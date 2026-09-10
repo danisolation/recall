@@ -252,6 +252,43 @@ packages/eslint-config/base.js
 
 ---
 
+## FOUNDATION-010
+
+### Title
+Scaffold NestJS API
+
+### Goal
+Create a minimal NestJS app in `apps/api` that builds and boots.
+
+### Dependencies
+FOUNDATION-008
+FOUNDATION-009
+
+### Status
+DONE
+
+### Files
+apps/api/package.json
+apps/api/tsconfig.json
+apps/api/tsconfig.build.json
+apps/api/nest-cli.json
+apps/api/src/main.ts
+apps/api/src/app.module.ts
+apps/api/src/app.controller.ts
+apps/api/src/app.service.ts
+
+### Acceptance Criteria
+- `apps/api` is a workspace package named `@danisolation-recall/api`
+- the app has a module, controller, and service
+- `tsconfig.json` extends the shared TypeScript config
+- dependencies install and the app builds
+
+### Tests
+- `pnpm install` succeeds
+- `pnpm --filter @danisolation-recall/api build` succeeds
+
+---
+
 ## Remaining foundation docs (coarse)
 
 - `CONTRIBUTING.md`
