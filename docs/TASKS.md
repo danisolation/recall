@@ -615,17 +615,20 @@ Provide argon2/bcrypt hash and verify helpers.
 AUTH-003
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/modules/auth/password.ts
+apps/api/src/auth/password.ts
+apps/api/src/auth/password.spec.ts
+apps/api/package.json
 
 ### Acceptance Criteria
 - plaintext passwords are never stored
 - hash and verify functions are tested
 
 ### Tests
-- unit tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (8 tests: 4 unit, 4 integration)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
 
