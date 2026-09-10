@@ -391,6 +391,94 @@ docs/adr/ADR-003-orm-selection.md
 
 ---
 
+## FOUNDATION-014
+
+### Title
+Wire the API to the database
+
+### Goal
+Add database and config dependencies to `apps/api`, provide the Drizzle client through a global `DatabaseModule`, and expose a health check.
+
+### Dependencies
+FOUNDATION-013
+
+### Status
+READY
+
+### Files
+apps/api/package.json
+apps/api/src/database/database.module.ts
+apps/api/src/health/health.controller.ts
+apps/api/src/app.module.ts
+packages/database/src/index.ts
+
+### Acceptance Criteria
+- `@danisolation-recall/database` and `@nestjs/config` are added to `apps/api`
+- `packages/database` exports `createDb(connectionString)` instead of an import-time singleton
+- `DatabaseModule` provides the Drizzle client using `DATABASE_URL`
+- `GET /health` runs `SELECT 1`
+
+### Tests
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+- `pnpm --filter @danisolation-recall/api build` succeeds
+
+---
+
+## FOUNDATION-015
+
+### Title
+Apply initial migration and verify the database pipeline
+
+### Goal
+Start local PostgreSQL, apply the `users` migration, and verify the API health check.
+
+### Dependencies
+FOUNDATION-014
+
+### Status
+READY
+
+### Files
+None (runtime verification)
+
+### Acceptance Criteria
+- migration applies successfully
+- `users` table exists
+- `GET /health` returns healthy
+
+### Tests
+- `docker compose -f infra/docker/docker-compose.yml up -d`
+- `pnpm --filter @danisolation-recall/database db:migrate`
+- `curl` the API health endpoint
+
+---
+
+## FOUNDATION-016
+
+### Title
+Add environment documentation
+
+### Goal
+Document required environment variables and the local development flow.
+
+### Dependencies
+FOUNDATION-015
+
+### Status
+READY
+
+### Files
+ENVIRONMENT.md
+
+### Acceptance Criteria
+- documents `.env`, `DATABASE_URL`, Docker Compose, and the local dev flow
+- matches the actual setup
+
+### Tests
+None (documentation only)
+
+---
+
 ## Remaining foundation docs (coarse)
 
 - `CONTRIBUTING.md`

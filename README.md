@@ -4,7 +4,7 @@ A modern flashcard and learning platform inspired by concepts behind tools like 
 
 ## Status
 
-Early foundation. The repository currently contains only project documentation and planning artifacts; no application code exists yet.
+Foundation complete: the monorepo is scaffolded, `apps/web` (Next.js) and `apps/api` (NestJS) build, and the Drizzle + PostgreSQL data layer is scaffolded. See [`docs/PROGRESS.md`](docs/PROGRESS.md) for the latest status and [`docs/ROADMAP.md`](docs/ROADMAP.md) for direction.
 
 ## Vision
 
@@ -32,29 +32,29 @@ Complexity is introduced only when a concrete problem justifies it.
 Current:
 
 - `AGENT_RULES.md` — operating constitution for the AI agent
-- `docs/ROADMAP.md` — high-level product and engineering direction
-- `docs/TASKS.md` — atomic, near-term tasks
+- `apps/` — web (Next.js), api (NestJS)
+- `packages/` — database, eslint-config, typescript-config
+- `infra/docker/` — local PostgreSQL via Docker Compose
+- `docs/` — roadmap, tasks, progress, and ADRs
 
 Planned:
 
-- `apps/` — web, api, worker
-- `packages/` — shared ui, domain, database, contracts, config
-- `infra/` — docker, local, deployment
+- `apps/worker` — background worker
+- `packages/` — ui, domain, contracts, validation, and other shared packages
 - `scripts/` — development utilities
 
 ## Getting started
 
-Not runnable yet. Once scaffolded, the target developer flow is:
-
 ```text
 git clone <repo>
 pnpm install
-docker compose up
+docker compose -f infra/docker/docker-compose.yml up
 pnpm dev
 ```
 
 ## Documentation
 
+- Progress: [`docs/PROGRESS.md`](docs/PROGRESS.md)
 - Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - Tasks: [`docs/TASKS.md`](docs/TASKS.md)
 - Agent rules: [`AGENT_RULES.md`](AGENT_RULES.md)
