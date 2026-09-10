@@ -166,6 +166,35 @@ DONE
 
 ---
 
+## FOUNDATION-007
+
+### Title
+Scaffold monorepo root
+
+### Goal
+Add root `package.json`, `pnpm-workspace.yaml`, and `turbo.json` to establish the monorepo.
+
+### Dependencies
+FOUNDATION-002
+
+### Status
+DONE
+
+### Files
+package.json
+pnpm-workspace.yaml
+turbo.json
+
+### Acceptance Criteria
+- root `package.json` declares the package name and pnpm package manager
+- `pnpm-workspace.yaml` lists the `apps` and `packages` workspaces
+- `turbo.json` defines build, dev, lint, typecheck, and test tasks
+
+### Tests
+- JSON files parse successfully
+
+---
+
 ## Remaining foundation docs (coarse)
 
 - `CONTRIBUTING.md`
