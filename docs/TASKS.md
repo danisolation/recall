@@ -152,7 +152,7 @@ Prevent build artifacts, dependencies, and secrets from being tracked.
 FOUNDATION-002
 
 ### Status
-READY
+DONE
 
 ### Files
 .gitignore
