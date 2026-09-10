@@ -486,18 +486,557 @@ None (documentation only)
 
 - `CONTRIBUTING.md`
 - `ARCHITECTURE.md`
-- `ENVIRONMENT.md`
 - `docs/TECH-DEBT.md`
 
 These will be created when their content is meaningful rather than empty placeholders.
 
 ---
 
-## MVP phases (coarse — not yet decomposed)
+## Authentication phase
+
+Session mechanism (ADR-007) is to be decided before AUTH-014. Recommended default: JWT in an httpOnly cookie with argon2/bcrypt password hashing.
+
+### AUTH-001
+
+### Title
+Create users table
+
+### Goal
+Define the `users` table in the database schema.
+
+### Dependencies
+FOUNDATION-013
+
+### Status
+DONE
+
+### Files
+packages/database/src/schema.ts
+
+### Acceptance Criteria
+- table has id, email, created_at, updated_at
+
+### Tests
+None (completed in FOUNDATION-013)
+
+---
+
+### AUTH-002
+
+### Title
+Create users migration
+
+### Goal
+Generate the initial migration for the `users` table.
+
+### Dependencies
+AUTH-001
+
+### Status
+DONE
+
+### Files
+packages/database/drizzle/0000_strange_master_mold.sql
+
+### Acceptance Criteria
+- migration creates the `users` table
+
+### Tests
+None (completed in FOUNDATION-013)
+
+---
+
+### AUTH-003
+
+### Title
+Add password hash to users
+
+### Goal
+Add a `password_hash` column and migration for email/password authentication.
+
+### Dependencies
+AUTH-002
+
+### Status
+DONE
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/0001_acoustic_black_widow.sql
+
+### Acceptance Criteria
+- `users` table gains a nullable `password_hash` column
+- migration is generated
+
+### Tests
+- `pnpm --filter @danisolation-recall/database db:generate` succeeds
+- `pnpm --filter @danisolation-recall/database db:migrate` succeeds
+
+---
+
+### AUTH-004
+
+### Title
+Add user database access
+
+### Goal
+Provide a Drizzle repository for user persistence (create, find by email, find by id).
+
+### Dependencies
+AUTH-003
+
+### Status
+READY
+
+### Files
+apps/api/src/modules/auth/users.repository.ts
+
+### Acceptance Criteria
+- repository supports create, findByEmail, findById
+
+### Tests
+- repository integration test
+
+---
+
+### AUTH-005
+
+### Title
+Add password hashing utility
+
+### Goal
+Provide argon2/bcrypt hash and verify helpers.
+
+### Dependencies
+AUTH-003
+
+### Status
+READY
+
+### Files
+apps/api/src/modules/auth/password.ts
+
+### Acceptance Criteria
+- plaintext passwords are never stored
+- hash and verify functions are tested
+
+### Tests
+- unit tests
+
+---
+
+### AUTH-006
+
+### Title
+Add registration input schema
+
+### Goal
+Define a Zod schema for registration input.
+
+### Dependencies
+AUTH-003
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/register.schema.ts
+
+### Acceptance Criteria
+- email and password are required and validated
+
+### Tests
+- schema unit tests
+
+---
+
+### AUTH-007
+
+### Title
+Add registration domain logic
+
+### Goal
+Create a user with a hashed password.
+
+### Dependencies
+AUTH-004
+AUTH-005
+AUTH-006
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/register.service.ts
+
+### Acceptance Criteria
+- duplicate email is rejected
+- password is hashed before persistence
+
+### Tests
+- service unit tests
+
+---
+
+### AUTH-008
+
+### Title
+Add registration endpoint
+
+### Goal
+Expose `POST /auth/register`.
+
+### Dependencies
+AUTH-007
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/auth.controller.ts
+
+### Acceptance Criteria
+- valid input creates a user
+- invalid input returns a validation error
+
+### Tests
+- endpoint integration test
+
+---
+
+### AUTH-009
+
+### Title
+Add registration integration test
+
+### Goal
+Cover the registration flow end to end at the API layer.
+
+### Dependencies
+AUTH-008
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/register.integration.spec.ts
+
+### Acceptance Criteria
+- success and duplicate-email cases are covered
+
+### Tests
+- integration test
+
+---
+
+### AUTH-010
+
+### Title
+Add login input schema
+
+### Goal
+Define a Zod schema for login input.
+
+### Dependencies
+AUTH-003
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/login.schema.ts
+
+### Acceptance Criteria
+- email and password are required
+
+### Tests
+- schema unit tests
+
+---
+
+### AUTH-011
+
+### Title
+Add login domain logic
+
+### Goal
+Verify credentials and return the authenticated user.
+
+### Dependencies
+AUTH-004
+AUTH-005
+AUTH-010
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/login.service.ts
+
+### Acceptance Criteria
+- wrong password or unknown email is rejected
+
+### Tests
+- service unit tests
+
+---
+
+### AUTH-012
+
+### Title
+Add login endpoint
+
+### Goal
+Expose `POST /auth/login`.
+
+### Dependencies
+AUTH-011
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/auth.controller.ts
+
+### Acceptance Criteria
+- valid credentials return a session token
+- invalid credentials return an error
+
+### Tests
+- endpoint integration test
+
+---
+
+### AUTH-013
+
+### Title
+Add login integration test
+
+### Goal
+Cover the login flow end to end at the API layer.
+
+### Dependencies
+AUTH-012
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/login.integration.spec.ts
+
+### Acceptance Criteria
+- success and failure cases are covered
+
+### Tests
+- integration test
+
+---
+
+### AUTH-014
+
+### Title
+Add session persistence
+
+### Goal
+Issue and persist the authenticated session per ADR-007.
+
+### Dependencies
+AUTH-012
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/session.ts
+
+### Acceptance Criteria
+- login returns a session credential (recommended: httpOnly cookie)
+- session can be validated on subsequent requests
+
+### Tests
+- unit tests
+
+---
+
+### AUTH-015
+
+### Title
+Add authentication guard
+
+### Goal
+Protect routes that require an authenticated user.
+
+### Dependencies
+AUTH-014
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/auth.guard.ts
+
+### Acceptance Criteria
+- unauthenticated requests are rejected
+- authenticated requests populate the current user
+
+### Tests
+- guard unit tests
+
+---
+
+### AUTH-016
+
+### Title
+Add protected route integration test
+
+### Goal
+Verify an authenticated route is protected.
+
+### Dependencies
+AUTH-015
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/protected.integration.spec.ts
+
+### Acceptance Criteria
+- protected route rejects missing or invalid credentials
+
+### Tests
+- integration test
+
+---
+
+### AUTH-017
+
+### Title
+Add logout
+
+### Goal
+Invalidate the current session.
+
+### Dependencies
+AUTH-014
+
+### Status
+TODO
+
+### Files
+apps/api/src/modules/auth/auth.controller.ts
+
+### Acceptance Criteria
+- logout clears the session credential
+
+### Tests
+- endpoint integration test
+
+---
+
+### AUTH-018
+
+### Title
+Add login frontend screen
+
+### Goal
+Build the login page UI.
+
+### Dependencies
+AUTH-012
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/login/*
+
+### Acceptance Criteria
+- page renders email and password fields
+
+### Tests
+- component test
+
+---
+
+### AUTH-019
+
+### Title
+Add login form validation
+
+### Goal
+Validate login form input on the client.
+
+### Dependencies
+AUTH-018
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/login/*
+
+### Acceptance Criteria
+- invalid input shows clear errors
+
+### Tests
+- component test
+
+---
+
+### AUTH-020
+
+### Title
+Connect login frontend to API
+
+### Goal
+Submit login credentials to the API and persist the session.
+
+### Dependencies
+AUTH-019
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/login/*
+
+### Acceptance Criteria
+- successful login stores the session and redirects
+
+### Tests
+- component test
+
+---
+
+### AUTH-021
+
+### Title
+Add authentication E2E test
+
+### Goal
+Cover the full login and logout journey in a browser.
+
+### Dependencies
+AUTH-020
+
+### Status
+TODO
+
+### Files
+apps/web/e2e/auth.spec.ts
+
+### Acceptance Criteria
+- register, login, protected route, and logout are covered
+
+### Tests
+- Playwright E2E test
+
+---
+
+## Remaining MVP phases (coarse — not yet decomposed)
 
 ```text
-Authentication
-  ↓
 Study sets
   ↓
 Cards
