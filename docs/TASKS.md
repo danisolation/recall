@@ -323,6 +323,35 @@ apps/web/src/app/page.tsx
 
 ---
 
+## FOUNDATION-012
+
+### Title
+Add local PostgreSQL via Docker Compose
+
+### Goal
+Provide a local PostgreSQL instance through Docker Compose for development.
+
+### Dependencies
+FOUNDATION-002
+
+### Status
+DONE
+
+### Files
+infra/docker/docker-compose.yml
+infra/docker/.env.example
+
+### Acceptance Criteria
+- compose file defines a `postgres:17-alpine` service with a named volume and healthcheck
+- credentials are configurable via environment variables with local defaults
+- `.env.example` documents the environment variables
+- the compose file validates
+
+### Tests
+- `docker compose -f infra/docker/docker-compose.yml config` succeeds
+
+---
+
 ## Remaining foundation docs (coarse)
 
 - `CONTRIBUTING.md`
