@@ -492,6 +492,89 @@ These will be created when their content is meaningful rather than empty placeho
 
 ---
 
+## Contracts phase
+
+Decision recorded in ADR-004. Frontend auth tasks (AUTH-017+) consume schemas from `packages/contracts`.
+
+### CONTRACTS-001
+
+### Title
+Record validation and contracts decision
+
+### Goal
+Document the validation approach and shared contracts decision in an ADR.
+
+### Dependencies
+AUTH-008
+
+### Status
+DONE
+
+### Files
+docs/adr/ADR-004-validation-and-contracts.md
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+
+### Tests
+None (documentation only)
+
+---
+
+### CONTRACTS-002
+
+### Title
+Create packages/contracts
+
+### Goal
+Create the `@danisolation-recall/contracts` workspace package and move the registration schema into it.
+
+### Dependencies
+CONTRACTS-001
+
+### Status
+READY
+
+### Files
+packages/contracts/*
+apps/api/src/auth/register.schema.ts (removed)
+
+### Acceptance Criteria
+- `registerSchema` and `RegisterInput` live in `packages/contracts`
+- API consumes them as a workspace dependency
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` passes
+
+---
+
+### CONTRACTS-003
+
+### Title
+Integrate nestjs-zod
+
+### Goal
+Replace per-controller `safeParse` with `nestjs-zod` DTOs and a validation pipe.
+
+### Dependencies
+CONTRACTS-002
+
+### Status
+TODO
+
+### Files
+apps/api/src/auth/auth.controller.ts
+apps/api/package.json
+
+### Acceptance Criteria
+- request bodies are validated through `createZodDto` and a Zod validation pipe
+- error responses keep the `VALIDATION_ERROR` code shape
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` passes
+
+---
+
 ## Authentication phase
 
 Session mechanism (ADR-007) is to be decided before AUTH-014. Recommended default: JWT in an httpOnly cookie with argon2/bcrypt password hashing.
@@ -734,16 +817,18 @@ Cover the registration flow end to end at the API layer.
 AUTH-008
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/modules/auth/register.integration.spec.ts
+apps/api/src/auth/register.integration.spec.ts
+apps/api/vitest.config.ts
+apps/api/package.json
 
 ### Acceptance Criteria
 - success and duplicate-email cases are covered
 
 ### Tests
-- integration test
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (22 tests, incl. 3 HTTP-level registration integration tests)
 
 ---
 
@@ -756,13 +841,13 @@ Add login input schema
 Define a Zod schema for login input.
 
 ### Dependencies
-AUTH-003
+CONTRACTS-002
 
 ### Status
 TODO
 
 ### Files
-apps/api/src/modules/auth/login.schema.ts
+packages/contracts/src/login.schema.ts
 
 ### Acceptance Criteria
 - email and password are required
