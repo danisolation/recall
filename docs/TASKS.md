@@ -916,17 +916,23 @@ Expose `POST /auth/login`.
 AUTH-011
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/modules/auth/auth.controller.ts
+apps/api/src/auth/auth.controller.ts
+apps/api/src/auth/auth.module.ts
+apps/api/src/auth/auth.controller.spec.ts
+apps/api/tsconfig.build.json
+apps/api/tsconfig.json
+.gitignore
 
 ### Acceptance Criteria
-- valid credentials return a session token
+- valid credentials return the authenticated user (session token arrives in AUTH-014)
 - invalid credentials return an error
 
 ### Tests
-- endpoint integration test
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (22 tests)
+- live smoke test: 200 valid login / 401 wrong password / 401 unknown email (`INVALID_CREDENTIALS`)
 
 ---
 
@@ -942,7 +948,7 @@ Cover the login flow end to end at the API layer.
 AUTH-012
 
 ### Status
-TODO
+READY
 
 ### Files
 apps/api/src/modules/auth/login.integration.spec.ts
