@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException } from "@nestjs/common";
+import { ConflictException } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 import { AuthController } from "./auth.controller";
 import {
@@ -30,16 +30,6 @@ describe("AuthController", () => {
 
     expect(result).toBe(registered);
     expect(registerService.register).toHaveBeenCalledWith({ email, password });
-  });
-
-  it("rejects invalid input with a validation error", async () => {
-    const registerService = createRegisterServiceMock();
-    const controller = new AuthController(registerService);
-
-    await expect(
-      controller.register({ email: "not-an-email", password: "short" }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(registerService.register).not.toHaveBeenCalled();
   });
 
   it("maps a duplicate email to a conflict error", async () => {

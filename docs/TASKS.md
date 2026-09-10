@@ -571,10 +571,13 @@ Replace per-controller `safeParse` with `nestjs-zod` DTOs and a validation pipe.
 CONTRACTS-002
 
 ### Status
-READY
+DONE
 
 ### Files
 apps/api/src/auth/auth.controller.ts
+apps/api/src/common/zod-exception.filter.ts
+apps/api/src/app.module.ts
+apps/api/src/auth/auth.controller.spec.ts
 apps/api/package.json
 
 ### Acceptance Criteria
@@ -582,7 +585,8 @@ apps/api/package.json
 - error responses keep the `VALIDATION_ERROR` code shape
 
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` passes
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (15 tests; 400 reshape covered by the HTTP integration test)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
 
@@ -855,7 +859,7 @@ Define a Zod schema for login input.
 CONTRACTS-002
 
 ### Status
-TODO
+READY
 
 ### Files
 packages/contracts/src/login.schema.ts

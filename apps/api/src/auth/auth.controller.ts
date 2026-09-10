@@ -1,35 +1,22 @@
-import {
-  BadRequestException,
-  Body,
-  ConflictException,
-  Controller,
-  Post,
-} from "@nestjs/common";
+import { Body, ConflictException, Controller, Post } from "@nestjs/common";
 import { registerSchema } from "@danisolation-recall/contracts";
-import { z } from "zod";
+import { createZodDto } from "nestjs-zod";
 import {
   EmailAlreadyRegisteredError,
   RegisterService,
   type RegisteredUser,
 } from "./register.service";
 
+export class RegisterDto extends createZodDto(registerSchema) {}
+
 @Controller("auth")
 export class AuthController {
   constructor(private readonly registerService: RegisterService) {}
 
   @Post("register")
-  async register(@Body() body: unknown): Promise<RegisteredUser> {
-    const parsed = registerSchema.safeParse(body);
-
-    if (!parsed.success) {
-      throw new BadRequestException({
-        code: "VALIDATION_ERROR",
-        errors: z.flattenError(parsed.error),
-      });
-    }
-
+  async register(@Body() body: RegisterDto): Promise<RegisteredUser> {
     try {
-      return await this.registerService.register(parsed.data);
+      return await this.registerService.register(body);
     } catch (error) {
       if (error instanceof EmailAlreadyRegisteredError) {
         throw new ConflictException({
