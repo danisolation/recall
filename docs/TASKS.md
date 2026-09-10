@@ -289,6 +289,40 @@ apps/api/src/app.service.ts
 
 ---
 
+## FOUNDATION-011
+
+### Title
+Scaffold Next.js web app
+
+### Goal
+Create a minimal Next.js app in `apps/web` that builds.
+
+### Dependencies
+FOUNDATION-008
+
+### Status
+DONE
+
+### Files
+apps/web/package.json
+apps/web/tsconfig.json
+apps/web/next.config.mjs
+apps/web/next-env.d.ts
+apps/web/src/app/layout.tsx
+apps/web/src/app/page.tsx
+
+### Acceptance Criteria
+- `apps/web` is a workspace package named `@danisolation-recall/web`
+- the app uses the App Router with a root layout and home page
+- `tsconfig.json` extends the shared TypeScript config
+- dependencies install and the app builds
+
+### Tests
+- `pnpm install` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds
+
+---
+
 ## Remaining foundation docs (coarse)
 
 - `CONTRIBUTING.md`
