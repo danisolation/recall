@@ -2,8 +2,8 @@ import { Inject, Injectable } from "@nestjs/common";
 import { eq, users } from "@danisolation-recall/database";
 import { DATABASE_PROVIDER, type Database } from "../database/database.module";
 
-type NewUser = typeof users.$inferInsert;
-type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
 
 @Injectable()
 export class UsersRepository {

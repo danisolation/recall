@@ -674,17 +674,20 @@ AUTH-005
 AUTH-006
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/modules/auth/register.service.ts
+apps/api/src/auth/register.service.ts
+apps/api/src/auth/register.service.spec.ts
+apps/api/src/auth/users.repository.ts
 
 ### Acceptance Criteria
 - duplicate email is rejected
 - password is hashed before persistence
 
 ### Tests
-- service unit tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (16 tests: 12 unit, 4 integration)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
 
@@ -700,7 +703,7 @@ Expose `POST /auth/register`.
 AUTH-007
 
 ### Status
-TODO
+READY
 
 ### Files
 apps/api/src/modules/auth/auth.controller.ts
