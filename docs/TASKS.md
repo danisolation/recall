@@ -644,16 +644,19 @@ Define a Zod schema for registration input.
 AUTH-003
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/modules/auth/register.schema.ts
+apps/api/src/auth/register.schema.ts
+apps/api/src/auth/register.schema.spec.ts
+apps/api/package.json
 
 ### Acceptance Criteria
 - email and password are required and validated
 
 ### Tests
-- schema unit tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (14 tests: 10 unit, 4 integration)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
 
@@ -671,7 +674,7 @@ AUTH-005
 AUTH-006
 
 ### Status
-TODO
+READY
 
 ### Files
 apps/api/src/modules/auth/register.service.ts

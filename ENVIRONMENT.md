@@ -9,6 +9,7 @@ Required environment variables and the local development setup for `danisolation
 | Variable | Purpose | Example |
 | --- | --- | --- |
 | `DATABASE_URL` | PostgreSQL connection string used by the Drizzle client | `postgresql://recall:recall@localhost:5432/recall` |
+| `PORT` | Port the API listens on (defaults to `3001`) | `3001` |
 
 The API loads `.env` from its working directory (`apps/api`). Create `apps/api/.env` from the root template:
 
@@ -39,6 +40,8 @@ docker compose -f infra/docker/docker-compose.yml up -d
 pnpm --filter @danisolation-recall/database db:migrate
 pnpm dev
 ```
+
+The web app runs on `http://localhost:3000` and the API on `http://localhost:3001` (health check at `/health`).
 
 ## Rules
 
