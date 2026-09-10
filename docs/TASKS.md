@@ -586,16 +586,20 @@ Provide a Drizzle repository for user persistence (create, find by email, find b
 AUTH-003
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/modules/auth/users.repository.ts
+apps/api/src/auth/users.repository.ts
+apps/api/src/auth/users.repository.integration.spec.ts
+packages/database/src/index.ts
+apps/api/package.json
 
 ### Acceptance Criteria
 - repository supports create, findByEmail, findById
 
 ### Tests
-- repository integration test
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (4 integration tests)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
 
@@ -637,7 +641,7 @@ Define a Zod schema for registration input.
 AUTH-003
 
 ### Status
-TODO
+READY
 
 ### Files
 apps/api/src/modules/auth/register.schema.ts
