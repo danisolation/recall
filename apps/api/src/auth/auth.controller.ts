@@ -5,8 +5,8 @@ import {
   Controller,
   Post,
 } from "@nestjs/common";
+import { registerSchema } from "@danisolation-recall/contracts";
 import { z } from "zod";
-import { registerSchema } from "./register.schema";
 import {
   EmailAlreadyRegisteredError,
   RegisterService,

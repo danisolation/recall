@@ -14,6 +14,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@danisolation-recall/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@danisolation-recall/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -100,6 +103,22 @@ importers:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
+
+  packages/contracts:
+    dependencies:
+      zod:
+        specifier: ^4.6.1
+        version: 4.6.1
+    devDependencies:
+      '@danisolation-recall/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@22.20.2)(vite@8.2.2(@types/node@22.20.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.13))
 
   packages/database:
     dependencies:

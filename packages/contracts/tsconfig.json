@@ -1,0 +1,8 @@
+{
+  "extends": "@danisolation-recall/typescript-config/base.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node"
+  },
+  "include": ["src/**/*.ts"]
+}

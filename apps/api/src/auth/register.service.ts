@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
+import { type RegisterInput } from "@danisolation-recall/contracts";
 import { hashPassword } from "./password";
-import { type RegisterInput } from "./register.schema";
 import { type User, UsersRepository } from "./users.repository";
 
 export class EmailAlreadyRegisteredError extends Error {

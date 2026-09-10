@@ -533,18 +533,29 @@ Create the `@danisolation-recall/contracts` workspace package and move the regis
 CONTRACTS-001
 
 ### Status
-READY
+DONE
 
 ### Files
-packages/contracts/*
+packages/contracts/package.json
+packages/contracts/tsconfig.json
+packages/contracts/tsconfig.build.json
+packages/contracts/vitest.config.ts
+packages/contracts/src/register.schema.ts
+packages/contracts/src/register.schema.spec.ts
+packages/contracts/src/index.ts
 apps/api/src/auth/register.schema.ts (removed)
+apps/api/src/auth/register.schema.spec.ts (removed)
+apps/api/src/auth/register.service.ts
+apps/api/src/auth/auth.controller.ts
+apps/api/package.json
 
 ### Acceptance Criteria
 - `registerSchema` and `RegisterInput` live in `packages/contracts`
 - API consumes them as a workspace dependency
 
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` passes
+- `pnpm --filter @danisolation-recall/contracts test` (6 schema tests)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (16 tests)
 
 ---
 
@@ -560,7 +571,7 @@ Replace per-controller `safeParse` with `nestjs-zod` DTOs and a validation pipe.
 CONTRACTS-002
 
 ### Status
-TODO
+READY
 
 ### Files
 apps/api/src/auth/auth.controller.ts
