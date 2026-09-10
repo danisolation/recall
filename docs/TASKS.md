@@ -99,7 +99,7 @@ Create `docs/ROADMAP.md` with high-level product and engineering phases.
 FOUNDATION-003
 
 ### Status
-READY
+DONE
 
 ### Files
 docs/ROADMAP.md
