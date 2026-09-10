@@ -439,7 +439,7 @@ Start local PostgreSQL, apply the `users` migration, and verify the API health c
 FOUNDATION-014
 
 ### Status
-READY
+DONE
 
 ### Files
 None (runtime verification)
@@ -468,7 +468,7 @@ Document required environment variables and the local development flow.
 FOUNDATION-015
 
 ### Status
-READY
+DONE
 
 ### Files
 ENVIRONMENT.md
