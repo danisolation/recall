@@ -403,13 +403,16 @@ Add database and config dependencies to `apps/api`, provide the Drizzle client t
 FOUNDATION-013
 
 ### Status
-READY
+DONE
 
 ### Files
 apps/api/package.json
 apps/api/src/database/database.module.ts
 apps/api/src/health/health.controller.ts
 apps/api/src/app.module.ts
+packages/database/package.json
+packages/database/tsconfig.json
+packages/database/tsconfig.build.json
 packages/database/src/index.ts
 
 ### Acceptance Criteria
