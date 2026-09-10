@@ -859,16 +859,18 @@ Define a Zod schema for login input.
 CONTRACTS-002
 
 ### Status
-READY
+DONE
 
 ### Files
 packages/contracts/src/login.schema.ts
+packages/contracts/src/login.schema.spec.ts
+packages/contracts/src/index.ts
 
 ### Acceptance Criteria
 - email and password are required
 
 ### Tests
-- schema unit tests
+- `pnpm --filter @danisolation-recall/contracts test` (12 tests: 6 login, 6 register)
 
 ---
 
@@ -886,7 +888,7 @@ AUTH-005
 AUTH-010
 
 ### Status
-TODO
+READY
 
 ### Files
 apps/api/src/modules/auth/login.service.ts
