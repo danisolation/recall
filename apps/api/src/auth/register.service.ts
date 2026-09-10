@@ -4,6 +4,8 @@ import { type RegisterInput } from "./register.schema";
 import { type User, UsersRepository } from "./users.repository";
 
 export class EmailAlreadyRegisteredError extends Error {
+  readonly code = "EMAIL_ALREADY_REGISTERED";
+
   constructor(email: string) {
     super(`Email ${email} is already registered`);
     this.name = "EmailAlreadyRegisteredError";

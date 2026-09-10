@@ -703,17 +703,22 @@ Expose `POST /auth/register`.
 AUTH-007
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/modules/auth/auth.controller.ts
+apps/api/src/auth/auth.controller.ts
+apps/api/src/auth/auth.module.ts
+apps/api/src/auth/auth.controller.spec.ts
+apps/api/src/auth/register.service.ts
+apps/api/src/app.module.ts
 
 ### Acceptance Criteria
 - valid input creates a user
 - invalid input returns a validation error
 
 ### Tests
-- endpoint integration test
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (19 tests: 15 unit, 4 integration)
+- live smoke test: 201 valid / 409 duplicate (`EMAIL_ALREADY_REGISTERED`) / 400 invalid (`VALIDATION_ERROR`)
 
 ---
 
@@ -729,7 +734,7 @@ Cover the registration flow end to end at the API layer.
 AUTH-008
 
 ### Status
-TODO
+READY
 
 ### Files
 apps/api/src/modules/auth/register.integration.spec.ts
