@@ -223,6 +223,35 @@ packages/typescript-config/base.json
 
 ---
 
+## FOUNDATION-009
+
+### Title
+Add shared ESLint config package
+
+### Goal
+Create `packages/eslint-config` with a flat config base that apps can extend.
+
+### Dependencies
+FOUNDATION-007
+
+### Status
+DONE
+
+### Files
+packages/eslint-config/package.json
+packages/eslint-config/base.js
+
+### Acceptance Criteria
+- package is scoped as `@danisolation-recall/eslint-config`
+- `base.js` exports a flat ESLint config using recommended rules
+- `package.json` parses and `base.js` is syntactically valid
+
+### Tests
+- JSON parses successfully
+- `base.js` passes a Node syntax check
+
+---
+
 ## Remaining foundation docs (coarse)
 
 - `CONTRIBUTING.md`
