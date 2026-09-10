@@ -352,6 +352,45 @@ infra/docker/.env.example
 
 ---
 
+## FOUNDATION-013
+
+### Title
+Set up database layer with Drizzle
+
+### Goal
+Create `packages/database` with Drizzle, an initial schema, and a connection client, and record the ORM decision.
+
+### Dependencies
+FOUNDATION-008
+FOUNDATION-012
+
+### Status
+DONE
+
+### Files
+packages/database/package.json
+packages/database/tsconfig.json
+packages/database/drizzle.config.ts
+packages/database/src/schema.ts
+packages/database/src/index.ts
+packages/database/drizzle/0000_strange_master_mold.sql
+docs/adr/ADR-003-orm-selection.md
+.env.example
+
+### Acceptance Criteria
+- Drizzle and pg are installed in `packages/database`
+- `src/schema.ts` defines a `users` table
+- `src/index.ts` exports a Drizzle client and fails clearly when `DATABASE_URL` is missing
+- `drizzle-kit` generates the initial migration
+- ADR-003 records the Drizzle decision
+
+### Tests
+- `pnpm install` succeeds
+- `pnpm --filter @danisolation-recall/database db:generate` succeeds
+- `pnpm --filter @danisolation-recall/database typecheck` succeeds
+
+---
+
 ## Remaining foundation docs (coarse)
 
 - `CONTRIBUTING.md`
