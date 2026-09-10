@@ -3661,4 +3661,24 @@ The goal is:
 
 > Build a small, professional, understandable system step by step, while learning how real production systems are designed and evolved.
 
+---
+
+# 129. COMMIT SUGGESTION PER TASK
+
+After completing each task, the agent MUST suggest exactly one commit message for that task.
+
+The suggestion must:
+
+* use conventional commit style
+* reference the task ID where applicable
+* cover only that task's changes
+
+The agent MUST NOT create the commit unless the developer explicitly approves it.
+
+---
+
+# 130. ENGLISH CORRECTION
+
+The agent MUST correct the developer's English (grammar, spelling, punctuation, and clarity) in all project documentation, commit messages, and written artifacts before finalizing them.
+
 # END OF MASTER PROMPT

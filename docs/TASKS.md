@@ -126,7 +126,7 @@ Add a top-level project overview that matches the current repository state.
 FOUNDATION-004
 
 ### Status
-READY
+DONE
 
 ### Files
 README.md
