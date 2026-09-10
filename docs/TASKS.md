@@ -195,6 +195,34 @@ turbo.json
 
 ---
 
+## FOUNDATION-008
+
+### Title
+Add shared TypeScript config package
+
+### Goal
+Create `packages/typescript-config` with a strict base `tsconfig` that apps can extend.
+
+### Dependencies
+FOUNDATION-007
+
+### Status
+DONE
+
+### Files
+packages/typescript-config/package.json
+packages/typescript-config/base.json
+
+### Acceptance Criteria
+- package is scoped as `@danisolation-recall/typescript-config`
+- `base.json` enables strict TypeScript settings
+- JSON files parse successfully
+
+### Tests
+- JSON files parse successfully
+
+---
+
 ## Remaining foundation docs (coarse)
 
 - `CONTRIBUTING.md`
