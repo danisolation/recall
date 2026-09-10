@@ -888,16 +888,19 @@ AUTH-005
 AUTH-010
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/modules/auth/login.service.ts
+apps/api/src/auth/login.service.ts
+apps/api/src/auth/login.service.spec.ts
+apps/api/src/auth/password.ts
 
 ### Acceptance Criteria
 - wrong password or unknown email is rejected
 
 ### Tests
-- service unit tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (20 tests)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
 
@@ -913,7 +916,7 @@ Expose `POST /auth/login`.
 AUTH-011
 
 ### Status
-TODO
+READY
 
 ### Files
 apps/api/src/modules/auth/auth.controller.ts

@@ -31,4 +31,10 @@ describe("password hashing", () => {
       false,
     );
   });
+
+  it("rejects a malformed stored hash without throwing", async () => {
+    await expect(verifyPassword("not-a-valid-hash", "any password")).resolves.toBe(
+      false,
+    );
+  });
 });
