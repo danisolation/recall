@@ -1274,6 +1274,41 @@ ENVIRONMENT.md
 
 ---
 
+### AUTH-020A
+
+### Title
+Rate limit login attempts
+
+### Goal
+Protect `POST /auth/login` against brute-force attempts with simple per-IP rate limiting (§68).
+
+### Dependencies
+AUTH-012
+
+### Status
+DONE
+
+### Files
+apps/api/src/auth/rate-limit.guard.ts
+apps/api/src/auth/auth.module.ts
+apps/api/src/auth/auth.controller.ts
+apps/api/src/auth/rate-limit.integration.spec.ts
+apps/api/package.json
+
+### Acceptance Criteria
+- more than 5 login attempts per minute from one IP return 429 with the `RATE_LIMITED` code
+- other auth routes are not throttled by this guard
+- error body keeps the `{ code, message }` house shape
+
+### Decision
+`@nestjs/throttler` (in-memory storage; Redis adapter is the documented Phase-2 swap), method-scoped on login only, 5 attempts per 60s per IP, custom `throwThrottlingException` for the house error shape. Account-level lockout deliberately avoided: IP-based limiting cannot be weaponized to lock a victim out.
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (50 tests, incl. 2 rate-limit integration tests: 5×401 then 429 `RATE_LIMITED`; register unaffected)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+
+---
+
 ### AUTH-021
 
 ### Title
@@ -1303,7 +1338,8 @@ apps/web/e2e/auth.spec.ts
 
 Real-world hardening deferred until the MVP surface stabilizes; each will be decomposed when its context is known:
 
-- rate limiting for login and registration (§68)
+- rate limiting for registration (same mechanism as AUTH-020A)
+- per-IP keying behind the rewrite proxy: honor `X-Forwarded-For` via Express trust proxy at deployment (§108); in dev all proxied traffic shares one IP
 - structured request logging with request ids (§63)
 - security headers (§42)
 - expired-session cleanup job (§47, worker phase)
