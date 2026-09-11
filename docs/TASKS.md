@@ -1223,16 +1223,22 @@ Validate login form input on the client.
 AUTH-018
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/login/*
+packages/contracts/src/login.schema.ts
+apps/web/src/app/login/login-form.tsx
+apps/web/src/app/login/login-form.spec.tsx
+apps/web/package.json
 
 ### Acceptance Criteria
 - invalid input shows clear errors
 
 ### Tests
-- component test
+- `pnpm --filter @danisolation-recall/web test` (5 tests: empty submit shows the two schema messages and never calls `onValid`; valid input submits normalized values with no errors)
+- `pnpm --filter @danisolation-recall/contracts test` (12 tests, unchanged behavior with user-facing messages)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds
 
 ---
 
