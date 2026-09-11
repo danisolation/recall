@@ -31,9 +31,10 @@ The compose project is named `recall` (container `recall-postgres`, host port `$
 | --- | --- |
 | `pnpm dev` | Web (:3000) + API (:3001) with watch mode (Turborepo) |
 | `pnpm build` / `pnpm typecheck` / `pnpm lint` | All packages |
-| `pnpm test` | All tests — Turborepo builds workspace packages first |
+| `DATABASE_URL=… pnpm test` | All tests — Turborepo builds workspace packages first |
 | `DATABASE_URL=… pnpm --filter @danisolation-recall/api test` | API suite (unit + integration; needs running Postgres) |
 | `pnpm --filter @danisolation-recall/web test` | Web component tests |
+| `pnpm --filter @danisolation-recall/web test:e2e` | Playwright E2E (needs `playwright install chromium` once; starts its own servers on 3100/3101) |
 | `pnpm --filter @danisolation-recall/contracts test` | Schema tests |
 | `pnpm --filter @danisolation-recall/database db:generate` | Generate a migration from schema changes |
 | `pnpm --filter @danisolation-recall/database db:migrate` | Apply migrations |
@@ -65,4 +66,8 @@ The compose project is named `recall` (container `recall-postgres`, host port `$
 - **`NODE_ENV`**: don't run tests with `NODE_ENV=production` exported in the shell (React's dev-only `act` disappears, builds behave differently). The web vitest config pins `NODE_ENV=test` for exactly this reason.
 - **Integration tests need Postgres** and `DATABASE_URL`; they create and clean up their own rows (unique emails per spec).
 - **The web app must not call the API cross-origin** — always go through the `/api` rewrite so the session cookie stays first-party.
+- **Turbo strict env**: Turborepo 2 does not pass arbitrary environment variables to tasks. Anything a task script reads from `process.env` must be declared in `turbo.json` (`test.passThroughEnv` includes `DATABASE_URL`); otherwise root `pnpm test` fails even though filtered runs work.
 - **Stale Docker containers**: if a previous compose incarnation left an orphaned Postgres (no published port), `docker ps` will show it; the canonical one is `recall-postgres` on 5432.
+- **E2E ports**: Playwright uses 3100 (web) and 3101 (API) so it never collides with a normal `pnpm dev`; it starts and stops those servers itself (`reuseExistingServer` locally, always fresh in CI).
+- **`role="alert"` in E2E**: Next.js injects its own route announcer with `role="alert"`, so E2E locators for form errors must be scoped (e.g. `.filter({ hasText: … })`).
+- **E2E test data**: specs register users with unique emails and do not delete them (there is no user-deletion endpoint yet); rows accumulate in the dev database.

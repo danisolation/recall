@@ -32,8 +32,10 @@ pnpm dev
 ## Testing
 
 ```bash
-pnpm test        # everything — Turborepo builds workspace packages first
+DATABASE_URL=postgresql://recall:recall@localhost:5432/recall pnpm test   # all packages (Turborepo builds dependencies first)
 ```
+
+`DATABASE_URL` must be set (with PostgreSQL running) for the API integration tests; it is passed through to tasks via `turbo.json` (`test.passThroughEnv`).
 
 Per package:
 
@@ -41,6 +43,13 @@ Per package:
 DATABASE_URL=postgresql://recall:recall@localhost:5432/recall pnpm --filter @danisolation-recall/api test
 pnpm --filter @danisolation-recall/web test
 pnpm --filter @danisolation-recall/contracts test
+```
+
+End-to-end (Playwright, Chromium — starts its own API and web servers on ports 3100/3101):
+
+```bash
+pnpm --filter @danisolation-recall/web exec playwright install chromium  # once
+pnpm --filter @danisolation-recall/web test:e2e
 ```
 
 API integration tests hit the real PostgreSQL from Docker Compose and require `DATABASE_URL`. Unit tests do not. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for workflow and known gotchas.

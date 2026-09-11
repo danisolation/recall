@@ -116,4 +116,4 @@ Deferred infrastructure (Redis, queues, worker, search engines, observability) i
 | Unit | domain logic, pure helpers | `*.spec.ts` next to the code |
 | Integration | DB operations, HTTP endpoints via `supertest` (real Postgres) | `*.integration.spec.ts` |
 | Component | web components via Testing Library | `apps/web/**/*.spec.tsx` |
-| E2E | full journeys in a browser (planned: AUTH-021) | `apps/web/e2e/` |
+| E2E | full journeys in a browser against the real stack (Playwright) | `apps/web/e2e/` |
