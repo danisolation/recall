@@ -1095,16 +1095,20 @@ Invalidate the current session.
 AUTH-014
 
 ### Status
-READY
+DONE
 
 ### Files
 apps/api/src/auth/auth.controller.ts
+apps/api/src/auth/session.ts
+apps/api/src/auth/session.integration.spec.ts
+apps/api/src/auth/auth.controller.spec.ts
+apps/api/src/auth/logout.integration.spec.ts
 
 ### Acceptance Criteria
 - logout clears the session credential
 
 ### Tests
-- endpoint integration test
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (48 tests, incl. 5 session integration tests with `revoke` coverage, a controller unit test, and 3 HTTP-level logout tests: 401 without cookie, 204 revoking + clearing the cookie, and the pre-logout cookie failing `GET /auth/me` afterwards)
 
 ---
 

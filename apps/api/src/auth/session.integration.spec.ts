@@ -72,4 +72,16 @@ describe("SessionService (integration)", () => {
 
     expect(user).toBeNull();
   });
+
+  it("revokes a token so it no longer validates", async () => {
+    const { token } = await sessionService.issue(userId);
+
+    const before = await sessionService.findUserByToken(token);
+    expect(before).not.toBeNull();
+
+    await sessionService.revoke(token);
+
+    const after = await sessionService.findUserByToken(token);
+    expect(after).toBeNull();
+  });
 });

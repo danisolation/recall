@@ -5,11 +5,12 @@ import {
   Get,
   HttpCode,
   Post,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
-import type { Response } from "express";
+import type { Request, Response } from "express";
 import { loginSchema, registerSchema } from "@danisolation-recall/contracts";
 import { createZodDto } from "nestjs-zod";
 import { AuthGuard, CurrentUser } from "./auth.guard";
@@ -89,5 +90,21 @@ export class AuthController {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  @Post("logout")
+  @UseGuards(AuthGuard)
+  @HttpCode(204)
+  async logout(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
+    const token = request.cookies?.[SESSION_COOKIE_NAME];
+
+    if (token) {
+      await this.sessionService.revoke(token);
+    }
+
+    response.clearCookie(SESSION_COOKIE_NAME);
   }
 }

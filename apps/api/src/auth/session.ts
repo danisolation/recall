@@ -55,4 +55,10 @@ export class SessionService {
 
     return row?.user ?? null;
   }
+
+  async revoke(token: string): Promise<void> {
+    await this.db
+      .delete(sessions)
+      .where(eq(sessions.tokenHash, hashToken(token)));
+  }
 }

@@ -1,5 +1,5 @@
 import { ConflictException, UnauthorizedException } from "@nestjs/common";
-import type { Response } from "express";
+import type { Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
 import { AuthController } from "./auth.controller";
 import {
@@ -26,11 +26,17 @@ function createLoginServiceMock() {
 }
 
 function createSessionServiceMock() {
-  return { issue: vi.fn() } as unknown as SessionService;
+  return {
+    issue: vi.fn(),
+    revoke: vi.fn(),
+  } as unknown as SessionService;
 }
 
 function createResponseMock() {
-  return { cookie: vi.fn() } as unknown as Response;
+  return {
+    cookie: vi.fn(),
+    clearCookie: vi.fn(),
+  } as unknown as Response;
 }
 
 describe("AuthController", () => {
@@ -127,5 +133,23 @@ describe("AuthController", () => {
       controller.login({ email, password }, response),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(response.cookie).not.toHaveBeenCalled();
+  });
+
+  it("logs out by revoking the session and clearing the cookie", async () => {
+    const sessionService = createSessionServiceMock();
+    const response = createResponseMock();
+    const request = {
+      cookies: { [SESSION_COOKIE_NAME]: "valid-token" },
+    } as unknown as Request;
+
+    const controller = new AuthController(
+      createRegisterServiceMock(),
+      createLoginServiceMock(),
+      sessionService,
+    );
+    await controller.logout(request, response);
+
+    expect(sessionService.revoke).toHaveBeenCalledWith("valid-token");
+    expect(response.clearCookie).toHaveBeenCalledWith(SESSION_COOKIE_NAME);
   });
 });
