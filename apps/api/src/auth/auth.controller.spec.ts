@@ -1,4 +1,5 @@
 import { ConflictException, UnauthorizedException } from "@nestjs/common";
+import type { Response } from "express";
 import { describe, expect, it, vi } from "vitest";
 import { AuthController } from "./auth.controller";
 import {
@@ -11,6 +12,7 @@ import {
   type AuthenticatedUser,
   type LoginService,
 } from "./login.service";
+import { SESSION_COOKIE_NAME, type SessionService } from "./session";
 
 const email = "auth.controller@example.com";
 const password = "correct horse battery staple";
@@ -21,6 +23,14 @@ function createRegisterServiceMock() {
 
 function createLoginServiceMock() {
   return { login: vi.fn() } as unknown as LoginService;
+}
+
+function createSessionServiceMock() {
+  return { issue: vi.fn() } as unknown as SessionService;
+}
+
+function createResponseMock() {
+  return { cookie: vi.fn() } as unknown as Response;
 }
 
 describe("AuthController", () => {
@@ -37,6 +47,7 @@ describe("AuthController", () => {
     const controller = new AuthController(
       registerService,
       createLoginServiceMock(),
+      createSessionServiceMock(),
     );
     const result = await controller.register({ email, password });
 
@@ -53,6 +64,7 @@ describe("AuthController", () => {
     const controller = new AuthController(
       registerService,
       createLoginServiceMock(),
+      createSessionServiceMock(),
     );
 
     await expect(
@@ -60,7 +72,7 @@ describe("AuthController", () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it("logs a user in with valid credentials", async () => {
+  it("logs a user in and issues a session cookie", async () => {
     const loginService = createLoginServiceMock();
     const authenticated: AuthenticatedUser = {
       id: 1,
@@ -70,29 +82,50 @@ describe("AuthController", () => {
     };
     vi.mocked(loginService.login).mockResolvedValue(authenticated);
 
+    const sessionService = createSessionServiceMock();
+    const expiresAt = new Date();
+    vi.mocked(sessionService.issue).mockResolvedValue({
+      token: "issued-token",
+      expiresAt,
+    });
+
+    const response = createResponseMock();
     const controller = new AuthController(
       createRegisterServiceMock(),
       loginService,
+      sessionService,
     );
-    const result = await controller.login({ email, password });
+    const result = await controller.login({ email, password }, response);
 
     expect(result).toBe(authenticated);
-    expect(loginService.login).toHaveBeenCalledWith({ email, password });
+    expect(sessionService.issue).toHaveBeenCalledWith(authenticated.id);
+    expect(response.cookie).toHaveBeenCalledWith(
+      SESSION_COOKIE_NAME,
+      "issued-token",
+      expect.objectContaining({
+        httpOnly: true,
+        sameSite: "lax",
+        expires: expiresAt,
+      }),
+    );
   });
 
-  it("maps invalid credentials to an unauthorized error", async () => {
+  it("maps invalid credentials to an unauthorized error and sets no cookie", async () => {
     const loginService = createLoginServiceMock();
     vi.mocked(loginService.login).mockRejectedValue(
       new InvalidCredentialsError(),
     );
 
+    const response = createResponseMock();
     const controller = new AuthController(
       createRegisterServiceMock(),
       loginService,
+      createSessionServiceMock(),
     );
 
     await expect(
-      controller.login({ email, password }),
+      controller.login({ email, password }, response),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(response.cookie).not.toHaveBeenCalled();
   });
 });

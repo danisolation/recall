@@ -15,6 +15,13 @@
       "when": 1789026698460,
       "tag": "0001_acoustic_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789098170909,
+      "tag": "0002_stiff_xavin",
+      "breakpoints": true
     }
   ]
 }

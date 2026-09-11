@@ -4,8 +4,10 @@ import {
   Controller,
   HttpCode,
   Post,
+  Res,
   UnauthorizedException,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { loginSchema, registerSchema } from "@danisolation-recall/contracts";
 import { createZodDto } from "nestjs-zod";
 import {
@@ -18,6 +20,7 @@ import {
   LoginService,
   type AuthenticatedUser,
 } from "./login.service";
+import { SESSION_COOKIE_NAME, SessionService } from "./session";
 
 export class RegisterDto extends createZodDto(registerSchema) {}
 
@@ -28,6 +31,7 @@ export class AuthController {
   constructor(
     private readonly registerService: RegisterService,
     private readonly loginService: LoginService,
+    private readonly sessionService: SessionService,
   ) {}
 
   @Post("register")
@@ -47,9 +51,20 @@ export class AuthController {
 
   @Post("login")
   @HttpCode(200)
-  async login(@Body() body: LoginDto): Promise<AuthenticatedUser> {
+  async login(
+    @Body() body: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthenticatedUser> {
     try {
-      return await this.loginService.login(body);
+      const user = await this.loginService.login(body);
+      const session = await this.sessionService.issue(user.id);
+      response.cookie(SESSION_COOKIE_NAME, session.token, {
+        httpOnly: true,
+        sameSite: "lax",
+        expires: session.expiresAt,
+        secure: process.env.NODE_ENV === "production",
+      });
+      return user;
     } catch (error) {
       if (error instanceof InvalidCredentialsError) {
         throw new UnauthorizedException({

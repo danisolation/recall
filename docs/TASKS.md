@@ -1000,18 +1000,29 @@ Issue and persist the authenticated session per ADR-007.
 AUTH-012
 
 ### Status
-READY
+DONE
 
 ### Files
+packages/database/src/schema.ts
+packages/database/src/index.ts
+packages/database/drizzle/0002_stiff_xavin.sql
 apps/api/src/auth/session.ts
-packages/database (sessions table + migration)
+apps/api/src/auth/auth.controller.ts
+apps/api/src/auth/auth.module.ts
+apps/api/src/auth/session.spec.ts
+apps/api/src/auth/session.integration.spec.ts
+apps/api/src/auth/auth.controller.spec.ts
+apps/api/package.json
 
 ### Acceptance Criteria
 - login returns a session credential (per ADR-007: httpOnly cookie)
 - session can be validated on subsequent requests
 
 ### Tests
-- unit tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (36 tests: 6 session unit, 4 session integration incl. expiry, updated controller spec asserting the cookie)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+- `pnpm --filter @danisolation-recall/database typecheck` succeeds
+- migration `0002_stiff_xavin.sql` applied; `sessions` table verified in psql
 
 ---
 

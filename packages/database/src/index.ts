@@ -7,5 +7,5 @@ export function createDb(connectionString: string) {
   return drizzle(pool, { schema });
 }
 
-export { eq, sql } from "drizzle-orm";
+export { and, eq, gt, sql } from "drizzle-orm";
 export * from "./schema";
