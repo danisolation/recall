@@ -2,14 +2,17 @@ import {
   Body,
   ConflictException,
   Controller,
+  Get,
   HttpCode,
   Post,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from "@nestjs/common";
 import type { Response } from "express";
 import { loginSchema, registerSchema } from "@danisolation-recall/contracts";
 import { createZodDto } from "nestjs-zod";
+import { AuthGuard, CurrentUser } from "./auth.guard";
 import {
   EmailAlreadyRegisteredError,
   RegisterService,
@@ -21,6 +24,7 @@ import {
   type AuthenticatedUser,
 } from "./login.service";
 import { SESSION_COOKIE_NAME, SessionService } from "./session";
+import { type User } from "./users.repository";
 
 export class RegisterDto extends createZodDto(registerSchema) {}
 
@@ -74,5 +78,16 @@ export class AuthController {
       }
       throw error;
     }
+  }
+
+  @Get("me")
+  @UseGuards(AuthGuard)
+  me(@CurrentUser() user: User): AuthenticatedUser {
+    return {
+      id: user.id,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 }

@@ -1,6 +1,7 @@
 import {
   type CanActivate,
   type ExecutionContext,
+  createParamDecorator,
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
@@ -36,3 +37,9 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 }
+
+export const CurrentUser = createParamDecorator(
+  (_data: unknown, context: ExecutionContext): User | undefined => {
+    return context.switchToHttp().getRequest<Request>().currentUser;
+  },
+);

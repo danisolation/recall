@@ -1068,16 +1068,18 @@ Verify an authenticated route is protected.
 AUTH-015
 
 ### Status
-READY
+DONE
 
 ### Files
 apps/api/src/auth/protected.integration.spec.ts
+apps/api/src/auth/auth.guard.ts
+apps/api/src/auth/auth.controller.ts
 
 ### Acceptance Criteria
 - protected route rejects missing or invalid credentials
 
 ### Tests
-- integration test
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (43 tests, incl. 4 HTTP-level tests over `GET /auth/me`: 401 without cookie, 401 with invalid cookie, 200 with the session cookie from login, and the ADR-007 cookie flags (HttpOnly, SameSite=Lax, Expires))
 
 ---
 
@@ -1093,10 +1095,10 @@ Invalidate the current session.
 AUTH-014
 
 ### Status
-TODO
+READY
 
 ### Files
-apps/api/src/modules/auth/auth.controller.ts
+apps/api/src/auth/auth.controller.ts
 
 ### Acceptance Criteria
 - logout clears the session credential
