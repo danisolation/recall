@@ -1124,16 +1124,23 @@ Build the login page UI.
 AUTH-012
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/login/*
+apps/web/src/app/login/page.tsx
+apps/web/src/app/login/login-form.tsx
+apps/web/src/app/login/login-form.spec.tsx
+apps/web/vitest.config.ts
+apps/web/vitest.setup.ts
+apps/web/package.json
 
 ### Acceptance Criteria
 - page renders email and password fields
 
 ### Tests
-- component test
+- `pnpm --filter @danisolation-recall/web test` (1 component test: labeled email and password inputs with submit button)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds (`/login` prerendered)
 
 ---
 
