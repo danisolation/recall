@@ -1254,16 +1254,23 @@ Submit login credentials to the API and persist the session.
 AUTH-019
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/login/*
+apps/web/src/lib/api.ts
+apps/web/src/app/login/login-form.tsx
+apps/web/src/app/login/login-form.spec.tsx
+apps/web/next.config.mjs
+ENVIRONMENT.md
 
 ### Acceptance Criteria
 - successful login stores the session and redirects
 
 ### Tests
-- component test
+- `pnpm --filter @danisolation-recall/web test` (7 tests: invalid input never submits; success calls the API with normalized values and redirects to `/`; 401 shows "Email or password is incorrect."; unexpected failures show the generic error)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds
+- live smoke test through the rewrite proxy: browser login with a registered user redirected to `/` and `GET /api/auth/me` from the same session returned the user (first-party session cookie)
 
 ---
 

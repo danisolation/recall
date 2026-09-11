@@ -2,8 +2,33 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LoginForm } from "./login-form";
+import { ApiError } from "@/lib/api";
 
-afterEach(cleanup);
+const { loginUserMock, replaceMock } = vi.hoisted(() => ({
+  loginUserMock: vi.fn(),
+  replaceMock: vi.fn(),
+}));
+
+vi.mock("@/lib/api", () => ({
+  ApiError: class ApiError extends Error {
+    constructor(
+      readonly code: string,
+      message: string,
+    ) {
+      super(message);
+    }
+  },
+  loginUser: loginUserMock,
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: replaceMock }),
+}));
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 describe("LoginForm", () => {
   it("renders email and password fields with a submit button", () => {
@@ -20,8 +45,7 @@ describe("LoginForm", () => {
   });
 
   it("shows clear errors and does not submit invalid input", async () => {
-    const onValid = vi.fn();
-    render(<LoginForm onValid={onValid} />);
+    render(<LoginForm />);
 
     await userEvent.click(screen.getByRole("button", { name: "Log in" }));
 
@@ -30,12 +54,12 @@ describe("LoginForm", () => {
       "Enter your email address",
       "Enter your password",
     ]);
-    expect(onValid).not.toHaveBeenCalled();
+    expect(loginUserMock).not.toHaveBeenCalled();
   });
 
-  it("submits normalized valid input without errors", async () => {
-    const onValid = vi.fn();
-    render(<LoginForm onValid={onValid} />);
+  it("logs in and redirects on success", async () => {
+    loginUserMock.mockResolvedValue(undefined);
+    render(<LoginForm />);
 
     await userEvent.type(
       screen.getByLabelText("Email"),
@@ -48,11 +72,57 @@ describe("LoginForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Log in" }));
 
     await waitFor(() =>
-      expect(onValid).toHaveBeenCalledWith({
+      expect(loginUserMock).toHaveBeenCalledWith({
         email: "user@example.com",
         password: "correct horse battery staple",
       }),
     );
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/"));
     expect(screen.queryAllByRole("alert")).toHaveLength(0);
+  });
+
+  it("shows a form error for invalid credentials", async () => {
+    loginUserMock.mockRejectedValue(
+      new ApiError(
+        "INVALID_CREDENTIALS",
+        "Email or password is incorrect.",
+      ),
+    );
+    render(<LoginForm />);
+
+    await userEvent.type(
+      screen.getByLabelText("Email"),
+      "user@example.com",
+    );
+    await userEvent.type(
+      screen.getByLabelText("Password"),
+      "wrong password",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Email or password is incorrect.",
+    );
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it("shows a generic error for unexpected failures", async () => {
+    loginUserMock.mockRejectedValue(new Error("network down"));
+    render(<LoginForm />);
+
+    await userEvent.type(
+      screen.getByLabelText("Email"),
+      "user@example.com",
+    );
+    await userEvent.type(
+      screen.getByLabelText("Password"),
+      "correct horse battery staple",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Logging in failed. Try again.",
+    );
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 });

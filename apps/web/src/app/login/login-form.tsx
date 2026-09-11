@@ -1,9 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import type { ComponentProps } from "react";
 import { useForm } from "react-hook-form";
-import { loginSchema, type LoginInput } from "@danisolation-recall/contracts";
+import { loginSchema } from "@danisolation-recall/contracts";
+import { ApiError, loginUser } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
@@ -37,14 +39,12 @@ function Field({
   );
 }
 
-export function LoginForm({
-  onValid,
-}: {
-  onValid?: (values: LoginInput) => void;
-}) {
+export function LoginForm() {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
@@ -54,7 +54,21 @@ export function LoginForm({
     <form
       className="flex flex-col gap-4"
       noValidate
-      onSubmit={handleSubmit((values) => onValid?.(values))}
+      onSubmit={handleSubmit(async (values) => {
+        try {
+          await loginUser(values);
+          router.replace("/");
+        } catch (error) {
+          if (
+            error instanceof ApiError &&
+            error.code === "INVALID_CREDENTIALS"
+          ) {
+            setError("root", { message: error.message });
+          } else {
+            setError("root", { message: "Logging in failed. Try again." });
+          }
+        }
+      })}
     >
       <Field
         label="Email"
@@ -72,6 +86,9 @@ export function LoginForm({
         error={errors.password?.message}
         {...register("password")}
       />
+      {errors.root?.message ? (
+        <FieldError>{errors.root.message}</FieldError>
+      ) : null}
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         Log in
       </Button>

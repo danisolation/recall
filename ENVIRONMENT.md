@@ -19,6 +19,14 @@ cp .env.example apps/api/.env
 
 `drizzle-kit` falls back to the same local default, so database migrations work without a separate `.env`.
 
+### Web
+
+| Variable | Purpose | Example |
+| --- | --- | --- |
+| `API_ORIGIN` | Origin the Next.js rewrite proxies `/api/*` to (defaults to `http://localhost:3001`) | `http://localhost:3002` |
+
+The web app never calls the API cross-origin: `/api/*` requests are proxied server-side to `API_ORIGIN`, so the session cookie stays first-party.
+
 ## Docker Compose variables
 
 PostgreSQL reads its variables from `infra/docker/.env` (template in `infra/docker/.env.example`):
