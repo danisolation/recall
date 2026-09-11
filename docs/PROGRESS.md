@@ -1,6 +1,6 @@
 # Progress
 
-Status report for `danisolation-recall`, updated 2026-09-10.
+Status report for `danisolation-recall`, updated 2026-09-11.
 
 This file summarizes what has been achieved and where the project is going. `docs/TASKS.md` is the authoritative atomic task ledger; `docs/ROADMAP.md` is the full forward-looking roadmap.
 
@@ -8,63 +8,45 @@ This file summarizes what has been achieved and where the project is going. `doc
 
 ## Achieved so far
 
-The foundation phase is complete. All `FOUNDATION-*` tasks are marked `DONE`.
+### Foundation
 
-### Project setup
+- All `FOUNDATION-*` tasks complete: constitution, task ledger, roadmap, monorepo scaffold (pnpm + Turborepo), NestJS API, Next.js web app, Docker Compose PostgreSQL, Drizzle data layer, health check, environment documentation.
 
-- FOUNDATION-001 — Persisted the constitution (`AGENT_RULES.md`)
-- FOUNDATION-002 — Initialized the git repository
-- FOUNDATION-003 — Created the task ledger (`docs/TASKS.md`)
-- FOUNDATION-004 — Created the roadmap (`docs/ROADMAP.md`)
-- FOUNDATION-005 — Created the README
-- FOUNDATION-006 — Added `.gitignore`
+### Contracts phase
 
-### Monorepo scaffold
+- `CONTRACTS-001..003` complete: validation and contracts decision recorded (ADR-004), `packages/contracts` workspace package created, request bodies validated via `nestjs-zod` DTOs with a global Zod validation pipe and a reshaping exception filter.
 
-- FOUNDATION-007 — Root manifest, pnpm workspaces, Turborepo
-- FOUNDATION-008 — Shared TypeScript config (`packages/typescript-config`)
-- FOUNDATION-009 — Shared ESLint config (`packages/eslint-config`)
+### Authentication — complete end to end
 
-### Applications
+- Database: `users` and `sessions` tables with migrations (0000–0002); user repository with create/find by email/id.
+- API: argon2id password hashing (AUTH-005), `POST /auth/register` (AUTH-008), `POST /auth/login` (AUTH-012), `GET /auth/me` behind the auth guard (AUTH-015/016), `POST /auth/logout` with server-side session revocation (AUTH-017), and per-IP login rate limiting — 5/minute, 429 `RATE_LIMITED` (AUTH-020A).
+- Sessions per ADR-007: opaque 256-bit token in an httpOnly `SameSite=Lax` cookie; only the SHA-256 token hash is persisted (`sessions` table); validation is a hash lookup with expiry; logout deletes the row.
+- Web: login screen built on the ADR-008 design foundation (Tailwind v4 tokens, Button/Input/FieldError primitives), React Hook Form validation against the shared `loginSchema`, and API connection through a Next.js rewrite proxy so the session cookie stays first-party (AUTH-018..020).
 
-- FOUNDATION-010 — NestJS API (`apps/api`) builds and boots
-- FOUNDATION-011 — Next.js web app (`apps/web`) builds
+### Documentation
 
-### Infrastructure and data
-
-- FOUNDATION-012 — Local PostgreSQL via Docker Compose (`infra/docker`)
-- FOUNDATION-013 — Drizzle database layer (`packages/database`) with an initial `users` migration and `ADR-003` (ORM selection)
+- Handoff documentation written for machine-independent continuation: README, ARCHITECTURE, CONTRIBUTING, API reference, database docs, tech-debt ledger (DOCS-001).
 
 ---
 
 ## Current state
 
-- 6 pnpm workspace packages
-- Next.js 16 (App Router, React 19) and NestJS 11 both build successfully
-- Drizzle + PostgreSQL layer is scaffolded; the `users` migration is generated but not yet applied
-- Docker Compose defines a local PostgreSQL 17 instance with a named volume and healthcheck
-
----
+- 6 pnpm workspace packages; all migrations applied through `0002_stiff_xavin.sql`.
+- Test suites green: API 50 (unit + HTTP/DB integration), web 7 (component), contracts 12 (schema).
+- Playwright E2E (AUTH-021) is the only remaining auth-phase task; the auth hardening block in `docs/TASKS.md` tracks deferred real-world hardening (registration rate limiting, proxy-aware IP keying, structured logging, security headers, session cleanup).
 
 ## Plans for the future
 
 ### Now
 
-- Wire the API to the database (NestJS ConfigModule + Drizzle client)
-- MVP: authentication, study sets, cards, study sessions, progress, search, organization
-- Environment documentation
+- AUTH-021: Playwright E2E for the full auth journey.
+- MVP continuation per `docs/ROADMAP.md`: study sets → cards → study sessions → progress → search.
 
 ### Next
 
-- Phase 2: sharing, tags/folders, images/audio, streaks, notifications
-- Redis for caching, rate limiting, and queues; background worker
+- Phase 2: sharing, tags/folders, media, streaks, notifications.
+- Redis (cache, rate-limit storage, queues) + background worker.
 
 ### Later
 
-- Phase 3: AI-assisted learning, semantic search, recommendations, adaptive learning
-- Object storage, search abstraction, observability, async workflows
-
-### Maybe
-
-- Phase 4: social and collaboration features
-- Extract selected modules into services only when justified
+- Phase 3: AI-assisted learning, semantic search, recommendations, adaptive learning; observability.

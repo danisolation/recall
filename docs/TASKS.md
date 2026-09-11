@@ -1346,6 +1346,42 @@ Real-world hardening deferred until the MVP surface stabilizes; each will be dec
 
 ---
 
+## Documentation phase
+
+### DOCS-001
+
+### Title
+Write machine-independent handoff documentation
+
+### Goal
+Make the project fully pick-up-able on another machine: accurate entry points, architecture, API and database references, workflow guide, and tech-debt ledger.
+
+### Dependencies
+AUTH-020A
+
+### Status
+DONE
+
+### Files
+README.md
+ARCHITECTURE.md
+CONTRIBUTING.md
+docs/PROGRESS.md
+docs/TECH-DEBT.md
+docs/api/auth.md
+docs/database/schema.md
+
+### Acceptance Criteria
+- a fresh clone can be set up and run from README + CONTRIBUTING alone (§72)
+- documentation matches the actual implementation (§73) — no aspirational content
+- §76-format tech-debt ledger replaces implicit knowledge
+- Mermaid diagrams cover the system and auth flow (§77)
+
+### Tests
+None (documentation only; facts cross-checked against code, manifests, and running containers)
+
+---
+
 ## Remaining MVP phases (coarse — not yet decomposed)
 
 ```text

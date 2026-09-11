@@ -1,60 +1,78 @@
 # DANISOLATION Recall
 
-A modern flashcard and learning platform inspired by concepts behind tools like Quizlet.
+A modern flashcard and learning platform inspired by concepts behind tools like Quizlet. A personal project engineered with real-world discipline: modular monolith, typed end to end, atomic task ledger, decision records.
 
 ## Status
 
-Foundation complete: the monorepo is scaffolded, `apps/web` (Next.js) and `apps/api` (NestJS) build, and the Drizzle + PostgreSQL data layer is scaffolded. See [`docs/PROGRESS.md`](docs/PROGRESS.md) for the latest status and [`docs/ROADMAP.md`](docs/ROADMAP.md) for direction.
+- **Monorepo** — pnpm workspaces + Turborepo: `apps/web` (Next.js 16), `apps/api` (NestJS 11), `packages/` (database, contracts, eslint-config, typescript-config)
+- **Authentication is complete end to end** — register, login, httpOnly-cookie sessions, guarded routes, logout, login rate limiting, and a designed login screen validating with the same schema as the API
+- **PostgreSQL 17** via Docker Compose with Drizzle ORM migrations
+- Next up (see [`docs/TASKS.md`](docs/TASKS.md)): Playwright E2E test (AUTH-021), then the study-sets phase
 
-## Vision
+## Requirements
 
-The platform should eventually allow users to:
+- Node.js ≥ 22 (`engines` in `package.json`)
+- pnpm 10.33.2 — pinned via `packageManager`; `corepack enable` picks it up
+- Docker (for PostgreSQL)
 
-- create flashcard sets and cards
-- study cards with reveal-and-answer flow
-- track progress and review history
-- use spaced repetition
-- search content
-- use AI-assisted learning features (later)
+## Quickstart
 
-## Architecture (planned)
+```bash
+pnpm install
+cp .env.example apps/api/.env
+docker compose -f infra/docker/docker-compose.yml up -d
+pnpm --filter @danisolation-recall/database db:migrate
+pnpm dev
+```
 
-A modular monolith:
+- Web: `http://localhost:3000`
+- API: `http://localhost:3001` (health check at `/health`)
+- The web app proxies `/api/*` to the API server-side, so the session cookie stays first-party (`API_ORIGIN` to change the target)
 
-- **Web:** Next.js + React + TypeScript
-- **API:** NestJS + TypeScript
-- **Database:** PostgreSQL
+## Testing
 
-Complexity is introduced only when a concrete problem justifies it.
+```bash
+pnpm test        # everything — Turborepo builds workspace packages first
+```
+
+Per package:
+
+```bash
+DATABASE_URL=postgresql://recall:recall@localhost:5432/recall pnpm --filter @danisolation-recall/api test
+pnpm --filter @danisolation-recall/web test
+pnpm --filter @danisolation-recall/contracts test
+```
+
+API integration tests hit the real PostgreSQL from Docker Compose and require `DATABASE_URL`. Unit tests do not. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for workflow and known gotchas.
 
 ## Repository layout
 
-Current:
-
-- `AGENT_RULES.md` — operating constitution for the AI agent
-- `apps/` — web (Next.js), api (NestJS)
-- `packages/` — database, eslint-config, typescript-config
-- `infra/docker/` — local PostgreSQL via Docker Compose
-- `docs/` — roadmap, tasks, progress, and ADRs
-
-Planned:
-
-- `apps/worker` — background worker
-- `packages/` — ui, domain, contracts, validation, and other shared packages
-- `scripts/` — development utilities
-
-## Getting started
-
 ```text
-git clone <repo>
-pnpm install
-docker compose -f infra/docker/docker-compose.yml up
-pnpm dev
+apps/
+  web/      Next.js 16 App Router frontend (Tailwind v4, React Hook Form)
+  api/      NestJS 11 API (auth module, database module, health)
+packages/
+  database/       Drizzle schema, client, migrations
+  contracts/      Zod schemas shared by API and web (ADR-004)
+  eslint-config/  Shared flat ESLint config
+  typescript-config/  Shared strict tsconfig base
+infra/docker/     docker-compose.yml for PostgreSQL 17
+docs/             Roadmap, tasks, progress, ADRs, API and database docs
+AGENT_RULES.md    Operating constitution for the (AI) engineer — read first
 ```
 
 ## Documentation
 
-- Progress: [`docs/PROGRESS.md`](docs/PROGRESS.md)
-- Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md)
-- Tasks: [`docs/TASKS.md`](docs/TASKS.md)
-- Agent rules: [`AGENT_RULES.md`](AGENT_RULES.md)
+| Document | Purpose |
+| --- | --- |
+| [`AGENT_RULES.md`](AGENT_RULES.md) | Project constitution: task workflow, engineering rules (§-numbered) |
+| [`docs/TASKS.md`](docs/TASKS.md) | Atomic task ledger — the source of truth for what to do next |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Where the project is going (Now / Next / Later / Maybe) |
+| [`docs/PROGRESS.md`](docs/PROGRESS.md) | What has been achieved so far |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | System overview, module map, auth flow, key decisions |
+| [`ENVIRONMENT.md`](ENVIRONMENT.md) | Environment variables and local development flow |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, everyday commands, task workflow, gotchas |
+| [`docs/api/auth.md`](docs/api/auth.md) | Auth API endpoint reference (shapes, error codes) |
+| [`docs/database/schema.md`](docs/database/schema.md) | Database schema and migration workflow |
+| [`docs/TECH-DEBT.md`](docs/TECH-DEBT.md) | Intentionally deferred work, with rationale |
+| [`docs/adr/`](docs/adr/) | Architecture decision records (ORM, contracts, sessions, design system) |

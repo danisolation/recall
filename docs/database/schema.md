@@ -1,0 +1,67 @@
+# Database schema
+
+PostgreSQL 17, accessed through Drizzle ORM (ADR-003). Schema lives in `packages/database/src/schema.ts`; migrations in `packages/database/drizzle/`. PostgreSQL is the single source of truth; relational invariants are enforced in the schema, not just application code (§32).
+
+---
+
+## Tables
+
+### users
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `id` | serial | primary key |
+| `email` | text | not null, unique |
+| `password_hash` | text | nullable (argon2id hash; never plaintext, §42) |
+| `created_at` | timestamp with time zone | not null, default `now()` |
+| `updated_at` | timestamp with time zone | not null, default `now()` |
+
+One row per user identity. Migrations: `0000_strange_master_mold.sql`, `0001_acoustic_black_widow.sql`.
+
+### sessions
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `id` | serial | primary key |
+| `user_id` | integer | not null, FK → `users.id` **ON DELETE CASCADE** |
+| `token_hash` | text | not null, **unique** — SHA-256 of the session token; the raw token is never stored (ADR-007) |
+| `expires_at` | timestamp with time zone | not null |
+| `created_at` | timestamp with time zone | not null, default `now()` |
+
+One row per live session; a user may have several (multiple devices). Deleting a user removes their sessions via the cascade. Session validation looks up `token_hash` with `expires_at > now()`. Migration: `0002_stiff_xavin.sql`.
+
+```mermaid
+erDiagram
+    users ||--o{ sessions : "has"
+    users {
+        serial id PK
+        text email UK
+        text password_hash "nullable, argon2id"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    sessions {
+        serial id PK
+        integer user_id FK
+        text token_hash UK "SHA-256 of token"
+        timestamptz expires_at
+        timestamptz created_at
+    }
+```
+
+---
+
+## Migration workflow
+
+```bash
+# 1. edit packages/database/src/schema.ts
+pnpm --filter @danisolation-recall/database db:generate   # creates drizzle/000N_*.sql
+pnpm --filter @danisolation-recall/database db:migrate    # applies pending migrations
+```
+
+Rules:
+
+- every schema change requires a generated migration (§32); never edit applied migration files
+- `drizzle-kit` falls back to the local default connection string, so no `.env` is needed for migrations
+- after schema edits, **rebuild the package** (`pnpm --filter @danisolation-recall/database build`) before running filtered test suites — apps consume the compiled `dist/` (see CONTRIBUTING gotchas)
+- timestamps are always `with time zone` and stored UTC (§49)
