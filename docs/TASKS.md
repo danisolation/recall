@@ -948,16 +948,17 @@ Cover the login flow end to end at the API layer.
 AUTH-012
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/modules/auth/login.integration.spec.ts
+apps/api/src/auth/login.integration.spec.ts
 
 ### Acceptance Criteria
 - success and failure cases are covered
 
 ### Tests
-- integration test
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (26 tests, incl. 4 HTTP-level login integration tests)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
 
