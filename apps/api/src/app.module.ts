@@ -1,6 +1,7 @@
-import { Module } from "@nestjs/common";
+import { type MiddlewareConsumer, Module, type NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER, APP_PIPE } from "@nestjs/core";
+import cookieParser from "cookie-parser";
 import { ZodValidationPipe } from "nestjs-zod";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -18,4 +19,8 @@ import { HealthController } from "./health/health.controller";
     { provide: APP_FILTER, useClass: ZodExceptionFilter },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(cookieParser()).forRoutes("*");
+  }
+}

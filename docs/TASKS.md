@@ -1038,17 +1038,21 @@ Protect routes that require an authenticated user.
 AUTH-014
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/api/src/modules/auth/auth.guard.ts
+apps/api/src/auth/auth.guard.ts
+apps/api/src/auth/auth.guard.spec.ts
+apps/api/src/app.module.ts
+apps/api/package.json
 
 ### Acceptance Criteria
 - unauthenticated requests are rejected
 - authenticated requests populate the current user
 
 ### Tests
-- guard unit tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (39 tests, incl. 3 guard unit tests: missing cookie, unknown token, valid session populating `request.currentUser`)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
 
@@ -1064,10 +1068,10 @@ Verify an authenticated route is protected.
 AUTH-015
 
 ### Status
-TODO
+READY
 
 ### Files
-apps/api/src/modules/auth/protected.integration.spec.ts
+apps/api/src/auth/protected.integration.spec.ts
 
 ### Acceptance Criteria
 - protected route rejects missing or invalid credentials
