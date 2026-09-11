@@ -1182,12 +1182,20 @@ Author the design tokens and first UI primitives, and style the login screen wit
 AUTH-018A
 
 ### Status
-READY
+DONE
 
 ### Files
+apps/web/postcss.config.mjs
 apps/web/src/app/globals.css
-apps/web/src/components/ui/*
-apps/web/src/app/login/*
+apps/web/src/app/layout.tsx
+apps/web/src/app/login/page.tsx
+apps/web/src/app/login/login-form.tsx
+apps/web/src/components/ui/button.tsx
+apps/web/src/components/ui/input.tsx
+apps/web/src/components/ui/field-error.tsx
+apps/web/src/components/ui/field-error.spec.tsx
+apps/web/vitest.config.ts
+apps/web/package.json
 
 ### Acceptance Criteria
 - tokens (OKLCH palette, spacing rhythm, type scale) are declared via `@theme` in `globals.css`
@@ -1196,8 +1204,10 @@ apps/web/src/app/login/*
 - interaction floor from ADR-008 is met (focus-visible, reduced motion, sentence-case copy)
 
 ### Tests
-- `pnpm --filter @danisolation-recall/web test`
-- `pnpm --filter @danisolation-recall/web build`
+- `pnpm --filter @danisolation-recall/web test` (3 tests: login form fields/button, FieldError render + empty render)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds (`/login` prerendered)
+- visual verification via browser screenshots: resting state and focused field (marker label highlight + ink focus ring) match ADR-008
 
 ---
 

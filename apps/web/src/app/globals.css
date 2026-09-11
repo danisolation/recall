@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — ADR-008. Warm card-stock surfaces tinted toward the
+ * marker hue; one highlighter accent reserved for primary actions,
+ * focus, and the selection tint.
+ */
+@theme {
+  --color-paper: oklch(0.97 0.012 85);
+  --color-card: oklch(0.995 0.006 85);
+  --color-ink: oklch(0.24 0.02 85);
+  --color-ink-soft: oklch(0.45 0.02 85);
+  --color-marker: oklch(0.84 0.15 95);
+  --color-marker-deep: oklch(0.74 0.14 90);
+  --color-alert: oklch(0.52 0.18 28);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  --radius-card: 0.5rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-marker) 60%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+}
