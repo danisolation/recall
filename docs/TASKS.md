@@ -1144,6 +1144,63 @@ apps/web/package.json
 
 ---
 
+### AUTH-018A
+
+### Title
+Record frontend design system decision (ADR-008)
+
+### Goal
+Decide and document the styling stack, design register, and interaction floor before AUTH-019/020 harden the login markup.
+
+### Dependencies
+AUTH-018
+
+### Status
+DONE
+
+### Files
+docs/adr/ADR-008-frontend-design-system.md
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+- the decision covers the §56/§57/§58/§59 quality bars and the Tailwind v4 token approach
+
+### Tests
+None (documentation only)
+
+---
+
+### AUTH-018B
+
+### Title
+Apply design foundation to the login screen
+
+### Goal
+Author the design tokens and first UI primitives, and style the login screen with them per ADR-008.
+
+### Dependencies
+AUTH-018A
+
+### Status
+READY
+
+### Files
+apps/web/src/app/globals.css
+apps/web/src/components/ui/*
+apps/web/src/app/login/*
+
+### Acceptance Criteria
+- tokens (OKLCH palette, spacing rhythm, type scale) are declared via `@theme` in `globals.css`
+- login form uses Button/Input primitives with visible focus states and a 44px touch-target submit
+- error text style exists for AUTH-019 to consume
+- interaction floor from ADR-008 is met (focus-visible, reduced motion, sentence-case copy)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test`
+- `pnpm --filter @danisolation-recall/web build`
+
+---
+
 ### AUTH-019
 
 ### Title
@@ -1216,6 +1273,17 @@ apps/web/e2e/auth.spec.ts
 
 ### Tests
 - Playwright E2E test
+
+---
+
+### Auth hardening (coarse — not yet decomposed)
+
+Real-world hardening deferred until the MVP surface stabilizes; each will be decomposed when its context is known:
+
+- rate limiting for login and registration (§68)
+- structured request logging with request ids (§63)
+- security headers (§42)
+- expired-session cleanup job (§47, worker phase)
 
 ---
 
