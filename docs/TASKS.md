@@ -592,7 +592,7 @@ apps/api/package.json
 
 ## Authentication phase
 
-Session mechanism (ADR-007) is to be decided before AUTH-014. Recommended default: JWT in an httpOnly cookie with argon2/bcrypt password hashing.
+Session mechanism decided in ADR-007 (`docs/adr/ADR-007-session-mechanism.md`): an opaque session token in an httpOnly cookie, persisted as a hash in PostgreSQL. The earlier recommendation (JWT in an httpOnly cookie) was rejected there because logout requires server-side invalidation.
 
 ### AUTH-001
 
@@ -962,6 +962,32 @@ apps/api/src/auth/login.integration.spec.ts
 
 ---
 
+### AUTH-013A
+
+### Title
+Record session mechanism decision (ADR-007)
+
+### Goal
+Decide and document how sessions are issued, validated, and revoked before AUTH-014 depends on the decision.
+
+### Dependencies
+AUTH-012
+
+### Status
+DONE
+
+### Files
+docs/adr/ADR-007-session-mechanism.md
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+- the decision is compatible with AUTH-014, AUTH-015, and AUTH-017
+
+### Tests
+None (documentation only)
+
+---
+
 ### AUTH-014
 
 ### Title
@@ -974,13 +1000,14 @@ Issue and persist the authenticated session per ADR-007.
 AUTH-012
 
 ### Status
-TODO
+READY
 
 ### Files
-apps/api/src/modules/auth/session.ts
+apps/api/src/auth/session.ts
+packages/database (sessions table + migration)
 
 ### Acceptance Criteria
-- login returns a session credential (recommended: httpOnly cookie)
+- login returns a session credential (per ADR-007: httpOnly cookie)
 - session can be validated on subsequent requests
 
 ### Tests
