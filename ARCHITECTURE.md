@@ -42,9 +42,10 @@ Domain modules own their controllers, services, and persistence (§28). Cross-mo
 | `src/app/page.tsx` | Home. Reads the session server-side and shows the signed-in user + logout control, or the auth links |
 | `src/app/login/` | Login page (server) + `LoginForm` (client): React Hook Form + `zodResolver` with the shared schema |
 | `src/app/register/` | Register page + `RegisterForm`; on success signs the new user in and redirects home |
-| `src/components/` | `LogoutButton` plus `ui/` design-system primitives (Button, Input, FormField, FieldError) per ADR-008 |
+| `src/app/(protected)/` | Route group whose `layout.tsx` gates access server-side (`redirect("/login")`); `dashboard/` is the first page in it |
+| `src/components/` | `UserMenu`, `LogoutButton`, and `ui/` design-system primitives (Button, Input, FormField, FieldError) per ADR-008 |
 | `src/lib/api.ts` | Thin browser API client: `loginUser`, `registerUser`, `logoutUser`, typed `ApiError` with stable codes |
-| `src/lib/session.ts` | Server-side session read: forwards the request cookie to `GET /auth/me` (`cache: "no-store"`) |
+| `src/lib/session.ts` | Server-side session read: forwards the request cookie to `GET /auth/me`, memoized per request with React `cache()` |
 
 ### `packages/`
 
@@ -78,13 +79,18 @@ sequenceDiagram
 
     C->>W: POST /api/auth/logout
     W->>A: DELETE session row + clear cookie
+
+    C->>W: GET /dashboard (page under the (protected) route group)
+    W->>A: GET /auth/me (server-side, cookie forwarded by lib/session.ts)
+    A-->>W: 200 user — or 401, in which case the layout redirects to /login
 ```
 
 Key properties:
 
 - the raw token never touches the database — only its SHA-256 hash (a DB leak yields no usable credentials),
 - logout revokes server-side (a DELETE), not just client-side cookie clearing,
-- every authenticated request is one indexed lookup; the Redis cache layer (Phase 2) can sit in front of it without changing the domain.
+- every authenticated request is one indexed lookup; the Redis cache layer (Phase 2) can sit in front of it without changing the domain,
+- protected pages validate the session in the server component (the token hash must be looked up in PostgreSQL, so middleware cannot do it in isolation); the layout and its page share one lookup per request via React `cache()`.
 
 ---
 

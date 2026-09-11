@@ -1443,17 +1443,36 @@ Provide a real protected route in the web app (not just the API), redirecting un
 AUTH-023
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/*
+apps/web/src/app/(protected)/layout.tsx
+apps/web/src/app/(protected)/layout.spec.tsx
+apps/web/src/app/(protected)/dashboard/page.tsx
+apps/web/src/app/(protected)/dashboard/page.spec.tsx
+apps/web/src/components/user-menu.tsx
+apps/web/src/components/user-menu.spec.tsx
+apps/web/src/lib/session.ts
+apps/web/src/lib/session.spec.ts
+apps/web/src/app/page.tsx
+apps/web/e2e/auth.spec.ts
 
 ### Acceptance Criteria
 - unauthenticated visitors are redirected to `/login`
 - authenticated visitors see their own data
 
+### Decisions
+- The gate lives in a **route group** — `(protected)/layout.tsx` — so every future page under it (study sets, study sessions) is protected by construction instead of per-page copy-paste. The URL is unaffected by the group.
+- Authorization is checked in the server component, not in edge middleware: the session is an opaque token whose SHA-256 hash must be looked up in PostgreSQL, so validating it in middleware would mean an extra HTTP round trip to the API and splitting auth logic. `redirect("/login")` from the server component is the authoritative check.
+- `getCurrentUser` is wrapped in React's `cache()`, so the layout and the page share one `GET /auth/me` per request (verified: one call per `/dashboard` render, down from two).
+- The dashboard re-checks the session for TypeScript narrowing and to survive a session expiring between the two checks rather than dereferencing a null user.
+- Dates render in a fixed locale and `UTC` so server and client markup match on hydration.
+- `/dashboard` shows the user's own account data (email, member since) — the first page that has no meaning without a session.
+
 ### Tests
-- E2E: protected page without a session redirects; with a session it renders
+- `pnpm --filter @danisolation-recall/web test` (24 tests, incl. layout + dashboard redirect-vs-render, and `getCurrentUser`'s three paths: no cookie → no API call, valid cookie forwarded → user, rejected session → null)
+- `pnpm --filter @danisolation-recall/web test:e2e` (4 Playwright tests; unauthenticated `/dashboard` redirects to `/login`, and the authenticated journey reaches `/dashboard`, sees its own email, then logs out)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/dashboard` is dynamic); redirect and authenticated page visually verified
 
 ---
 

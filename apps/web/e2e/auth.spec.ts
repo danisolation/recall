@@ -40,6 +40,14 @@ test.describe("authentication", () => {
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByText(email)).toBeVisible();
 
+    await page.getByRole("link", { name: "Dashboard" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    // The email appears in the header menu too, so scope to the page body.
+    await expect(
+      page.getByRole("heading", { name: "Dashboard" }),
+    ).toBeVisible();
+    await expect(page.getByRole("main").getByText(email)).toBeVisible();
+
     await page.getByRole("button", { name: "Log out" }).click();
 
     await expect(page).toHaveURL(/\/login$/);
@@ -47,6 +55,17 @@ test.describe("authentication", () => {
     // The cookie is gone, so the protected route rejects the browser.
     const afterLogout = await page.request.get("/api/auth/me");
     expect(afterLogout.status()).toBe(401);
+  });
+
+  test("redirects an unauthenticated visitor away from a protected page", async ({
+    page,
+  }) => {
+    await page.goto("/dashboard");
+
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(
+      page.getByRole("button", { name: "Log in" }),
+    ).toBeVisible();
   });
 
   test("shows an error for invalid credentials", async ({ page, request }) => {

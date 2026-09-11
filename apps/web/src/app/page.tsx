@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogoutButton } from "@/components/logout-button";
+import { UserMenu } from "@/components/user-menu";
 import { getCurrentUser } from "@/lib/session";
 
 const navLink =
@@ -16,12 +16,11 @@ export default async function Home() {
           <span className="rounded-sm bg-marker/70 px-1">Recall</span>
         </h1>
         {user ? (
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-ink-soft">
-              Signed in as{" "}
-              <span className="font-medium text-ink">{user.email}</span>
-            </p>
-            <LogoutButton />
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/dashboard" className={navLink}>
+              Dashboard
+            </Link>
+            <UserMenu email={user.email} />
           </div>
         ) : (
           <nav className="flex items-center gap-4 text-sm text-ink-soft">
