@@ -7,7 +7,7 @@ function uniqueEmail(): string {
 }
 
 test.describe("authentication", () => {
-  test("registers through the UI and is signed in", async ({ page }) => {
+  test("registers through the UI and lands signed in", async ({ page }) => {
     const email = uniqueEmail();
 
     await page.goto("/register");
@@ -17,18 +17,16 @@ test.describe("authentication", () => {
 
     await expect(page).toHaveURL(/\/$/);
 
-    const meResponse = await page.request.get("/api/auth/me");
-    expect(meResponse.status()).toBe(200);
-    expect((await meResponse.json()).email).toBe(email);
+    // The home page reads the session server-side and names the user.
+    await expect(page.getByText("Signed in as")).toBeVisible();
+    await expect(page.getByText(email)).toBeVisible();
   });
 
-  test("logs in through the UI, uses the session, and logs out", async ({
-    page,
-    request,
-  }) => {
+  test("logs in and logs out through the UI", async ({ page, request }) => {
     const email = uniqueEmail();
 
-    // Account arranged through the API; logout has no UI yet (AUTH-023).
+    // Account arranged through the API: this test is about the session
+    // lifecycle in the browser, not registration (covered above).
     const registerResponse = await request.post("/api/auth/register", {
       data: { email, password },
     });
@@ -40,16 +38,13 @@ test.describe("authentication", () => {
     await page.getByRole("button", { name: "Log in" }).click();
 
     await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByText(email)).toBeVisible();
 
-    // The session cookie set by login authenticates a protected API route
-    // from the browser context.
-    const meResponse = await page.request.get("/api/auth/me");
-    expect(meResponse.status()).toBe(200);
-    expect((await meResponse.json()).email).toBe(email);
+    await page.getByRole("button", { name: "Log out" }).click();
 
-    const logoutResponse = await page.request.post("/api/auth/logout");
-    expect(logoutResponse.status()).toBe(204);
+    await expect(page).toHaveURL(/\/login$/);
 
+    // The cookie is gone, so the protected route rejects the browser.
     const afterLogout = await page.request.get("/api/auth/me");
     expect(afterLogout.status()).toBe(401);
   });

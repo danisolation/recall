@@ -5,9 +5,9 @@ A modern flashcard and learning platform inspired by concepts behind tools like 
 ## Status
 
 - **Monorepo** — pnpm workspaces + Turborepo: `apps/web` (Next.js 16), `apps/api` (NestJS 11), `packages/` (database, contracts, eslint-config, typescript-config)
-- **Authentication is complete end to end** — register, login, httpOnly-cookie sessions, guarded routes, logout, login rate limiting, and a designed login screen validating with the same schema as the API
+- **Authentication is complete end to end** — register and login screens validating with the same schemas as the API, httpOnly-cookie sessions, guarded routes, a signed-in home page with logout, login rate limiting, and a Playwright journey over the real stack
 - **PostgreSQL 17** via Docker Compose with Drizzle ORM migrations
-- Next up (see [`docs/TASKS.md`](docs/TASKS.md)): Playwright E2E test (AUTH-021), then the study-sets phase
+- Next up (see [`docs/TASKS.md`](docs/TASKS.md)): a protected web page (AUTH-024), then the study-sets phase
 
 ## Requirements
 

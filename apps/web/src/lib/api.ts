@@ -1,6 +1,6 @@
-import {
-  type LoginInput,
-  type RegisterInput,
+import type {
+  LoginInput,
+  RegisterInput,
 } from "@danisolation-recall/contracts";
 
 const API_BASE = "/api";
@@ -15,11 +15,15 @@ export class ApiError extends Error {
   }
 }
 
-async function post(path: string, data: unknown): Promise<Response> {
+async function post(path: string, data?: unknown): Promise<Response> {
   return fetch(`${API_BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    ...(data === undefined
+      ? {}
+      : {
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        }),
     credentials: "include",
   });
 }
@@ -77,4 +81,14 @@ export async function registerUser(input: RegisterInput): Promise<void> {
   }
 
   throw new ApiError("UNKNOWN", "Creating your account failed. Try again.");
+}
+
+export async function logoutUser(): Promise<void> {
+  const response = await post("/auth/logout");
+
+  if (response.ok) {
+    return;
+  }
+
+  throw new ApiError("UNKNOWN", "Logging out failed. Try again.");
 }

@@ -39,9 +39,12 @@ Domain modules own their controllers, services, and persistence (§28). Cross-mo
 | Path | Responsibility |
 | --- | --- |
 | `src/app/` | Routes (App Router). Server components by default; `"use client"` only where interactivity lives |
+| `src/app/page.tsx` | Home. Reads the session server-side and shows the signed-in user + logout control, or the auth links |
 | `src/app/login/` | Login page (server) + `LoginForm` (client): React Hook Form + `zodResolver` with the shared schema |
-| `src/components/ui/` | Design-system primitives (Button, Input, FieldError) per ADR-008 |
-| `src/lib/api.ts` | Thin API client: `loginUser`, typed `ApiError` with stable codes |
+| `src/app/register/` | Register page + `RegisterForm`; on success signs the new user in and redirects home |
+| `src/components/` | `LogoutButton` plus `ui/` design-system primitives (Button, Input, FormField, FieldError) per ADR-008 |
+| `src/lib/api.ts` | Thin browser API client: `loginUser`, `registerUser`, `logoutUser`, typed `ApiError` with stable codes |
+| `src/lib/session.ts` | Server-side session read: forwards the request cookie to `GET /auth/me` (`cache: "no-store"`) |
 
 ### `packages/`
 

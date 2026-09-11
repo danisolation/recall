@@ -48,7 +48,7 @@ The compose project is named `recall` (container `recall-postgres`, host port `$
 3. Implement the smallest change that satisfies the acceptance criteria — nothing unrelated (§14).
 4. Add/update tests at the right level; run the suite and typecheck.
 5. Update `docs/TASKS.md`: status `DONE`, the real files touched, and the actual test evidence (counts, smoke results).
-6. Recommend a conventional commit with the task ID, e.g. `feat(auth): rate limit login attempts (AUTH-020A)` — but **do not commit unless asked**.
+6. Recommend one commit message (see Commit messages below) — but **do not commit unless asked**.
 7. Stop. Recommend the next task.
 
 ## Conventions
@@ -59,6 +59,23 @@ The compose project is named `recall` (container `recall-postgres`, host port `$
 - Test files: `*.spec.ts(x)` for unit/component, `*.integration.spec.ts` for DB/HTTP tests; colocated with the code.
 - Frontend styling goes through the tokens and primitives (ADR-008); no one-off colors or ad-hoc styles.
 - Time: pass `now` explicitly where domain logic needs it (§49).
+
+## Commit messages
+
+[Conventional Commits](https://www.conventionalcommits.org/): `type(scope): imperative subject`.
+
+- **type** — `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`.
+- **scope** — the package or app the change landed in: `api`, `web`, `contracts`, `database`. It answers *where*, never *what* — the subject already names the domain ("add login endpoint"), so a change to API auth code is `feat(api): …`, not `feat(auth): …`. Repo-wide docs use bare `docs`; ADRs use `docs(adr)`.
+- **subject** — lowercase, imperative, no trailing period, ≤ 72 characters.
+- **task ID** — a body footer, never in the subject:
+
+  ```text
+  feat(api): rate limit login attempts
+
+  Refs: AUTH-020A
+  ```
+
+One commit per task, covering only that task's changes (§129). The agent suggests; the developer commits (§94, §117).
 
 ## Gotchas (learned the hard way)
 

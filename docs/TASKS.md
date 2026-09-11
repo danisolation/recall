@@ -1334,7 +1334,7 @@ apps/web/package.json
 - register, login, protected route, and logout are covered
 
 ### Note
-Only login currently has a UI, so the journey is covered end to end through the real system (browser → rewrite proxy → API → PostgreSQL) with login driven through the UI and the not-yet-built legs (register, logout) arranged through the API. The missing screens are tracked as AUTH-022..024.
+The journey runs end to end through the real system (browser → rewrite proxy → API → PostgreSQL). Originally only login had a UI, so register and logout were arranged through the API; AUTH-022 (register) and AUTH-023 (logout) have since moved those legs into the browser.
 
 ### Tests
 - `pnpm --filter @danisolation-recall/web test:e2e` (2 Playwright tests: register → UI login → redirect → authenticated `/api/auth/me` → logout → revoked session returns 401; invalid credentials shows "Email or password is incorrect." and stays on `/login`)
@@ -1402,18 +1402,32 @@ Expose the current session in the UI and let the user log out.
 AUTH-021
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/*
+apps/web/src/lib/session.ts
+apps/web/src/lib/api.ts
+apps/web/src/app/page.tsx
+apps/web/src/app/page.spec.tsx
+apps/web/src/components/logout-button.tsx
+apps/web/src/components/logout-button.spec.tsx
+apps/web/src/components/ui/button.tsx
+apps/web/e2e/auth.spec.ts
 
 ### Acceptance Criteria
 - authenticated state is visible to the user
 - a logout control revokes the session and returns to the login screen
 
+### Decisions
+- The session is read server-side (`lib/session.ts` forwards the browser's `Cookie` header to `GET /auth/me` with `cache: "no-store"`) rather than fetched client-side: no signed-out flash, the httpOnly cookie never reaches JS, and the page is the real App Router pattern. `/` becomes a dynamic route as a result.
+- Logout calls `POST /auth/logout` (which clears the cookie server-side), then `router.replace("/login")` + `router.refresh()` so the home page re-renders from the server as signed out.
+- `Button` gained a `secondary` variant; the marker accent stays reserved for primary actions (ADR-008), so the logout control is neutral.
+- Signed in: the header names the user and offers "Log out". Signed out: it offers "Log in" / "Create account".
+
 ### Tests
-- component tests
-- extend the E2E journey (AUTH-021) to log out through the UI
+- `pnpm --filter @danisolation-recall/web test` (16 tests, incl. 3 LogoutButton tests — revokes and redirects; disabled while in flight; error keeps the user put — and 2 Home tests — signed-in email + control vs. signed-out links)
+- `pnpm --filter @danisolation-recall/web test:e2e` (3 Playwright tests; login → logout now driven through the UI, asserting the redirect and that `/api/auth/me` returns 401 afterwards)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/` is dynamic, auth pages stay static); signed-in and signed-out states visually verified
 
 ---
 
