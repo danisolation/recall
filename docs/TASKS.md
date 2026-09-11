@@ -1355,19 +1355,38 @@ Let a new user create an account from the browser instead of the API.
 AUTH-020
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/register/*
+apps/web/src/app/register/page.tsx
+apps/web/src/app/register/register-form.tsx
+apps/web/src/app/register/register-form.spec.tsx
+apps/web/src/components/ui/form-field.tsx
+apps/web/src/lib/api.ts
+apps/web/src/app/login/login-form.tsx
+apps/web/src/app/login/page.tsx
+apps/web/e2e/auth.spec.ts
+apps/web/playwright.config.ts
+packages/contracts/src/register.schema.ts
+apps/api/src/auth/auth.module.ts
+apps/api/src/auth/auth.controller.ts
 
 ### Acceptance Criteria
 - page validates with `registerSchema` from `@danisolation-recall/contracts`
 - duplicate email and validation failures show clear errors
 - success logs the user in or redirects to login
 
+### Decisions
+- `registerSchema` gained user-facing messages (unchanged rules), so both API and browser show "Use at least 8 characters" instead of zod defaults.
+- Success auto-signs-in (register then login) rather than bouncing the user to a login screen to retype credentials.
+- The shared `Field` composition moved out of `login-form.tsx` into `components/ui/form-field.tsx` now that a second form consumes it.
+- Login rate limiting is now configurable (`THROTTLE_LIMIT` / `THROTTLE_TTL_MS`) so repeated E2E logins don't trip the 5/min ceiling; defaults are unchanged.
+
 ### Tests
-- component tests
-- extend the E2E journey (AUTH-021) to register through the UI
+- `pnpm --filter @danisolation-recall/web test` (11 tests, incl. 4 register tests: short password shows "Use at least 8 characters" and does not submit; success registers, signs in, redirects and normalizes the email; duplicate email shows "An account with this email already exists.")
+- `pnpm --filter @danisolation-recall/web test:e2e` (3 Playwright tests — registration now runs through the UI)
+- `pnpm --filter @danisolation-recall/contracts test` (12) and `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (50) pass
+- `pnpm typecheck` and `pnpm --filter @danisolation-recall/web build` (`/register` prerendered) succeed; page visually verified
 
 ---
 

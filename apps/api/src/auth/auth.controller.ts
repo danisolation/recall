@@ -10,7 +10,6 @@ import {
   UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
-import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 import { loginSchema, registerSchema } from "@danisolation-recall/contracts";
 import { createZodDto } from "nestjs-zod";
@@ -56,7 +55,6 @@ export class AuthController {
     }
   }
 
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(RateLimitGuard)
   @Post("login")
   @HttpCode(200)

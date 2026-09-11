@@ -29,21 +29,21 @@ This file summarizes what has been achieved and where the project is going. `doc
 
 ### End-to-end testing
 
-- Playwright E2E in place (AUTH-021): the auth journey runs against the real stack (browser → rewrite proxy → API → PostgreSQL) on isolated ports 3100/3101. Register and logout have no UI yet, so those legs are arranged through the API; AUTH-022..024 track the missing screens.
+- Playwright E2E in place (AUTH-021): registration and login both run through the real UI against the real stack (browser → rewrite proxy → API → PostgreSQL) on isolated ports 3100/3101. Logout has no UI yet, so that leg is arranged through the API; AUTH-023/024 track the remaining screens.
 
 ---
 
 ## Current state
 
 - 6 pnpm workspace packages; all migrations applied through `0002_stiff_xavin.sql`.
-- Test suites green: API 50 (unit + HTTP/DB integration), web 7 (component), contracts 12 (schema), E2E 2 (Playwright).
-- The auth phase is complete (AUTH-001..021). The next web work is the missing auth screens (AUTH-022..024: register, logout control, protected page); the hardening block in `docs/TASKS.md` tracks deferred real-world hardening (registration rate limiting, proxy-aware IP keying, structured logging, security headers, session cleanup).
+- Test suites green: API 50 (unit + HTTP/DB integration), web 11 (component), contracts 12 (schema), E2E 3 (Playwright).
+- The auth phase is complete (AUTH-001..022). Remaining web work: AUTH-023 (logout control) and AUTH-024 (protected page); the hardening block in `docs/TASKS.md` tracks deferred real-world hardening (registration rate limiting, proxy-aware IP keying, structured logging, security headers, session cleanup).
 
 ## Plans for the future
 
 ### Now
 
-- Missing auth screens (AUTH-022..024): register, logout control, protected page.
+- Remaining auth screens (AUTH-023/024): logout control, protected page.
 - MVP continuation per `docs/ROADMAP.md`: study sets → cards → study sessions → progress → search.
 
 ### Next

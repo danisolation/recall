@@ -3,13 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { loginSchema } from "@danisolation-recall/contracts";
-import { ApiError, loginUser } from "@/lib/api";
+import { registerSchema } from "@danisolation-recall/contracts";
+import { ApiError, loginUser, registerUser } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormField } from "@/components/ui/form-field";
 
-export function LoginForm() {
+export function RegisterForm() {
   const router = useRouter();
   const {
     register,
@@ -17,7 +17,7 @@ export function LoginForm() {
     setError,
     formState: { errors, isSubmitting },
   } = useForm({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(registerSchema),
   });
 
   return (
@@ -26,16 +26,21 @@ export function LoginForm() {
       noValidate
       onSubmit={handleSubmit(async (values) => {
         try {
+          await registerUser(values);
+          // Registration does not start a session, so sign the new user in
+          // rather than making them retype what they just entered.
           await loginUser(values);
           router.replace("/");
         } catch (error) {
           if (
             error instanceof ApiError &&
-            error.code === "INVALID_CREDENTIALS"
+            error.code === "EMAIL_ALREADY_REGISTERED"
           ) {
             setError("root", { message: error.message });
           } else {
-            setError("root", { message: "Logging in failed. Try again." });
+            setError("root", {
+              message: "Creating your account failed. Try again.",
+            });
           }
         }
       })}
@@ -52,7 +57,7 @@ export function LoginForm() {
         label="Password"
         id="password"
         type="password"
-        autoComplete="current-password"
+        autoComplete="new-password"
         error={errors.password?.message}
         {...register("password")}
       />
@@ -60,7 +65,7 @@ export function LoginForm() {
         <FieldError>{errors.root.message}</FieldError>
       ) : null}
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        Log in
+        Create account
       </Button>
     </form>
   );

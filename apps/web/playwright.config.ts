@@ -23,6 +23,8 @@ export default defineConfig({
         DATABASE_URL:
           process.env.DATABASE_URL ??
           "postgresql://recall:recall@localhost:5432/recall",
+        // The journey logs in repeatedly; the default 5/min would throttle it.
+        THROTTLE_LIMIT: "1000",
       },
       url: `http://localhost:${API_PORT}/health`,
       reuseExistingServer: !process.env.CI,

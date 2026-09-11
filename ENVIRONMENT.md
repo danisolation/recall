@@ -10,6 +10,8 @@ Required environment variables and the local development setup for `danisolation
 | --- | --- | --- |
 | `DATABASE_URL` | PostgreSQL connection string used by the Drizzle client | `postgresql://recall:recall@localhost:5432/recall` |
 | `PORT` | Port the API listens on (defaults to `3001`) | `3001` |
+| `THROTTLE_LIMIT` | Login attempts allowed per window per IP (defaults to `5`) | `5` |
+| `THROTTLE_TTL_MS` | Rate-limit window in milliseconds (defaults to `60000`) | `60000` |
 
 The API loads `.env` from its working directory (`apps/api`). Create `apps/api/.env` from the root template:
 

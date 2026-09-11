@@ -7,14 +7,28 @@ function uniqueEmail(): string {
 }
 
 test.describe("authentication", () => {
-  test("registers, logs in through the UI, uses the session, and logs out", async ({
+  test("registers through the UI and is signed in", async ({ page }) => {
+    const email = uniqueEmail();
+
+    await page.goto("/register");
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password").fill(password);
+    await page.getByRole("button", { name: "Create account" }).click();
+
+    await expect(page).toHaveURL(/\/$/);
+
+    const meResponse = await page.request.get("/api/auth/me");
+    expect(meResponse.status()).toBe(200);
+    expect((await meResponse.json()).email).toBe(email);
+  });
+
+  test("logs in through the UI, uses the session, and logs out", async ({
     page,
     request,
   }) => {
     const email = uniqueEmail();
 
-    // Registration has no UI yet, so the account is arranged through the API
-    // (which also exercises the Next.js rewrite proxy).
+    // Account arranged through the API; logout has no UI yet (AUTH-023).
     const registerResponse = await request.post("/api/auth/register", {
       data: { email, password },
     });
@@ -33,7 +47,6 @@ test.describe("authentication", () => {
     expect(meResponse.status()).toBe(200);
     expect((await meResponse.json()).email).toBe(email);
 
-    // Logout has no UI yet; the endpoint revokes the session server-side.
     const logoutResponse = await page.request.post("/api/auth/logout");
     expect(logoutResponse.status()).toBe(204);
 
