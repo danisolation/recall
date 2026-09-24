@@ -1676,7 +1676,7 @@ Return the authenticated user's own sets, paginated.
 SET-004
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/sets/sets.controller.ts
@@ -1687,10 +1687,11 @@ apps/api/src/sets/list-sets.integration.spec.ts
 - explicit paginated envelope (items + next offset)
 
 ### Decision
-Offset pagination, limit default 20 and capped at 100 (§36: acceptable for simple low-scale lists; revisit cursor pagination if lists grow).
+Offset pagination, limit default 20 and capped at 100 (§36: acceptable for simple low-scale lists; revisit cursor pagination if lists grow). The cap rejects with 400 `VALIDATION_ERROR` instead of silently clamping — explicit contracts over hidden corrections (§53). Query params are coerced and validated by a `listSetsQuerySchema` (file-local to the controller, promoted to contracts if the web ever needs to construct queries). `nextOffset` is `offset + limit` when a full page came back and `null` otherwise — a total that is an exact multiple of the limit costs one extra empty-page call, which beats a `COUNT(*)` per list request.
 
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: pagination boundary, another user's sets excluded)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (72 tests, incl. 4 new HTTP-level tests: envelope with newest-first items and row shape, limit/offset slicing with `nextOffset` transitions 2 → null, another user's sets excluded, 400 `VALIDATION_ERROR` for `limit=101` and `offset=-1`)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
 
