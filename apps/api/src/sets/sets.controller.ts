@@ -4,11 +4,12 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
 } from "@nestjs/common";
-import { createSetSchema } from "@danisolation-recall/contracts";
+import { createSetSchema, updateSetSchema } from "@danisolation-recall/contracts";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 import { AuthGuard, CurrentUser } from "../auth/auth.guard";
@@ -17,6 +18,8 @@ import { CreateSetService } from "./create-set.service";
 import { type StudySet, SetsRepository } from "./sets.repository";
 
 export class CreateSetDto extends createZodDto(createSetSchema) {}
+
+export class UpdateSetDto extends createZodDto(updateSetSchema) {}
 
 const listSetsQuerySchema = z.object({
   limit: z.coerce
@@ -38,6 +41,19 @@ export type PaginatedSets = {
   items: StudySet[];
   nextOffset: number | null;
 };
+
+function parseSetId(setId: string): number {
+  const id = Number(setId);
+
+  if (!Number.isInteger(id)) {
+    throw new NotFoundException({
+      code: "SET_NOT_FOUND",
+      message: "Study set not found",
+    });
+  }
+
+  return id;
+}
 
 @Controller("sets")
 export class SetsController {
@@ -79,10 +95,33 @@ export class SetsController {
     @CurrentUser() user: User,
     @Param("id") setId: string,
   ): Promise<StudySet> {
-    const id = Number(setId);
-    const set = Number.isInteger(id)
-      ? await this.setsRepository.findById(id, user.id)
-      : null;
+    const set = await this.setsRepository.findById(
+      parseSetId(setId),
+      user.id,
+    );
+
+    if (!set) {
+      throw new NotFoundException({
+        code: "SET_NOT_FOUND",
+        message: "Study set not found",
+      });
+    }
+
+    return set;
+  }
+
+  @Patch(":id")
+  @UseGuards(AuthGuard)
+  async update(
+    @CurrentUser() user: User,
+    @Param("id") setId: string,
+    @Body() body: UpdateSetDto,
+  ): Promise<StudySet> {
+    const set = await this.setsRepository.update(
+      parseSetId(setId),
+      user.id,
+      body,
+    );
 
     if (!set) {
       throw new NotFoundException({

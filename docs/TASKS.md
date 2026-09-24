@@ -1739,7 +1739,7 @@ SET-002
 SET-006
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/sets/sets.controller.ts
@@ -1751,7 +1751,11 @@ apps/api/src/sets/update-set.integration.spec.ts
 - 404 for missing or not-owned set; 400 for an empty update
 
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 200, 404, 400)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (82 tests, incl. 6 new HTTP-level tests: title-only and description-only updates with the other field intact, trimmed values, `updated_at` bumped, 404 `SET_NOT_FOUND` for missing and foreign sets, 400 `VALIDATION_ERROR` for an empty update)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+### Note
+`parseSetId` was extracted to a shared controller helper (GET and PATCH both use it; DELETE will next).
 
 ---
 
