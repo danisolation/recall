@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { createSetSchema } from "@danisolation-recall/contracts";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
@@ -62,5 +71,26 @@ export class SetsController {
       nextOffset:
         items.length === query.limit ? query.offset + query.limit : null,
     };
+  }
+
+  @Get(":id")
+  @UseGuards(AuthGuard)
+  async get(
+    @CurrentUser() user: User,
+    @Param("id") setId: string,
+  ): Promise<StudySet> {
+    const id = Number(setId);
+    const set = Number.isInteger(id)
+      ? await this.setsRepository.findById(id, user.id)
+      : null;
+
+    if (!set) {
+      throw new NotFoundException({
+        code: "SET_NOT_FOUND",
+        message: "Study set not found",
+      });
+    }
+
+    return set;
   }
 }

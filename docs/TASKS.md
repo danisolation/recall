@@ -1707,7 +1707,7 @@ Return a single set to its owner.
 SET-004
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/sets/sets.controller.ts
@@ -1718,10 +1718,11 @@ apps/api/src/sets/get-set.integration.spec.ts
 - missing or not-owned set returns 404 `SET_NOT_FOUND`
 
 ### Decision
-A set owned by another user returns 404 — indistinguishable from a missing set, since all sets are private in MVP. `SET_ACCESS_DENIED` is reserved for the Phase-2 visibility model.
+A set owned by another user returns 404 — indistinguishable from a missing set, since all sets are private in MVP. `SET_ACCESS_DENIED` is reserved for the Phase-2 visibility model. Malformed ids (`/sets/not-a-number`) fold into the same 404: the controller parses the param and never sends a non-integer to PostgreSQL (a `NaN` bind would surface as a 500).
 
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 200, 404 missing, 404 other user's set)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (76 tests, incl. 4 new HTTP-level tests: 200 with the full row for the owner, 404 `SET_NOT_FOUND` for a missing id, 404 for a malformed id, 404 for another user's set)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
 
