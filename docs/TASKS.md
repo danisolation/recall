@@ -1572,7 +1572,7 @@ Define Zod schemas for creating and updating a study set.
 None
 
 ### Status
-READY
+DONE
 
 ### Files
 packages/contracts/src/set.schema.ts
@@ -1584,8 +1584,12 @@ packages/contracts/src/index.ts
 - `updateSetSchema`: all fields optional, rejects an empty update
 - inferred types (`CreateSetInput`, `UpdateSetInput`) exported
 
+### Decision
+Both schemas trim values via the `transform().pipe()` pattern established by the auth schemas; messages follow the same register (sentence case, no trailing period). A whitespace-only title is rejected (it trims to empty). An empty-string description is accepted and means "no description".
+
 ### Tests
-- `pnpm --filter @danisolation-recall/contracts test` (valid input, empty/too-long title, empty update rejected)
+- `pnpm --filter @danisolation-recall/contracts test` (24 tests, incl. 12 new: valid input, trimming, description optional, empty/whitespace/256-char title, 2001-char description, missing fields; title-only/description-only update, trimmed update, empty update rejected)
+- `pnpm --filter @danisolation-recall/contracts typecheck` succeeds
 
 ---
 
