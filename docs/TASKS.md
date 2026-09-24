@@ -1639,13 +1639,15 @@ SET-002
 SET-003
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/sets/sets.module.ts
 apps/api/src/sets/sets.controller.ts
 apps/api/src/sets/create-set.service.ts
+apps/api/src/sets/create-set.service.spec.ts
 apps/api/src/sets/create-set.integration.spec.ts
+apps/api/src/auth/auth.module.ts
 apps/api/src/app.module.ts
 
 ### Acceptance Criteria
@@ -1653,9 +1655,12 @@ apps/api/src/app.module.ts
 - body validated via `createZodDto`; invalid input returns 400 `VALIDATION_ERROR`
 - 201 with an explicit response shape; 401 `UNAUTHENTICATED` without a session
 
+### Decision
+`SetsModule` imports `AuthModule` and `AuthModule` now exports `SessionService` — the guard's dependency must be visible to the consuming module's injector for `@UseGuards(AuthGuard)` to resolve. Validation needs no per-route pipe: the global `ZodValidationPipe` (APP_PIPE) reshapes failures into 400 `VALIDATION_ERROR`. Ownership comes from the session (`@CurrentUser()`), never from the request body.
+
 ### Tests
-- unit tests for the service
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 201 success, 401 without cookie, 400 invalid body)
+- `pnpm --filter @danisolation-recall/api test` (68 tests, incl. 2 new service unit tests and 3 HTTP-level tests: 201 returns the created row with trimmed title and ownership from the session, 401 without cookie `UNAUTHENTICATED`, 400 with empty title `VALIDATION_ERROR`)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
 

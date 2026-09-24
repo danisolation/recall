@@ -9,9 +9,10 @@ import { AuthModule } from "./auth/auth.module";
 import { ZodExceptionFilter } from "./common/zod-exception.filter";
 import { DatabaseModule } from "./database/database.module";
 import { HealthController } from "./health/health.controller";
+import { SetsModule } from "./sets/sets.module";
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, SetsModule],
   controllers: [AppController, HealthController],
   providers: [
     AppService,

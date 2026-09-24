@@ -23,5 +23,6 @@ import { UsersRepository } from "./users.repository";
   ],
   controllers: [AuthController],
   providers: [RegisterService, LoginService, SessionService, UsersRepository],
+  exports: [SessionService],
 })
 export class AuthModule {}
