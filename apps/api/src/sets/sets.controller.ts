@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   NotFoundException,
   Param,
   Patch,
@@ -131,5 +133,25 @@ export class SetsController {
     }
 
     return set;
+  }
+
+  @Delete(":id")
+  @UseGuards(AuthGuard)
+  @HttpCode(204)
+  async remove(
+    @CurrentUser() user: User,
+    @Param("id") setId: string,
+  ): Promise<void> {
+    const deleted = await this.setsRepository.delete(
+      parseSetId(setId),
+      user.id,
+    );
+
+    if (!deleted) {
+      throw new NotFoundException({
+        code: "SET_NOT_FOUND",
+        message: "Study set not found",
+      });
+    }
   }
 }

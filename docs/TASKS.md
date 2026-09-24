@@ -1771,7 +1771,7 @@ Let the owner delete a set.
 SET-006
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/sets/sets.controller.ts
@@ -1785,7 +1785,8 @@ apps/api/src/sets/delete-set.integration.spec.ts
 When the cards phase adds a cards table, its foreign key will be `ON DELETE CASCADE` so set deletion removes its cards.
 
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 204, 404, repeat delete)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (86 tests, incl. 4 new HTTP-level tests: 204 with the set then 404 on `GET /sets/:id`, 404 `SET_NOT_FOUND` for a missing set, 404 for another user's set which is left intact, 404 on a repeat delete)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
 
