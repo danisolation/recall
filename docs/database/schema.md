@@ -30,9 +30,23 @@ One row per user identity. Migrations: `0000_strange_master_mold.sql`, `0001_aco
 
 One row per live session; a user may have several (multiple devices). Deleting a user removes their sessions via the cascade. Session validation looks up `token_hash` with `expires_at > now()`. Migration: `0002_stiff_xavin.sql`.
 
+### study_sets
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `id` | serial | primary key |
+| `owner_id` | integer | not null, FK → `users.id` **ON DELETE CASCADE** |
+| `title` | text | not null |
+| `description` | text | nullable |
+| `created_at` | timestamp with time zone | not null, default `now()` |
+| `updated_at` | timestamp with time zone | not null, default `now()` |
+
+One row per study set; every set belongs to exactly one owner. Deleting a user removes their sets via the cascade. Owner-scoped queries use `study_sets_owner_id_index`. Migration: `0003_lazy_oracle.sql`.
+
 ```mermaid
 erDiagram
     users ||--o{ sessions : "has"
+    users ||--o{ study_sets : "owns"
     users {
         serial id PK
         text email UK
@@ -46,6 +60,14 @@ erDiagram
         text token_hash UK "SHA-256 of token"
         timestamptz expires_at
         timestamptz created_at
+    }
+    study_sets {
+        serial id PK
+        integer owner_id FK
+        text title
+        text description "nullable"
+        timestamptz created_at
+        timestamptz updated_at
     }
 ```
 

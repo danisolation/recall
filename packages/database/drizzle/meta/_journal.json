@@ -22,6 +22,13 @@
       "when": 1789098170909,
       "tag": "0002_stiff_xavin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790270253273,
+      "tag": "0003_lazy_oracle",
+      "breakpoints": true
     }
   ]
 }

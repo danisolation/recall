@@ -1540,11 +1540,11 @@ Define the `study_sets` table in the database schema and generate its migration.
 None (builds on the existing `users` table)
 
 ### Status
-READY
+DONE
 
 ### Files
 packages/database/src/schema.ts
-packages/database/drizzle/<generated>.sql
+packages/database/drizzle/0003_lazy_oracle.sql
 docs/database/schema.md
 
 ### Acceptance Criteria
@@ -1554,8 +1554,9 @@ docs/database/schema.md
 - schema documentation updated
 
 ### Tests
-- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed
-- `pnpm --filter @danisolation-recall/database typecheck` succeeds
+- `pnpm --filter @danisolation-recall/database db:generate` produced `drizzle/0003_lazy_oracle.sql` (table, cascade FK, owner index)
+- `pnpm --filter @danisolation-recall/database db:migrate` applied it; `study_sets` verified in psql (columns, `ON DELETE CASCADE` FK, `study_sets_owner_id_index`)
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed
 
 ---
 
