@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Dashboard — DANISOLATION Recall",
 };
+
+// Same link register as the home page navigation.
+const newSetLink =
+  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 // Fixed locale and zone keep the rendered date identical on the server and
 // during hydration, so the markup cannot mismatch.
@@ -22,7 +27,12 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <Link href="/sets/new" className={newSetLink}>
+          New set
+        </Link>
+      </div>
       <section className="rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6">
         <h2 className="text-lg font-semibold">Your account</h2>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">

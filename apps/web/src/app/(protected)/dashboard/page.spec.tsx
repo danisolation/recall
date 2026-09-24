@@ -43,5 +43,9 @@ describe("DashboardPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("user@example.com")).toBeInTheDocument();
     expect(screen.getByText("January 1, 2026")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "New set" })).toHaveAttribute(
+      "href",
+      "/sets/new",
+    );
   });
 });

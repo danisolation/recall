@@ -1,4 +1,5 @@
 import type {
+  CreateSetInput,
   LoginInput,
   RegisterInput,
 } from "@danisolation-recall/contracts";
@@ -91,4 +92,25 @@ export async function logoutUser(): Promise<void> {
   }
 
   throw new ApiError("UNKNOWN", "Logging out failed. Try again.");
+}
+
+export async function createSet(
+  input: CreateSetInput,
+): Promise<{ id: number }> {
+  const response = await post("/sets", input);
+
+  if (response.ok) {
+    const body: unknown = await response.json();
+
+    if (
+      typeof body === "object" &&
+      body !== null &&
+      "id" in body &&
+      typeof body.id === "number"
+    ) {
+      return { id: body.id };
+    }
+  }
+
+  throw new ApiError("UNKNOWN", "Creating your set failed. Try again.");
 }

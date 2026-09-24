@@ -1803,12 +1803,14 @@ SET-002
 SET-004
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/sets/new/page.tsx
 apps/web/src/app/(protected)/sets/new/create-set-form.tsx
 apps/web/src/app/(protected)/sets/new/create-set-form.spec.tsx
+apps/web/src/app/(protected)/dashboard/page.tsx
+apps/web/src/app/(protected)/dashboard/page.spec.tsx
 apps/web/src/lib/api.ts
 
 ### Acceptance Criteria
@@ -1817,9 +1819,13 @@ apps/web/src/lib/api.ts
 - API errors show clear messages (§56)
 - the dashboard offers a "New set" entry point
 
+### Decision
+On success the form navigates to the new set's detail page (`/sets/:id`) — that page is built in SET-011, so the journey completes then. `createSet` in `lib/api.ts` returns only `{ id }` (all the client needs); the detail data stays server-fetched. The dashboard "New set" entry reuses the home page's link register rather than growing the Button primitive with link semantics (§59).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component tests)
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/web test` (28 tests, incl. 4 new CreateSetForm tests: renders labeled fields, empty title shows "Enter a title" and never calls the API, success calls `createSet` with normalized values and pushes `/sets/42`, API failure shows the error message and stays put — plus a dashboard assertion for the "New set" link)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds (`/sets/new` is dynamic under the protected layout)
 
 ---
 
