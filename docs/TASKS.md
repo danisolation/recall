@@ -1605,19 +1605,24 @@ Provide a Drizzle repository for study set persistence.
 SET-001
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/sets/sets.repository.ts
 apps/api/src/sets/sets.repository.integration.spec.ts
+packages/database/src/index.ts
 
 ### Acceptance Criteria
 - repository supports create, findById, listByOwner, update, delete
 - every query is owner-scoped (§41)
 - listByOwner is offset-paginated, newest first
 
+### Decision
+Every query filters by `owner_id` in SQL (not in a service layer): `findById`, `update`, and `delete` all take the owner alongside the id, so a wrong owner is indistinguishable from a missing row. `listByOwner` orders by `created_at DESC` with `id DESC` as a tiebreaker (same-transaction timestamps can be identical). `packages/database/src/index.ts` gained the `desc` re-export — apps funnel all drizzle helpers through the database package.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (integration tests against real PostgreSQL, incl. ownership isolation and pagination boundaries)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (63 tests, incl. 13 new repository integration tests: create with/without description, find by id, other-user's set not found, unknown id, newest-first ordering, list excludes other users, limit/offset pagination, partial update + `updated_at` bump, update/delete by wrong owner rejected, repeat delete not found)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
 
