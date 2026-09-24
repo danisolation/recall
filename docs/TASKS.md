@@ -1524,11 +1524,435 @@ None (documentation only; facts cross-checked against code, manifests, and runni
 
 ---
 
+## Study sets phase
+
+API design per §52: `GET/POST /sets`, `GET/PATCH/DELETE /sets/:id`. Every endpoint requires an authenticated session (AuthGuard); ownership is enforced server-side (§41). Input schemas live in `packages/contracts` (ADR-004).
+
+### SET-001
+
+### Title
+Add the study_sets table and migration
+
+### Goal
+Define the `study_sets` table in the database schema and generate its migration.
+
+### Dependencies
+None (builds on the existing `users` table)
+
+### Status
+READY
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/<generated>.sql
+docs/database/schema.md
+
+### Acceptance Criteria
+- table has id, owner_id (FK → users, on delete cascade), title (not null), description (nullable), created_at, updated_at — following the existing serial/timezone conventions
+- index on owner_id for owner-scoped queries
+- migration is generated and applies cleanly
+- schema documentation updated
+
+### Tests
+- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed
+- `pnpm --filter @danisolation-recall/database typecheck` succeeds
+
+---
+
+### SET-002
+
+### Title
+Add study set input schemas to contracts
+
+### Goal
+Define Zod schemas for creating and updating a study set.
+
+### Dependencies
+None
+
+### Status
+READY
+
+### Files
+packages/contracts/src/set.schema.ts
+packages/contracts/src/set.schema.spec.ts
+packages/contracts/src/index.ts
+
+### Acceptance Criteria
+- `createSetSchema`: title required (1–255 characters after trimming), description optional (max 2000 characters), with user-facing messages
+- `updateSetSchema`: all fields optional, rejects an empty update
+- inferred types (`CreateSetInput`, `UpdateSetInput`) exported
+
+### Tests
+- `pnpm --filter @danisolation-recall/contracts test` (valid input, empty/too-long title, empty update rejected)
+
+---
+
+### SET-003
+
+### Title
+Add set database access
+
+### Goal
+Provide a Drizzle repository for study set persistence.
+
+### Dependencies
+SET-001
+
+### Status
+TODO
+
+### Files
+apps/api/src/sets/sets.repository.ts
+apps/api/src/sets/sets.repository.integration.spec.ts
+
+### Acceptance Criteria
+- repository supports create, findById, listByOwner, update, delete
+- every query is owner-scoped (§41)
+- listByOwner is offset-paginated, newest first
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (integration tests against real PostgreSQL, incl. ownership isolation and pagination boundaries)
+
+---
+
+### SET-004
+
+### Title
+Add create set endpoint (POST /sets)
+
+### Goal
+Allow an authenticated user to create a study set.
+
+### Dependencies
+SET-002
+SET-003
+
+### Status
+TODO
+
+### Files
+apps/api/src/sets/sets.module.ts
+apps/api/src/sets/sets.controller.ts
+apps/api/src/sets/create-set.service.ts
+apps/api/src/sets/create-set.integration.spec.ts
+apps/api/src/app.module.ts
+
+### Acceptance Criteria
+- authenticated users can create a set; ownership is assigned from the session user
+- body validated via `createZodDto`; invalid input returns 400 `VALIDATION_ERROR`
+- 201 with an explicit response shape; 401 `UNAUTHENTICATED` without a session
+
+### Tests
+- unit tests for the service
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 201 success, 401 without cookie, 400 invalid body)
+
+---
+
+### SET-005
+
+### Title
+Add list sets endpoint (GET /sets)
+
+### Goal
+Return the authenticated user's own sets, paginated.
+
+### Dependencies
+SET-004
+
+### Status
+TODO
+
+### Files
+apps/api/src/sets/sets.controller.ts
+apps/api/src/sets/list-sets.integration.spec.ts
+
+### Acceptance Criteria
+- only the caller's sets are returned, newest first
+- explicit paginated envelope (items + next offset)
+
+### Decision
+Offset pagination, limit default 20 and capped at 100 (§36: acceptable for simple low-scale lists; revisit cursor pagination if lists grow).
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: pagination boundary, another user's sets excluded)
+
+---
+
+### SET-006
+
+### Title
+Add get set endpoint (GET /sets/:id)
+
+### Goal
+Return a single set to its owner.
+
+### Dependencies
+SET-004
+
+### Status
+TODO
+
+### Files
+apps/api/src/sets/sets.controller.ts
+apps/api/src/sets/get-set.integration.spec.ts
+
+### Acceptance Criteria
+- owner receives 200 with the set
+- missing or not-owned set returns 404 `SET_NOT_FOUND`
+
+### Decision
+A set owned by another user returns 404 — indistinguishable from a missing set, since all sets are private in MVP. `SET_ACCESS_DENIED` is reserved for the Phase-2 visibility model.
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 200, 404 missing, 404 other user's set)
+
+---
+
+### SET-007
+
+### Title
+Add update set endpoint (PATCH /sets/:id)
+
+### Goal
+Let the owner edit a set's title and description.
+
+### Dependencies
+SET-002
+SET-006
+
+### Status
+TODO
+
+### Files
+apps/api/src/sets/sets.controller.ts
+apps/api/src/sets/update-set.integration.spec.ts
+
+### Acceptance Criteria
+- owner-only partial update validated by `updateSetSchema`
+- updated set returned with `updated_at` bumped
+- 404 for missing or not-owned set; 400 for an empty update
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 200, 404, 400)
+
+---
+
+### SET-008
+
+### Title
+Add delete set endpoint (DELETE /sets/:id)
+
+### Goal
+Let the owner delete a set.
+
+### Dependencies
+SET-006
+
+### Status
+TODO
+
+### Files
+apps/api/src/sets/sets.controller.ts
+apps/api/src/sets/delete-set.integration.spec.ts
+
+### Acceptance Criteria
+- owner-only; 204 on success
+- 404 for missing or not-owned set; a repeat delete returns 404
+
+### Note
+When the cards phase adds a cards table, its foreign key will be `ON DELETE CASCADE` so set deletion removes its cards.
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 204, 404, repeat delete)
+
+---
+
+### SET-009
+
+### Title
+Add the create set screen
+
+### Goal
+Let an authenticated user create a set from the browser.
+
+### Dependencies
+SET-002
+SET-004
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/new/page.tsx
+apps/web/src/app/(protected)/sets/new/create-set-form.tsx
+apps/web/src/app/(protected)/sets/new/create-set-form.spec.tsx
+apps/web/src/lib/api.ts
+
+### Acceptance Criteria
+- form validates with `createSetSchema` via `zodResolver`
+- success navigates to the new set's detail page
+- API errors show clear messages (§56)
+- the dashboard offers a "New set" entry point
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component tests)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### SET-010
+
+### Title
+Add the sets list to the dashboard
+
+### Goal
+Show the user's sets on the protected dashboard.
+
+### Dependencies
+SET-005
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/dashboard/page.tsx
+apps/web/src/app/(protected)/dashboard/page.spec.tsx
+apps/web/src/components/set-list.tsx
+apps/web/src/components/set-list.spec.tsx
+
+### Acceptance Criteria
+- a server component fetches `GET /sets` with the forwarded cookie (same pattern as `lib/session.ts`)
+- items link to their detail page
+- the empty state offers creating a set (§56)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component tests: items rendered, empty state)
+
+---
+
+### SET-011
+
+### Title
+Add the set detail page
+
+### Goal
+View a single set.
+
+### Dependencies
+SET-006
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/page.tsx
+apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
+
+### Acceptance Criteria
+- server fetch of `GET /sets/:id` with the forwarded cookie
+- renders title, description, and timestamps
+- 404 (missing or not owned) leads to `notFound()`
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component tests)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### SET-012
+
+### Title
+Add set editing
+
+### Goal
+Let the owner edit a set from the browser.
+
+### Dependencies
+SET-007
+SET-011
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/edit/page.tsx
+apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx
+apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.spec.tsx
+apps/web/src/lib/api.ts
+
+### Acceptance Criteria
+- form is prefilled and validated with `updateSetSchema`
+- success re-renders the updated data
+- API errors show clear messages
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component tests)
+
+---
+
+### SET-013
+
+### Title
+Add set deletion
+
+### Goal
+Let the owner delete a set from the browser.
+
+### Dependencies
+SET-008
+SET-011
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/page.tsx
+apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
+apps/web/src/lib/api.ts
+
+### Acceptance Criteria
+- a delete control asks for confirmation before deleting
+- success redirects to the dashboard
+- a 404 after the set is gone is handled
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component tests)
+
+---
+
+### SET-014
+
+### Title
+Add the sets E2E journey
+
+### Goal
+Cover the full study-set lifecycle in a browser.
+
+### Dependencies
+SET-009
+SET-010
+SET-011
+SET-012
+SET-013
+
+### Status
+TODO
+
+### Files
+apps/web/e2e/sets.spec.ts
+
+### Acceptance Criteria
+- register → create a set → see it in the dashboard list → open detail → edit → delete → gone from the list
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test:e2e`
+
+---
+
 ## Remaining MVP phases (coarse — not yet decomposed)
 
 ```text
-Study sets
-  ↓
 Cards
   ↓
 Study sessions
