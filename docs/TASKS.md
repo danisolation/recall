@@ -2064,7 +2064,7 @@ Define Zod schemas for creating and updating a card.
 None
 
 ### Status
-TODO
+DONE
 
 ### Files
 packages/contracts/src/card.schema.ts
@@ -2077,8 +2077,11 @@ packages/contracts/src/index.ts
 - inferred types (`CreateCardInput`, `UpdateCardInput`) exported
 - the length ceilings chosen are recorded as a decision (changeable by migration later)
 
+### Decision
+Both sides share one `cardSide` factory (trim → pipe) parameterized by the empty-field message — "Enter the front" / "Enter the back" — so the two fields never drift and each gets its own error text. The 2000-character ceiling matches the set description's existing limit: far above real flashcard content, keeps request and future study-session payloads sane, and is changeable by migration if real usage demands more. `updateCardSchema` reuses `createCardSchema.partial()` with the same "Nothing to update" refine as `updateSetSchema`, so a cleared side still surfaces its "Enter the …" message rather than silently becoming no-change.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/contracts test` (new cases: valid, trimming, empty/whitespace front, over-length, missing fields, partial update, empty update rejected)
+- `pnpm --filter @danisolation-recall/contracts test` (35 tests, incl. 11 new: valid card, trimming both sides, empty front, whitespace-only back, over-length front/back, missing fields; front-only and back-only updates, trimmed update, empty update rejected)
 - `pnpm --filter @danisolation-recall/contracts typecheck` succeeds
 
 ---
