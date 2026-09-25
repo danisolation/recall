@@ -1878,20 +1878,26 @@ View a single set.
 SET-006
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/sets/[id]/page.tsx
 apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
+apps/web/src/lib/sets.ts
+apps/web/src/lib/sets.spec.ts
 
 ### Acceptance Criteria
 - server fetch of `GET /sets/:id` with the forwarded cookie
 - renders title, description, and timestamps
 - 404 (missing or not owned) leads to `notFound()`
 
+### Decision
+`getSet` joins `listSets` in `lib/sets.ts` (same cookie-forwarding, `no-store` pattern); a 404 response maps to `null` — covering both a missing set and a set owned by someone else, which SET-006 made indistinguishable — and the page turns `null` into `notFound()`. A non-integer route param also calls `notFound()` before any fetch, mirroring the API's `parseSetId` decision of never sending a non-integer downstream. Dates render with the dashboard's fixed-locale/UTC `Intl` pattern for hydration safety. This page completes the create-set journey: the form (SET-009) and the dashboard list (SET-010) both navigate to `/sets/:id`.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component tests)
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/web test` (42 tests, incl. 7 new: `getSet` forwards the cookie and returns the set, returns null without a cookie, maps 404 to null, throws on other failures; the page renders title/description/timestamps, calls `notFound()` for a missing or foreign set, and calls `notFound()` for a malformed id without calling the API)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds (`/sets/[id]` is dynamic)
 
 ---
 
