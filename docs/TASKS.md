@@ -2133,7 +2133,7 @@ CARD-002
 CARD-003
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/cards/cards.module.ts
@@ -2148,8 +2148,11 @@ apps/api/src/app.module.ts
 - malformed or foreign set returns 404 (same rule as GET /sets/:id); invalid body returns 400 `VALIDATION_ERROR`
 - 201 with an explicit response shape; 401 `UNAUTHENTICATED` without a session
 
+### Decision
+`CardsController` mounts at `sets/:id/cards` — the set id lives in the controller path, so every future card route (`GET/PATCH/DELETE`, reorder) shares one ownership-scoped prefix and the same local `parseSetId` malformed-id fold into 404 as the sets controller. The service stays HTTP-agnostic: it returns the card or `null`, and the controller translates `null` into 404 `SET_NOT_FOUND` — the same division as `SetsController.get` (HTTP errors live at the boundary). The ownership check is the repository's transactional set lookup, so ownership and position assignment land atomically. `CardsModule` imports `AuthModule` exactly like `SetsModule` so the guard's `SessionService` resolves.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (service unit tests + HTTP-level: 201, 404 foreign/missing set, 400 validation, 401)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (114 tests, incl. 9 new: 2 service unit tests — passthrough and null-for-foreign-set contract; 7 HTTP-level tests — 201 with trimmed values and position 1, append to position 2, 401 `UNAUTHENTICATED`, 400 `VALIDATION_ERROR`, 404 `SET_NOT_FOUND` for unknown and malformed set ids, 404 for a foreign set left intact)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---

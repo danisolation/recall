@@ -6,13 +6,14 @@ import { ZodValidationPipe } from "nestjs-zod";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
+import { CardsModule } from "./cards/cards.module";
 import { ZodExceptionFilter } from "./common/zod-exception.filter";
 import { DatabaseModule } from "./database/database.module";
 import { HealthController } from "./health/health.controller";
 import { SetsModule } from "./sets/sets.module";
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, SetsModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, SetsModule, CardsModule],
   controllers: [AppController, HealthController],
   providers: [
     AppService,
