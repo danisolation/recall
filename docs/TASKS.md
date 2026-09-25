@@ -2098,21 +2098,25 @@ Provide a Drizzle repository for card persistence.
 CARD-001
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/cards/cards.repository.ts
 apps/api/src/cards/cards.repository.integration.spec.ts
-packages/database/src/index.ts (if helper re-exports are needed)
+packages/database/src/index.ts
 
 ### Acceptance Criteria
 - repository supports create (append to a set's ordering), findById, listBySet (ordered by position), update, delete, and reordering
 - every query is authorized through set ownership (§41): card lookups join through `study_sets` so a foreign owner's card is indistinguishable from a missing row
 - listBySet is offset-paginated like the sets list (§36)
 
+### Decision
+Every card method takes `setId` alongside the card id and scopes through the `study_sets` join ( findById/update/delete) or verifies the set first (create/listBySet), so a foreign owner's card is indistinguishable from a missing row at the SQL level — matching the sets repository's rule. `create` and `move` run in transactions and own the ordering invariant from CARD-001: create appends `max(position)+1`, move clamps the target to `1..n`, shifts the siblings between the old and new place in one direction, then sets the card's position — the sequence stays dense. `listBySet` returns `null` for a foreign/missing set but an empty array for an owned empty set, so the controller can 404 the first and render an empty state for the second. `packages/database/src/index.ts` gained the `asc`/`gte`/`lte`/`lt` re-exports — apps still funnel all drizzle helpers through the database package.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (integration tests: create appends, ordering, foreign-owner card not found, partial update, delete, reorder invariants)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (105 tests, incl. 19 new repository integration tests: append ordering, foreign/unknown set rejected, find by id, foreign owner null, study-order listing, foreign cards excluded, foreign set list null, limit/offset pagination, partial update + `updated_at` bump, foreign update/delete rejected, move up/down, no-op move, out-of-range clamp, foreign move rejected)
 - `pnpm --filter @danisolation-recall/api typecheck` succeeds
+- `pnpm --filter @danisolation-recall/contracts build` and `pnpm --filter @danisolation-recall/database build` refreshed the dist consumed by the API (the typecheck initially failed on CARD-002 types until contracts was rebuilt — same dist gotcha documented in schema.md)
 
 ---
 
