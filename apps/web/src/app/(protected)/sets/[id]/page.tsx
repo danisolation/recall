@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSet } from "@/lib/sets";
 
 export const metadata: Metadata = {
   title: "Set — DANISOLATION Recall",
 };
+
+// Same link register as the dashboard's "New set" link.
+const textLink =
+  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 // Fixed locale and zone keep the rendered dates identical on the server and
 // during hydration, so the markup cannot mismatch.
@@ -35,7 +40,12 @@ export default async function SetDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{set.title}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">{set.title}</h1>
+        <Link href={`/sets/${set.id}/edit`} className={textLink}>
+          Edit set
+        </Link>
+      </div>
       <section className="rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6">
         {set.description && <p className="text-ink-soft">{set.description}</p>}
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">

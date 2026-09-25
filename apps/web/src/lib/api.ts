@@ -2,6 +2,7 @@ import type {
   CreateSetInput,
   LoginInput,
   RegisterInput,
+  UpdateSetInput,
 } from "@danisolation-recall/contracts";
 
 const API_BASE = "/api";
@@ -16,9 +17,13 @@ export class ApiError extends Error {
   }
 }
 
-async function post(path: string, data?: unknown): Promise<Response> {
+async function request(
+  method: string,
+  path: string,
+  data?: unknown,
+): Promise<Response> {
   return fetch(`${API_BASE}${path}`, {
-    method: "POST",
+    method,
     ...(data === undefined
       ? {}
       : {
@@ -45,7 +50,7 @@ async function errorCode(response: Response): Promise<string | null> {
 }
 
 export async function loginUser(input: LoginInput): Promise<void> {
-  const response = await post("/auth/login", input);
+  const response = await request("POST", "/auth/login", input);
 
   if (response.ok) {
     return;
@@ -65,7 +70,7 @@ export async function loginUser(input: LoginInput): Promise<void> {
 }
 
 export async function registerUser(input: RegisterInput): Promise<void> {
-  const response = await post("/auth/register", input);
+  const response = await request("POST", "/auth/register", input);
 
   if (response.ok) {
     return;
@@ -85,7 +90,7 @@ export async function registerUser(input: RegisterInput): Promise<void> {
 }
 
 export async function logoutUser(): Promise<void> {
-  const response = await post("/auth/logout");
+  const response = await request("POST", "/auth/logout");
 
   if (response.ok) {
     return;
@@ -97,7 +102,7 @@ export async function logoutUser(): Promise<void> {
 export async function createSet(
   input: CreateSetInput,
 ): Promise<{ id: number }> {
-  const response = await post("/sets", input);
+  const response = await request("POST", "/sets", input);
 
   if (response.ok) {
     const body: unknown = await response.json();
@@ -113,4 +118,24 @@ export async function createSet(
   }
 
   throw new ApiError("UNKNOWN", "Creating your set failed. Try again.");
+}
+
+export async function updateSet(
+  id: number,
+  input: UpdateSetInput,
+): Promise<void> {
+  const response = await request("PATCH", `/sets/${id}`, input);
+
+  if (response.ok) {
+    return;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "SET_NOT_FOUND"
+  ) {
+    throw new ApiError("SET_NOT_FOUND", "This set no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Saving your changes failed. Try again.");
 }

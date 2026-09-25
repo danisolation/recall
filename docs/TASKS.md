@@ -1914,21 +1914,30 @@ SET-007
 SET-011
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/sets/[id]/edit/page.tsx
+apps/web/src/app/(protected)/sets/[id]/edit/page.spec.tsx
 apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx
 apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.spec.tsx
+apps/web/src/app/(protected)/sets/[id]/page.tsx
+apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
 apps/web/src/lib/api.ts
+apps/web/src/lib/api.spec.ts
 
 ### Acceptance Criteria
 - form is prefilled and validated with `updateSetSchema`
 - success re-renders the updated data
 - API errors show clear messages
 
+### Decision
+The form sends a full update (title + description, prefilled via `defaultValues`) — the schema's "Nothing to update" refine can never trigger from the form, and clearing the title correctly surfaces "Enter a title" because `partial()` keeps the transform/pipe. Success navigates back to `/sets/:id`, so the updated data re-renders through the server fetch (same journey as creation) rather than duplicating detail rendering client-side. `updateSet` maps `404 SET_NOT_FOUND` to "This set no longer exists." and everything else to a generic save-failure message; the private `post` helper was generalized to `request(method, path, data?)` instead of duplicating a `patch` variant. The detail page gained an "Edit set" link (one line, outside the task's original file list but the only reachable entry point) using the existing text-link register — no new Button semantics.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component tests)
+- `pnpm --filter @danisolation-recall/web test` (52 tests, incl. 10 new: `updateSet` patches with credentials and resolves, maps `SET_NOT_FOUND` and other failures to clear errors; the form renders prefilled, submits the update and navigates to `/sets/42`, blocks an empty title without calling the API, and shows the API error; the edit page prefills and 404s for missing/foreign/malformed ids; the detail page links to `/sets/:id/edit`)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds (`/sets/[id]/edit` is dynamic)
 
 ---
 
