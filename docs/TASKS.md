@@ -2012,11 +2012,442 @@ One journey test (not per-feature tests): the phase's value is that the pieces c
 
 ---
 
+## Cards phase
+
+API design per §52: `GET/POST /sets/:id/cards`, `PATCH/DELETE /sets/:id/cards/:cardId`, plus reordering (§78 lists reorder as MVP). Every endpoint requires an authenticated session and is authorized through set ownership (§41): a card is reached only via its set, and a foreign set is indistinguishable from a missing row. Card input schemas live in `packages/contracts` (ADR-004). Deleting a set cascades its cards (SET-008 note). Learning state deliberately stays off the card (§45) — `UserCardProgress` arrives with the study-sessions phase.
+
+### CARD-001
+
+### Title
+Add the cards table and migration
+
+### Goal
+Define the `cards` table in the database schema and generate its migration.
+
+### Dependencies
+None (builds on the existing `study_sets` table)
+
+### Status
+TODO
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/0004_*.sql (generated)
+docs/database/schema.md
+
+### Acceptance Criteria
+- table has id, set_id (FK → study_sets, on delete cascade), front (not null), back (not null), position (not null), created_at, updated_at — following the existing serial/timezone conventions (§49)
+- index on `set_id` for set-scoped queries; ordering supported by `position`
+- the position-uniqueness tradeoff (plain index + repository-enforced ordering vs. unique constraint) is decided and recorded in the task
+- migration is generated and applies cleanly
+- schema documentation and the ER diagram are updated
+
+### Tests
+- `pnpm --filter @danisolation-recall/database db:generate` produces the migration (table, cascade FK, indexes)
+- `pnpm --filter @danisolation-recall/database db:migrate` applies it; `cards` verified in psql
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed
+
+---
+
+### CARD-002
+
+### Title
+Add card input schemas to contracts
+
+### Goal
+Define Zod schemas for creating and updating a card.
+
+### Dependencies
+None
+
+### Status
+TODO
+
+### Files
+packages/contracts/src/card.schema.ts
+packages/contracts/src/card.schema.spec.ts
+packages/contracts/src/index.ts
+
+### Acceptance Criteria
+- `createCardSchema`: front and back required (trimmed, 1–2000 characters), with user-facing messages in the established register
+- `updateCardSchema`: all fields optional, rejects an empty update — mirroring `updateSetSchema`
+- inferred types (`CreateCardInput`, `UpdateCardInput`) exported
+- the length ceilings chosen are recorded as a decision (changeable by migration later)
+
+### Tests
+- `pnpm --filter @danisolation-recall/contracts test` (new cases: valid, trimming, empty/whitespace front, over-length, missing fields, partial update, empty update rejected)
+- `pnpm --filter @danisolation-recall/contracts typecheck` succeeds
+
+---
+
+### CARD-003
+
+### Title
+Add card database access
+
+### Goal
+Provide a Drizzle repository for card persistence.
+
+### Dependencies
+CARD-001
+
+### Status
+TODO
+
+### Files
+apps/api/src/cards/cards.repository.ts
+apps/api/src/cards/cards.repository.integration.spec.ts
+packages/database/src/index.ts (if helper re-exports are needed)
+
+### Acceptance Criteria
+- repository supports create (append to a set's ordering), findById, listBySet (ordered by position), update, delete, and reordering
+- every query is authorized through set ownership (§41): card lookups join through `study_sets` so a foreign owner's card is indistinguishable from a missing row
+- listBySet is offset-paginated like the sets list (§36)
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (integration tests: create appends, ordering, foreign-owner card not found, partial update, delete, reorder invariants)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+
+---
+
+### CARD-004
+
+### Title
+Add create card endpoint (POST /sets/:id/cards)
+
+### Goal
+Allow the owner of a set to add a card to it.
+
+### Dependencies
+CARD-002
+CARD-003
+
+### Status
+TODO
+
+### Files
+apps/api/src/cards/cards.module.ts
+apps/api/src/cards/cards.controller.ts
+apps/api/src/cards/create-card.service.ts
+apps/api/src/cards/create-card.service.spec.ts
+apps/api/src/cards/create-card.integration.spec.ts
+apps/api/src/app.module.ts
+
+### Acceptance Criteria
+- authenticated users can add a card to their own set; the new card appends to the end of the ordering
+- malformed or foreign set returns 404 (same rule as GET /sets/:id); invalid body returns 400 `VALIDATION_ERROR`
+- 201 with an explicit response shape; 401 `UNAUTHENTICATED` without a session
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (service unit tests + HTTP-level: 201, 404 foreign/missing set, 400 validation, 401)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### CARD-005
+
+### Title
+Add list cards endpoint (GET /sets/:id/cards)
+
+### Goal
+Return a set's cards to its owner, in study order.
+
+### Dependencies
+CARD-003
+CARD-004
+
+### Status
+TODO
+
+### Files
+apps/api/src/cards/cards.controller.ts
+apps/api/src/cards/list-cards.integration.spec.ts
+
+### Acceptance Criteria
+- only the set owner's cards are returned, ordered by position (study order)
+- explicit paginated envelope (items + next offset), same shape and limits as GET /sets
+- 404 for a missing or foreign set
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: envelope with position order, pagination, foreign set 404, validation limits)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### CARD-006
+
+### Title
+Add update card endpoint (PATCH /sets/:id/cards/:cardId)
+
+### Goal
+Let the owner edit a card's front and back.
+
+### Dependencies
+CARD-005
+
+### Status
+TODO
+
+### Files
+apps/api/src/cards/cards.controller.ts
+apps/api/src/cards/update-card.integration.spec.ts
+
+### Acceptance Criteria
+- owner-only partial update validated by `updateCardSchema`
+- updated card returned with `updated_at` bumped
+- 404 for missing card, foreign set, or malformed cardId; 400 for an empty update
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: front-only, back-only, trimmed values, updated_at bump, 404s, 400 empty update)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### CARD-007
+
+### Title
+Add delete card endpoint (DELETE /sets/:id/cards/:cardId)
+
+### Goal
+Let the owner delete a card.
+
+### Dependencies
+CARD-006
+
+### Status
+TODO
+
+### Files
+apps/api/src/cards/cards.controller.ts
+apps/api/src/cards/delete-card.integration.spec.ts
+
+### Acceptance Criteria
+- owner-only; 204 on success
+- 404 for missing card, foreign set, or malformed cardId; repeat delete returns 404
+- the gap left in the ordering is handled (decide and record: leave gaps vs. close them)
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 204 then 404 on re-fetch, foreign set 404 leaving the card intact, repeat delete 404)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### CARD-008
+
+### Title
+Add card reorder endpoint
+
+### Goal
+Let the owner change a card's position in the set's study order.
+
+### Dependencies
+CARD-007
+
+### Status
+TODO
+
+### Files
+apps/api/src/cards/cards.controller.ts
+apps/api/src/cards/reorder-card.integration.spec.ts
+
+### Acceptance Criteria
+- owner-only; the exact contract (move-to-position vs. explicit id order) is decided and recorded here, informed by the UI's needs
+- reordering keeps every card in the set with a stable, complete ordering
+- 404/400 rules consistent with the other card endpoints
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: reorder moves the card, other positions update consistently, foreign set 404, invalid target 400)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### CARD-009
+
+### Title
+Add the cards list to the set detail page
+
+### Goal
+Show a set's cards on its detail page.
+
+### Dependencies
+CARD-005
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/page.tsx
+apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
+apps/web/src/components/card-list.tsx
+apps/web/src/components/card-list.spec.tsx
+apps/web/src/lib/sets.ts (or lib/cards.ts — server fetch per the established pattern)
+
+### Acceptance Criteria
+- a server component fetches `GET /sets/:id/cards` with the forwarded cookie (same pattern as `listSets`)
+- cards render front and back in study order
+- the empty state offers adding the first card (§56)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component tests: items rendered, empty state)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### CARD-010
+
+### Title
+Add the create card form
+
+### Goal
+Let the owner add a card from the set detail page.
+
+### Dependencies
+CARD-004
+CARD-009
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/create-card-form.tsx
+apps/web/src/app/(protected)/sets/[id]/create-card-form.spec.tsx
+apps/web/src/lib/api.ts
+
+### Acceptance Criteria
+- form validates with `createCardSchema` via `zodResolver`
+- success appends the card to the visible list (§25: refetch/refresh the stale list)
+- API errors show clear messages
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (form tests: empty submit blocked, success calls the API and refreshes, API failure shows the message)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### CARD-011
+
+### Title
+Add card editing
+
+### Goal
+Let the owner edit a card's front and back.
+
+### Dependencies
+CARD-006
+CARD-009
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/edit-card-form.tsx (or inline editing component)
+apps/web/src/app/(protected)/sets/[id]/edit-card-form.spec.tsx
+apps/web/src/lib/api.ts
+
+### Acceptance Criteria
+- form is prefilled and validated with `updateCardSchema`
+- success re-renders the updated card
+- API errors show clear messages
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component tests)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### CARD-012
+
+### Title
+Add card deletion
+
+### Goal
+Let the owner delete a card.
+
+### Dependencies
+CARD-007
+CARD-009
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/delete-card-button.tsx (or per-card control)
+apps/web/src/app/(protected)/sets/[id]/delete-card-button.spec.tsx
+apps/web/src/lib/api.ts
+
+### Acceptance Criteria
+- a per-card delete control asks for confirmation before deleting (same inline pattern as SET-013)
+- success removes the card from the visible list
+- a 404 after the card is gone is handled
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component tests: confirmation, success, 404, error)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### CARD-013
+
+### Title
+Add card reordering
+
+### Goal
+Let the owner reorder a set's cards.
+
+### Dependencies
+CARD-008
+CARD-009
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/move-card-button.tsx (or reorder control component)
+apps/web/src/app/(protected)/sets/[id]/move-card-button.spec.tsx
+apps/web/src/lib/api.ts
+
+### Acceptance Criteria
+- each card offers move up/down (keyboard-accessible; no drag-and-drop library — §81), matching the reorder contract chosen in CARD-008
+- boundary cards have their move control disabled
+- success re-renders the new order
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component tests: move calls the API, boundaries disabled, error state)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### CARD-014
+
+### Title
+Add the cards E2E journey
+
+### Goal
+Cover the card lifecycle in a browser inside a real set.
+
+### Dependencies
+CARD-010
+CARD-011
+CARD-012
+CARD-013
+
+### Status
+TODO
+
+### Files
+apps/web/e2e/cards.spec.ts
+
+### Acceptance Criteria
+- register → create a set → add cards → see them on the detail page in order → edit one → move one → delete one → delete the set (cards cascade)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test:e2e`
+
+---
+
 ## Remaining MVP phases (coarse — not yet decomposed)
 
 ```text
-Cards
-  ↓
 Study sessions
   ↓
 Progress
