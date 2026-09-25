@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DeleteSetButton } from "./delete-set-button";
 import { getSet } from "@/lib/sets";
 
 export const metadata: Metadata = {
@@ -67,6 +68,9 @@ export default async function SetDetailPage({
           </div>
         </dl>
       </section>
+      <div>
+        <DeleteSetButton setId={set.id} />
+      </div>
     </div>
   );
 }

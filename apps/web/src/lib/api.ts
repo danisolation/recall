@@ -139,3 +139,20 @@ export async function updateSet(
 
   throw new ApiError("UNKNOWN", "Saving your changes failed. Try again.");
 }
+
+export async function deleteSet(id: number): Promise<void> {
+  const response = await request("DELETE", `/sets/${id}`);
+
+  if (response.ok) {
+    return;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "SET_NOT_FOUND"
+  ) {
+    throw new ApiError("SET_NOT_FOUND", "This set no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Deleting your set failed. Try again.");
+}

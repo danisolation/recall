@@ -15,6 +15,7 @@ vi.mock("@/lib/sets", () => ({
 
 vi.mock("next/navigation", () => ({
   notFound: notFoundMock,
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
 afterEach(() => {
@@ -46,6 +47,9 @@ describe("SetDetailPage", () => {
     expect(screen.getByText("Common irregular verbs")).toBeInTheDocument();
     expect(screen.getByText("February 1, 2026")).toBeInTheDocument();
     expect(screen.getByText("March 15, 2026")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Delete set" }),
+    ).toBeInTheDocument();
   });
 
   it("renders a 404 when the set is missing or not owned", async () => {

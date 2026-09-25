@@ -1954,20 +1954,28 @@ SET-008
 SET-011
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/sets/[id]/page.tsx
 apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
+apps/web/src/app/(protected)/sets/[id]/delete-set-button.tsx
+apps/web/src/app/(protected)/sets/[id]/delete-set-button.spec.tsx
 apps/web/src/lib/api.ts
+apps/web/src/lib/api.spec.ts
 
 ### Acceptance Criteria
 - a delete control asks for confirmation before deleting
 - success redirects to the dashboard
 - a 404 after the set is gone is handled
 
+### Decision
+The control is a two-step inline confirmation (Delete set → "Delete this set? This cannot be undone." + Confirm delete/Cancel) rather than a `window.confirm` or a new Dialog primitive: it stays keyboard-accessible with the existing Button/FieldError primitives (§57, §59) and no dialog focus management is needed yet. It sits below the detail card — destructive actions render away from the page's primary actions. The button is `secondary` (marker accent stays reserved for primary actions, ADR-008). On success — and on `404 SET_NOT_FOUND` when the set was already deleted elsewhere — it navigates to `/dashboard`, which reflects the deletion via the server fetch; other failures keep the confirm step open with a clear error. `deleteSet` in `lib/api.ts` mirrors `updateSet`'s error mapping.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component tests)
+- `pnpm --filter @danisolation-recall/web test` (60 tests, incl. 8 new: `deleteSet` sends DELETE with credentials, maps `SET_NOT_FOUND` and other failures to clear errors; the button requires confirmation before any API call, cancels back to a single control, deletes and navigates to `/dashboard`, navigates there on a 404, and shows an error on other failures; the detail page renders the delete control)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds
 
 ---
 
