@@ -1841,21 +1841,28 @@ Show the user's sets on the protected dashboard.
 SET-005
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/dashboard/page.tsx
 apps/web/src/app/(protected)/dashboard/page.spec.tsx
 apps/web/src/components/set-list.tsx
 apps/web/src/components/set-list.spec.tsx
+apps/web/src/lib/sets.ts
+apps/web/src/lib/sets.spec.ts
 
 ### Acceptance Criteria
 - a server component fetches `GET /sets` with the forwarded cookie (same pattern as `lib/session.ts`)
 - items link to their detail page
 - the empty state offers creating a set (§56)
 
+### Decision
+`lib/sets.ts` mirrors `lib/session.ts`: a server-only fetch that forwards the browser's httpOnly cookie with `cache: "no-store"` and returns an empty page without calling the API when no cookie exists (the protected layout has already gated the request). `SetList` is a presentational server component with no client JS — items are card-style links to `/sets/:id` in the ADR-008 register, and the empty state offers "Create a set" per §56; headings stay in the page so the component stays reusable. The sets section sits above "Your account" since sets are the product's primary content. An API failure surfaces through Next's error boundary rather than an inline retry state — acceptable for a server-rendered MVP dashboard.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component tests: items rendered, empty state)
+- `pnpm --filter @danisolation-recall/web test` (35 tests, incl. 7 new: SetList renders each set as a link to its detail page and offers "Create a set" when empty; `listSets` forwards the cookie and returns the paginated envelope, returns an empty page without a cookie without calling the API, and throws on API failure; the dashboard renders the "Your sets" section with detail links and the create-a-set empty state)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds
+- `pnpm --filter @danisolation-recall/web build` succeeds (`/dashboard` is dynamic)
 
 ---
 

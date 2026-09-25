@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { SetList } from "@/components/set-list";
 import { getCurrentUser } from "@/lib/session";
+import { listSets } from "@/lib/sets";
 
 export const metadata: Metadata = {
   title: "Dashboard — DANISOLATION Recall",
@@ -25,6 +27,8 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const sets = await listSets();
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -33,6 +37,10 @@ export default async function DashboardPage() {
           New set
         </Link>
       </div>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Your sets</h2>
+        <SetList sets={sets.items} />
+      </section>
       <section className="rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6">
         <h2 className="text-lg font-semibold">Your account</h2>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
