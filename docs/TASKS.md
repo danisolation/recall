@@ -2028,11 +2028,11 @@ Define the `cards` table in the database schema and generate its migration.
 None (builds on the existing `study_sets` table)
 
 ### Status
-TODO
+DONE
 
 ### Files
 packages/database/src/schema.ts
-packages/database/drizzle/0004_*.sql (generated)
+packages/database/drizzle/0004_marvelous_makkari.sql
 docs/database/schema.md
 
 ### Acceptance Criteria
@@ -2042,9 +2042,12 @@ docs/database/schema.md
 - migration is generated and applies cleanly
 - schema documentation and the ER diagram are updated
 
+### Decision
+`position` is a **plain** column with a set-scoped btree index, not a unique `(set_id, position)` constraint: reordering a card shifts several sibling rows at once, and PostgreSQL checks unique constraints per row mid-statement, so a unique index would reject the very operation it exists to serve (unless declared deferrable, which drizzle-kit does not emit and which adds ceremony for a table with exactly one writer). Ordering integrity is owned by the cards repository (CARD-003), enforced inside transactions; gaps left by deletes are harmless. If a second writer ever appears, the upgrade path is a deferrable unique index.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/database db:generate` produces the migration (table, cascade FK, indexes)
-- `pnpm --filter @danisolation-recall/database db:migrate` applies it; `cards` verified in psql
+- `pnpm --filter @danisolation-recall/database db:generate` produced `drizzle/0004_marvelous_makkari.sql` (table, cascade FK, `cards_set_id_index`)
+- `pnpm --filter @danisolation-recall/database db:migrate` applied it; `cards` verified in psql (columns, `ON DELETE CASCADE` FK, index)
 - `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed
 
 ---
