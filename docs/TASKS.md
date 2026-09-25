@@ -1995,7 +1995,7 @@ SET-012
 SET-013
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/e2e/sets.spec.ts
@@ -2003,8 +2003,12 @@ apps/web/e2e/sets.spec.ts
 ### Acceptance Criteria
 - register → create a set → see it in the dashboard list → open detail → edit → delete → gone from the list
 
+### Decision
+One journey test (not per-feature tests): the phase's value is that the pieces compose, and the auth journey already covers the primitives they share. Registration runs through the UI (auto-signin), the set title doubles as the list/detail/heading assertion target, and deletion is asserted both by the missing list entry and the visible empty state. The E2E environment needed its Chromium build refreshed (`playwright install chromium`) — the lockfile's Playwright version had moved past the cached browser revision.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test:e2e`
+- `pnpm --filter @danisolation-recall/web test:e2e` (5 Playwright tests, incl. the new sets journey: register through the UI → create with title/description → detail page renders → dashboard lists it → open detail → edit prefilled → save shows updated title on detail → delete with confirmation → dashboard shows the empty state with the set gone; the 4 auth tests still pass)
+- `pnpm --filter @danisolation-recall/web test` (60 component tests) unaffected
 
 ---
 
