@@ -4,11 +4,12 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
 } from "@nestjs/common";
-import { createCardSchema } from "@danisolation-recall/contracts";
+import { createCardSchema, updateCardSchema } from "@danisolation-recall/contracts";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 import { AuthGuard, CurrentUser } from "../auth/auth.guard";
@@ -17,6 +18,8 @@ import { type Card, CardsRepository } from "./cards.repository";
 import { CreateCardService } from "./create-card.service";
 
 export class CreateCardDto extends createZodDto(createCardSchema) {}
+
+export class UpdateCardDto extends createZodDto(updateCardSchema) {}
 
 const listCardsQuerySchema = z.object({
   limit: z.coerce
@@ -46,6 +49,19 @@ function parseSetId(setId: string): number {
     throw new NotFoundException({
       code: "SET_NOT_FOUND",
       message: "Study set not found",
+    });
+  }
+
+  return id;
+}
+
+function parseCardId(cardId: string): number {
+  const id = Number(cardId);
+
+  if (!Number.isInteger(id)) {
+    throw new NotFoundException({
+      code: "CARD_NOT_FOUND",
+      message: "Card not found",
     });
   }
 
@@ -84,6 +100,31 @@ export class CardsController {
       nextOffset:
         cards.length === query.limit ? query.offset + query.limit : null,
     };
+  }
+
+  @Patch(":cardId")
+  @UseGuards(AuthGuard)
+  async update(
+    @CurrentUser() user: User,
+    @Param("id") setId: string,
+    @Param("cardId") cardId: string,
+    @Body() body: UpdateCardDto,
+  ): Promise<Card> {
+    const card = await this.cardsRepository.update(
+      parseCardId(cardId),
+      parseSetId(setId),
+      user.id,
+      body,
+    );
+
+    if (!card) {
+      throw new NotFoundException({
+        code: "CARD_NOT_FOUND",
+        message: "Card not found",
+      });
+    }
+
+    return card;
   }
 
   @Post()

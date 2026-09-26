@@ -2202,7 +2202,7 @@ Let the owner edit a card's front and back.
 CARD-005
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/cards/cards.controller.ts
@@ -2213,8 +2213,11 @@ apps/api/src/cards/update-card.integration.spec.ts
 - updated card returned with `updated_at` bumped
 - 404 for missing card, foreign set, or malformed cardId; 400 for an empty update
 
+### Decision
+Every 404 on a card route — malformed cardId, unknown card, card in a missing or foreign set — folds into a single `CARD_NOT_FOUND`: the addressed resource is the card, and a foreign set is indistinguishable from a set without that card, which leaks nothing (§41, §111). `SET_NOT_FOUND` stays reserved for the set level of the path (`parseSetId`, shared with POST, reports a malformed set id) and for set-level routes. The repository's single exists-scoped `update` covers all four 404 shapes in one query — no set pre-check needed. The empty-update 400 is free: `updateCardSchema`'s "Nothing to update" refine flows through the global `ZodValidationPipe` as `VALIDATION_ERROR`.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: front-only, back-only, trimmed values, updated_at bump, 404s, 400 empty update)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (124 tests, incl. 6 new HTTP-level tests: front-only with the back intact, back-only with the front intact, trimming on both, `updated_at` strictly bumped, 404 `CARD_NOT_FOUND` for an unknown card, an unknown set, a malformed cardId and a foreign set left intact, 400 `VALIDATION_ERROR` for an empty update)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
