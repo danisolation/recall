@@ -2518,7 +2518,7 @@ Decide and document the session lifecycle, MVP study mode, review model, and sch
 None (builds on the completed cards phase)
 
 ### Status
-READY
+DONE
 
 ### Files
 docs/adr/ADR-009-study-sessions.md
@@ -2530,6 +2530,9 @@ docs/adr/ADR-009-study-sessions.md
 - decides the answer model (binary correct/incorrect vs. a graded rating) and how `UserCardProgress.next_review_at` is produced — a minimal interval rule with the FSRS upgrade path recorded (§48: prefer an established scheduler rather than an invented one; the MVP decision must state which rule is used and why it is honest for MVP)
 - decides whether a session snapshots its cards at start or reads live card order, and what deleting a set does to its sessions (cascade vs. retain — record the history-loss tradeoff, §46)
 - the decisions are compatible with STUDY-002..014 and leave the Progress phase able to surface review count, accuracy, and next review without schema churn
+
+### Decision
+ADR-009 records: `ACTIVE → COMPLETED | ABANDONED` with terminal states accepting nothing (no `CREATED` — creation is activation; `PAUSED` deferred until a pause feature exists); one MVP mode — an ordered pass over the set's **live** position order, with the session payloads carrying the ordered cards so start and resume are each a single fetch; binary `correct: boolean` answers matching the two-control UI (a graded column can be added to the append-only table later); a Leitner-style ladder behind an isolated pure `schedule(progress, correct, now)` — streak 0 → 10 minutes, then 1 → 3 → 7 days capped, incorrect resets the streak — with FSRS recorded as the same-signature upgrade path (§48); one review per card per session (409 `REVIEW_ALREADY_RECORDED`), idempotent repeat-finish (409 `INVALID_STUDY_SESSION` only from `ABANDONED`), 404 `SESSION_NOT_FOUND` for missing/foreign sessions; and full cascade on set deletion — losing history with the content is the deliberate, recorded tradeoff (§46).
 
 ### Tests
 None (documentation only)
@@ -2586,7 +2589,7 @@ packages/database/drizzle/ (generated migration)
 docs/database/schema.md
 
 ### Acceptance Criteria
-- table has id, session_id (FK → study_sessions, per ADR-009's deletion decision), card_id (FK → cards, same decision), rating (per ADR-009's answer model), reviewed_at — reviews are inserted once and never updated
+- table has id, session_id (FK → study_sessions cascade), card_id (FK → cards cascade), correct (boolean, per ADR-009's binary answer model), reviewed_at — reviews are inserted once and never updated
 - index on `session_id` for session history; `card_id` indexed for the Progress phase's per-card joins
 - migration is generated and applies cleanly
 
@@ -2616,7 +2619,7 @@ packages/database/drizzle/ (generated migration)
 docs/database/schema.md
 
 ### Acceptance Criteria
-- table has id, user_id (FK → users cascade), card_id (FK → cards cascade), review_count, correct_count, last_reviewed_at, next_review_at (nullable until first review), created_at, updated_at
+- table has id, user_id (FK → users cascade), card_id (FK → cards cascade), review_count, correct_count, streak (consecutive correct answers — the scheduling state ADR-009's ladder reads), last_reviewed_at, next_review_at (nullable until first review), created_at, updated_at
 - unique constraint on (user_id, card_id) — one progress row per user per card, the invariant the review endpoint's upsert relies on
 - migration is generated and applies cleanly
 
