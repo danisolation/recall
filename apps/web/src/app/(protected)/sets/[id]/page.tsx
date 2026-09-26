@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CardList } from "@/components/card-list";
 import { DeleteSetButton } from "./delete-set-button";
+import { listCards } from "@/lib/cards";
 import { getSet } from "@/lib/sets";
 
 export const metadata: Metadata = {
@@ -39,6 +41,8 @@ export default async function SetDetailPage({
     notFound();
   }
 
+  const cardsPage = await listCards(setId);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -67,6 +71,10 @@ export default async function SetDetailPage({
             </dd>
           </div>
         </dl>
+      </section>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-xl font-semibold tracking-tight">Cards</h2>
+        <CardList cards={cardsPage.items} />
       </section>
       <div>
         <DeleteSetButton setId={set.id} />

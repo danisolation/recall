@@ -2298,23 +2298,27 @@ Show a set's cards on its detail page.
 CARD-005
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/sets/[id]/page.tsx
 apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
 apps/web/src/components/card-list.tsx
 apps/web/src/components/card-list.spec.tsx
-apps/web/src/lib/sets.ts (or lib/cards.ts — server fetch per the established pattern)
+apps/web/src/lib/cards.ts
+apps/web/src/lib/cards.spec.ts
 
 ### Acceptance Criteria
 - a server component fetches `GET /sets/:id/cards` with the forwarded cookie (same pattern as `listSets`)
 - cards render front and back in study order
 - the empty state offers adding the first card (§56)
 
+### Decision
+The server fetch landed in a new `lib/cards.ts` rather than growing `lib/sets.ts`: cards are their own domain (mirroring the API's module split), and the cookie-forwarding, `no-store` pattern is copied per function by established convention. `CardList` is presentational with no client JS — items render front (medium) over back (soft) in list order, which *is* study order; positions are not displayed because CARD-007 leaves gaps after deletes and a raw `position` column could read 1, 2, 4. The empty state is the §56 offer as text ("No cards yet. Add your first card to start studying.") without a control — the create-card form it will sit beside arrives in CARD-010, so a dead link is deferred rather than rendered (SET-009 precedent of forward references completing in the next task). The section sits above the destructive delete control (SET-013), with the "Cards" heading kept in the page (SET-010). API failure surfaces through Next's error boundary, same as the dashboard list.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component tests: items rendered, empty state)
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/web test` (67 tests, incl. 7 new: `listCards` forwards the cookie to `/sets/:id/cards`, returns an empty page without a cookie without calling the API, throws on API failure; `CardList` renders fronts/backs in order and offers the first card when empty; the page renders the "Cards" section with ordered items and the empty-state offer)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/sets/[id]` stays dynamic)
 
 ---
 
