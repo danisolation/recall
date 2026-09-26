@@ -23,6 +23,12 @@ export class CreateCardDto extends createZodDto(createCardSchema) {}
 
 export class UpdateCardDto extends createZodDto(updateCardSchema) {}
 
+const reorderCardSchema = z.object({
+  position: z.number().int().min(1, "Position must be at least 1"),
+});
+
+export class ReorderCardDto extends createZodDto(reorderCardSchema) {}
+
 const listCardsQuerySchema = z.object({
   limit: z.coerce
     .number()
@@ -117,6 +123,31 @@ export class CardsController {
       parseSetId(setId),
       user.id,
       body,
+    );
+
+    if (!card) {
+      throw new NotFoundException({
+        code: "CARD_NOT_FOUND",
+        message: "Card not found",
+      });
+    }
+
+    return card;
+  }
+
+  @Patch(":cardId/position")
+  @UseGuards(AuthGuard)
+  async reorder(
+    @CurrentUser() user: User,
+    @Param("id") setId: string,
+    @Param("cardId") cardId: string,
+    @Body() body: ReorderCardDto,
+  ): Promise<Card> {
+    const card = await this.cardsRepository.move(
+      parseCardId(cardId),
+      parseSetId(setId),
+      user.id,
+      body.position,
     );
 
     if (!card) {

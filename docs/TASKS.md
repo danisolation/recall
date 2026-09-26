@@ -2266,7 +2266,7 @@ Let the owner change a card's position in the set's study order.
 CARD-007
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/cards/cards.controller.ts
@@ -2277,8 +2277,11 @@ apps/api/src/cards/reorder-card.integration.spec.ts
 - reordering keeps every card in the set with a stable, complete ordering
 - 404/400 rules consistent with the other card endpoints
 
+### Decision
+**Move-to-position**: `PATCH /sets/:id/cards/:cardId/position` with `{ position: n }`, backed unchanged by the repository's transactional `move` (CARD-003). The MVP UI is move up/down buttons, not drag-and-drop (§81): the client knows the card's `position` from the list envelope and sends `position ± 1`, so an explicit id-order list would only add client state and a heavier validate-everything contract. Alternatives rejected: folding `position` into the content PATCH (would reshape `updateCardSchema`'s contract; zod strips unknown keys, so `{ position }` would become a 400 "Nothing to update"), and an RPC-style `/move` verb path. The position schema stays file-local like the list query schema (the web sends a computed number, no shared validation needed yet). Bounds: structurally invalid targets (missing, non-integer, < 1) → 400 `VALIDATION_ERROR`; out-of-range targets clamp to 1..n per CARD-003 — the UI always targets an adjacent slot, the clamp only absorbs stale positions. 404 rules match CARD-006/007 (`CARD_NOT_FOUND`; malformed set id stays `SET_NOT_FOUND`). The reorder is a single transaction with the sibling shift, so the ordering stays stable and complete.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: reorder moves the card, other positions update consistently, foreign set 404, invalid target 400)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (133 tests, incl. 5 new HTTP-level tests: A moved 1→2 with siblings B, C shifted and the list order B, A, C; out-of-range target clamped to last with the full order updated; 400 `VALIDATION_ERROR` for `position: 0` and a missing position; 404 `CARD_NOT_FOUND` for an unknown and a malformed card id; 404 for a foreign set's card left in place)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
