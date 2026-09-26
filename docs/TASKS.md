@@ -2502,14 +2502,444 @@ One journey test, not per-feature tests (SET-014 precedent): the phase's value i
 
 ---
 
+## Study sessions phase
+
+MVP study flow per §78: start a session for one of your sets, display cards one at a time, reveal the answer, answer the card, finish the session. Reviews are historical events — inserted once, never updated (§44, §46); per-card learning state is `UserCardProgress` (§45), written at review time so the later Progress phase only has to surface it. The domain distinctions that must not drift (§44): a StudySession is an interaction, a StudySet is content, a Card is content, a Review is history. API design per §52: `POST /study-sessions`, `GET /study-sessions/:id`, `POST /study-sessions/:id/reviews`, plus a finish transition. Sessions belong to their user directly (owner filter on `user_id`); the studied set is reached through ownership the same way cards are (§41). The session lifecycle, MVP study mode, answer model, and how `next_review_at` is produced are decided once in STUDY-001 (ADR-009) before any table exists — later tasks inherit those decisions rather than re-deciding them.
+
+### STUDY-001
+
+### Title
+Record the study session design decision (ADR-009)
+
+### Goal
+Decide and document the session lifecycle, MVP study mode, review model, and scheduling approach before any study-session table or endpoint exists.
+
+### Dependencies
+None (builds on the completed cards phase)
+
+### Status
+READY
+
+### Files
+docs/adr/ADR-009-study-sessions.md
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+- decides the session states for MVP (a subset of §47's CREATED/ACTIVE/PAUSED/COMPLETED/ABANDONED) and the allowed transitions
+- decides the MVP study mode: an ordered pass through the set's cards in position order (no per-session randomization yet — §50 notes how to add a testable random source later)
+- decides the answer model (binary correct/incorrect vs. a graded rating) and how `UserCardProgress.next_review_at` is produced — a minimal interval rule with the FSRS upgrade path recorded (§48: prefer an established scheduler rather than an invented one; the MVP decision must state which rule is used and why it is honest for MVP)
+- decides whether a session snapshots its cards at start or reads live card order, and what deleting a set does to its sessions (cascade vs. retain — record the history-loss tradeoff, §46)
+- the decisions are compatible with STUDY-002..014 and leave the Progress phase able to surface review count, accuracy, and next review without schema churn
+
+### Tests
+None (documentation only)
+
+---
+
+### STUDY-002
+
+### Title
+Add the study_sessions table and migration
+
+### Goal
+Define the `study_sessions` table in the database schema and generate its migration.
+
+### Dependencies
+STUDY-001
+
+### Status
+TODO
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/ (generated migration)
+docs/database/schema.md
+
+### Acceptance Criteria
+- table has id, user_id (FK → users, on delete cascade), set_id (FK → study_sets, per ADR-009's deletion decision), status (not null), started_at, finished_at (nullable), created_at, updated_at — following the existing serial/timezone conventions (§49)
+- index on `user_id` for history and progress queries
+- migration is generated and applies cleanly; schema documentation and the ER diagram are updated
+
+### Tests
+- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed; table verified in psql
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed
+
+---
+
+### STUDY-003
+
+### Title
+Add the reviews table and migration
+
+### Goal
+Define the `reviews` table — the historical record of answered cards (§44, §46).
+
+### Dependencies
+STUDY-002
+
+### Status
+TODO
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/ (generated migration)
+docs/database/schema.md
+
+### Acceptance Criteria
+- table has id, session_id (FK → study_sessions, per ADR-009's deletion decision), card_id (FK → cards, same decision), rating (per ADR-009's answer model), reviewed_at — reviews are inserted once and never updated
+- index on `session_id` for session history; `card_id` indexed for the Progress phase's per-card joins
+- migration is generated and applies cleanly
+
+### Tests
+- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed
+
+---
+
+### STUDY-004
+
+### Title
+Add the user_card_progress table and migration
+
+### Goal
+Define `user_card_progress` — the current learning state of a user's card (§45), distinct from review history.
+
+### Dependencies
+STUDY-002
+
+### Status
+TODO
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/ (generated migration)
+docs/database/schema.md
+
+### Acceptance Criteria
+- table has id, user_id (FK → users cascade), card_id (FK → cards cascade), review_count, correct_count, last_reviewed_at, next_review_at (nullable until first review), created_at, updated_at
+- unique constraint on (user_id, card_id) — one progress row per user per card, the invariant the review endpoint's upsert relies on
+- migration is generated and applies cleanly
+
+### Tests
+- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed
+
+---
+
+### STUDY-005
+
+### Title
+Add study session input schemas to contracts
+
+### Goal
+Define Zod schemas for starting a session, recording a review, and the session response contract.
+
+### Dependencies
+STUDY-001
+
+### Status
+TODO
+
+### Files
+packages/contracts/src/study-session.schema.ts
+packages/contracts/src/study-session.schema.spec.ts
+packages/contracts/src/index.ts
+
+### Acceptance Criteria
+- `startSessionSchema`: `setId` required (positive integer) with user-facing messages
+- `reviewSchema`: card id and rating per ADR-009's answer model
+- inferred types (`StartSessionInput`, `ReviewInput`) exported
+- user-facing messages in the established register (sentence case, no trailing period)
+
+### Tests
+- `pnpm --filter @danisolation-recall/contracts test` (valid input, invalid ids, missing fields)
+- `pnpm --filter @danisolation-recall/contracts typecheck` succeeds
+
+---
+
+### STUDY-006
+
+### Title
+Add study session database access
+
+### Goal
+Provide a Drizzle repository for sessions, reviews, and progress.
+
+### Dependencies
+STUDY-002
+STUDY-003
+STUDY-004
+
+### Status
+TODO
+
+### Files
+apps/api/src/study/sessions.repository.ts
+apps/api/src/study/sessions.repository.integration.spec.ts
+packages/database/src/index.ts (any new helper re-exports)
+
+### Acceptance Criteria
+- repository supports: create (verifying the set is owned by the caller — a foreign set is indistinguishable from missing, §41), findById (owner-scoped), listByUser (offset-paginated, newest first, §36), complete/abandon status transitions per ADR-009, addReview, listReviewsBySession (chronological), and the progress upsert (insert-or-update review_count/correct_count/last_reviewed_at/next_review_at per ADR-009's minimal rule)
+- the progress upsert relies on the (user_id, card_id) unique constraint (STUDY-004)
+- every query is owner-scoped (§41)
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (repository integration: foreign set rejected, state transitions enforced per ADR-009, review append, progress upsert insert-then-update math, pagination)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+
+---
+
+### STUDY-007
+
+### Title
+Add the start session endpoint (POST /study-sessions)
+
+### Goal
+Let an authenticated user start a study session for one of their sets.
+
+### Dependencies
+STUDY-005
+STUDY-006
+
+### Status
+TODO
+
+### Files
+apps/api/src/study/sessions.module.ts
+apps/api/src/study/sessions.controller.ts
+apps/api/src/study/start-session.service.ts
+apps/api/src/study/start-session.service.spec.ts
+apps/api/src/study/start-session.integration.spec.ts
+apps/api/src/app.module.ts
+
+### Acceptance Criteria
+- authenticated users can start a session for their own set; malformed or foreign set returns 404 (same rule as the cards phase)
+- 201 with an explicit response shape per ADR-009 (what the client needs to display the first card without extra round trips); 401 `UNAUTHENTICATED` without a session
+- invalid body returns 400 `VALIDATION_ERROR` via the global pipe
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (service unit + HTTP-level: 201 shape, 401, 400, 404 foreign/missing set)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### STUDY-008
+
+### Title
+Add the get session endpoint (GET /study-sessions/:id)
+
+### Goal
+Return a session with its reviews so the study screen can render and resume.
+
+### Dependencies
+STUDY-007
+
+### Status
+TODO
+
+### Files
+apps/api/src/study/sessions.controller.ts
+apps/api/src/study/get-session.integration.spec.ts
+
+### Acceptance Criteria
+- owner receives 200 with the session and its reviews chronologically
+- missing or foreign session returns 404 with a stable error code (chosen from the §54 register and recorded in the task)
+- malformed ids fold into the 404 like every other id route
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: owner 200 with reviews, foreign/missing/malformed 404)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### STUDY-009
+
+### Title
+Add the record review endpoint (POST /study-sessions/:id/reviews)
+
+### Goal
+Record an answered card and update the user's progress in one transaction (§34).
+
+### Dependencies
+STUDY-008
+
+### Status
+TODO
+
+### Files
+apps/api/src/study/sessions.controller.ts
+apps/api/src/study/record-review.service.ts
+apps/api/src/study/record-review.service.spec.ts
+apps/api/src/study/record-review.integration.spec.ts
+
+### Acceptance Criteria
+- owner-only; the reviewed card must belong to the studied set; the session must accept reviews per ADR-009's state machine
+- review insert + progress upsert are atomic — a partial write must be impossible
+- duplicate review of the same card within a session is decided and recorded (§54's `REVIEW_ALREADY_RECORDED` exists for exactly this; §55: design the retry behavior explicitly, never assume retry is safe)
+- foreign/missing session or card returns 404; invalid body returns 400
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 201 review shape, progress counts and next_review_at updated, duplicate rejected per the recorded decision, 404s, 400)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### STUDY-010
+
+### Title
+Add the finish session endpoint (POST /study-sessions/:id/finish)
+
+### Goal
+Let the owner complete or abandon the session per ADR-009's state machine.
+
+### Dependencies
+STUDY-008
+
+### Status
+TODO
+
+### Files
+apps/api/src/study/sessions.controller.ts
+apps/api/src/study/finish-session.integration.spec.ts
+
+### Acceptance Criteria
+- owner-only; transitions per ADR-009 with `finished_at` set
+- finishing an already-finished session is decided and recorded (idempotent no-op vs. error)
+- foreign/missing session returns 404
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: finish, repeat-finish per the recorded decision, foreign 404)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### STUDY-011
+
+### Title
+Add the start-study control and study route
+
+### Goal
+Let the owner start studying a set from its detail page.
+
+### Dependencies
+STUDY-007
+CARD-009
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/start-study-button.tsx
+apps/web/src/app/(protected)/sets/[id]/start-study-button.spec.tsx
+apps/web/src/app/(protected)/sets/[id]/page.tsx
+apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
+apps/web/src/lib/api.ts
+apps/web/src/app/(protected)/study/[sessionId]/page.tsx
+
+### Acceptance Criteria
+- the set detail page offers a primary "Study" control (marker accent per ADR-008 — studying is the product's primary action)
+- starting navigates to the study screen for the new session
+- API errors show clear messages (§56)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (button calls the API and navigates; error state; page renders the control)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### STUDY-012
+
+### Title
+Add the study session screen
+
+### Goal
+The card-by-card study interaction: display front, reveal back, answer (§78).
+
+### Dependencies
+STUDY-008
+STUDY-009
+STUDY-011
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx
+apps/web/src/app/(protected)/study/[sessionId]/study-client.spec.tsx
+apps/web/src/lib/api.ts
+
+### Acceptance Criteria
+- shows the current card's front; a reveal control shows the back; answer controls record the review and advance (keyboard-accessible, ADR-008 interaction floor)
+- the answered/remaining progression comes from the session data, not client-side guessing
+- a finished session renders the completion state (STUDY-013's view or a direct hand-off)
+- loading, error, and empty states per §56 — never only the happy path
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (reveal shows the back; answering records the review and advances; last answer reaches the completion state; API failure shows an error)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### STUDY-013
+
+### Title
+Add the session completion view
+
+### Goal
+Summarize a finished session and offer the way out.
+
+### Dependencies
+STUDY-012
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/study/[sessionId]/ (completion rendering + spec)
+
+### Acceptance Criteria
+- shows reviewed count and accuracy (§78's progress basics, scoped to the session)
+- offers navigation back to the set (and the dashboard register)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (counts render; navigation)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### STUDY-014
+
+### Title
+Add the study E2E journey
+
+### Goal
+Cover the study loop in a browser against the real stack.
+
+### Dependencies
+STUDY-012
+STUDY-013
+
+### Status
+TODO
+
+### Files
+apps/web/e2e/study.spec.ts
+
+### Acceptance Criteria
+- register → create a set → add cards → start a session → answer every card → reach the completion summary → the session is finished
+- one journey test, not per-feature tests (SET-014/CARD-014 precedent)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test:e2e`
+
+---
+
 ## Remaining MVP phases (coarse — not yet decomposed)
 
 ```text
-Study sessions
-  ↓
 Progress
   ↓
 Search
 ```
 
-Each phase will be decomposed into detailed atomic tasks when its implementation context is known.
+Each phase will be decomposed into detailed atomic tasks when its implementation context is known. The Progress phase (§78: review count, accuracy, basic history, next review) reads the data this phase writes and should be decomposed once STUDY-001..010 land.
