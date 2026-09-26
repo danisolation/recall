@@ -2653,7 +2653,7 @@ Define Zod schemas for starting a session, recording a review, and the session r
 STUDY-001
 
 ### Status
-TODO
+DONE
 
 ### Files
 packages/contracts/src/study-session.schema.ts
@@ -2666,9 +2666,12 @@ packages/contracts/src/index.ts
 - inferred types (`StartSessionInput`, `ReviewInput`) exported
 - user-facing messages in the established register (sentence case, no trailing period)
 
+### Decision
+`reviewSchema` carries `{ cardId, correct }` — the boolean *is* the "rating" ADR-009's binary answer model decided, named to match the `reviews.correct` column so no representation drifts (§82). The ids are strict numbers, not coerced: JSON bodies send real numbers, and coercing would silently accept `"42"` strings that only exist in hand-built requests (unlike the query-param schemas, where strings are the transport's native type). Both fields use one message each in the register ("Choose a set to study" / "Choose a card to answer" / "Record your answer") — zod v4's `error` param covers the type, int, and positivity violations alike. No response schema: the response shapes live in ADR-009 and the web's lib types (the same split SET-005 kept query schemas file-local), and the web constructs no session requests it needs to validate client-side yet.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/contracts test` (valid input, invalid ids, missing fields)
-- `pnpm --filter @danisolation-recall/contracts typecheck` succeeds
+- `pnpm --filter @danisolation-recall/contracts test` (45 tests, incl. 10 new: valid start and review, missing/non-integer/zero/negative ids, the message register asserted on the type violation, missing and non-boolean answers)
+- `pnpm --filter @danisolation-recall/contracts typecheck` succeeds; `build` refreshed the dist the API consumes
 
 ---
 
