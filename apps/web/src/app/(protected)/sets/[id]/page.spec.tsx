@@ -73,7 +73,10 @@ describe("SetDetailPage", () => {
   it("renders the set's title, description, and timestamps", async () => {
     getSetMock.mockResolvedValue(set);
 
-    render(await SetDetailPage({ params: Promise.resolve({ id: "42" }) }));
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }));
 
     expect(
       screen.getByRole("heading", { name: "Spanish verbs" }),
@@ -93,13 +96,19 @@ describe("SetDetailPage", () => {
     getSetMock.mockResolvedValue(null);
 
     await expect(
-      SetDetailPage({ params: Promise.resolve({ id: "42" }) }),
+      SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
   });
 
   it("renders a 404 for a malformed id without calling the API", async () => {
     await expect(
-      SetDetailPage({ params: Promise.resolve({ id: "not-a-number" }) }),
+      SetDetailPage({
+      params: Promise.resolve({ id: "not-a-number" }),
+      searchParams: Promise.resolve({}),
+    }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(getSetMock).not.toHaveBeenCalled();
   });
@@ -108,7 +117,10 @@ describe("SetDetailPage", () => {
     getSetMock.mockResolvedValue(set);
     listCardsMock.mockResolvedValue({ items: cards, nextOffset: null });
 
-    render(await SetDetailPage({ params: Promise.resolve({ id: "42" }) }));
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }));
 
     expect(
       screen.getByRole("heading", { name: "Cards" }),
@@ -122,7 +134,10 @@ describe("SetDetailPage", () => {
     getSetMock.mockResolvedValue(set);
     listCardsMock.mockResolvedValue({ items: [], nextOffset: null });
 
-    render(await SetDetailPage({ params: Promise.resolve({ id: "42" }) }));
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }));
 
     expect(
       screen.getByText("No cards yet. Add your first card to start studying."),
@@ -132,10 +147,50 @@ describe("SetDetailPage", () => {
   it("offers a form to add a card", async () => {
     getSetMock.mockResolvedValue(set);
 
-    render(await SetDetailPage({ params: Promise.resolve({ id: "42" }) }));
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }));
 
     expect(screen.getByLabelText("Front")).toBeInTheDocument();
     expect(screen.getByLabelText("Back")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add card" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the edit form prefilled for the card in the edit param", async () => {
+    getSetMock.mockResolvedValue(set);
+    listCardsMock.mockResolvedValue({ items: cards, nextOffset: null });
+
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({ edit: "1" }),
+    }));
+
+    expect(screen.getByLabelText("Front")).toHaveValue("What is mitosis?");
+    expect(screen.getByLabelText("Back")).toHaveValue("Cell division");
+    expect(
+      screen.getByRole("button", { name: "Save changes" }),
+    ).toBeInTheDocument();
+    // The create form yields while editing, so labeled fields stay unique.
+    expect(
+      screen.queryByRole("button", { name: "Add card" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders no edit form for an edit param that matches no card", async () => {
+    getSetMock.mockResolvedValue(set);
+    listCardsMock.mockResolvedValue({ items: cards, nextOffset: null });
+
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({ edit: "999" }),
+    }));
+
+    expect(
+      screen.queryByRole("button", { name: "Save changes" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Add card" }),
     ).toBeInTheDocument();

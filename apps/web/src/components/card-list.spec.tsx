@@ -41,6 +41,16 @@ describe("CardList", () => {
     expect(items[1]).toHaveTextContent("Diffusion of water");
   });
 
+  it("links each card to its edit state", () => {
+    render(<CardList cards={cards} />);
+
+    const editLinks = screen.getAllByRole("link", { name: "Edit" });
+
+    expect(editLinks).toHaveLength(2);
+    expect(editLinks[0]).toHaveAttribute("href", "?edit=1");
+    expect(editLinks[1]).toHaveAttribute("href", "?edit=2");
+  });
+
   it("offers adding the first card when there are none", () => {
     render(<CardList cards={[]} />);
 

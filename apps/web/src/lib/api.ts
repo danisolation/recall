@@ -3,6 +3,7 @@ import type {
   CreateSetInput,
   LoginInput,
   RegisterInput,
+  UpdateCardInput,
   UpdateSetInput,
 } from "@danisolation-recall/contracts";
 
@@ -139,6 +140,31 @@ export async function createCard(
   }
 
   throw new ApiError("UNKNOWN", "Adding the card failed. Try again.");
+}
+
+export async function updateCard(
+  setId: number,
+  cardId: number,
+  input: UpdateCardInput,
+): Promise<void> {
+  const response = await request(
+    "PATCH",
+    `/sets/${setId}/cards/${cardId}`,
+    input,
+  );
+
+  if (response.ok) {
+    return;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "CARD_NOT_FOUND"
+  ) {
+    throw new ApiError("CARD_NOT_FOUND", "This card no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Saving your changes failed. Try again.");
 }
 
 export async function updateSet(

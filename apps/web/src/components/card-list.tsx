@@ -1,4 +1,9 @@
+import Link from "next/link";
 import type { Card } from "@/lib/cards";
+
+// Same link register as the dashboard's "New set" link.
+const textLink =
+  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 // Same panel register as SetList's items (ADR-008).
 const item =
@@ -21,6 +26,9 @@ export function CardList({ cards }: { cards: Card[] }) {
         <li key={card.id} className={item}>
           <span className="block font-medium">{card.front}</span>
           <span className="mt-1 block text-sm text-ink-soft">{card.back}</span>
+          <Link href={`?edit=${card.id}`} className={`${textLink} mt-2 inline-block text-sm`}>
+            Edit
+          </Link>
         </li>
       ))}
     </ul>

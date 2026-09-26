@@ -2371,21 +2371,28 @@ CARD-006
 CARD-009
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/(protected)/sets/[id]/edit-card-form.tsx (or inline editing component)
+apps/web/src/app/(protected)/sets/[id]/page.tsx
+apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
+apps/web/src/app/(protected)/sets/[id]/edit-card-form.tsx
 apps/web/src/app/(protected)/sets/[id]/edit-card-form.spec.tsx
+apps/web/src/components/card-list.tsx
+apps/web/src/components/card-list.spec.tsx
 apps/web/src/lib/api.ts
 
 ### Acceptance Criteria
 - form is prefilled and validated with `updateCardSchema`
 - success re-renders the updated card
-- API errors show clear messages
+- API errors show clear messages (§56)
+
+### Decision
+Edit state lives in the URL (`?edit=<cardId>`) — §23's URL state, the one category for "which item am I editing". `CardList` stays a server component (CARD-009's decision preserved) and each item gains an "Edit" text link; the page resolves the param against the fetched cards and swaps the create form for a prefilled `EditCardForm`, so labeled fields stay unique and there is exactly one client form per mode. A param matching no card is silently ignored (stale links degrade to the normal view, no error state needed for UI-only state). Unlike CARD-010's stay-in-place create, saving or cancelling changes the URL (`router.push` back to `/sets/:id`), and the navigation itself re-renders the server components with fresh data — no explicit `refresh()` (§25: the URL change is the invalidation). The form always sends both prefilled sides — the same full-update reading of `updateCardSchema.partial()` as SET-012, so a cleared field surfaces its "Enter the …" message instead of a silent no-change. `updateCard` maps `404 CARD_NOT_FOUND` to "This card no longer exists." (card deleted in another tab).
 
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component tests)
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/web test` (80 tests, incl. 8 new: the form renders prefilled with Save changes and Cancel; an empty front blocks submission without calling the API; saving calls `updateCard(setId, cardId, values)` and navigates to `/sets/:id`; an API failure shows the message and keeps the values; Cancel navigates without calling the API; every card links to `?edit=<id>`; the page renders the prefilled edit form — create form hidden — for a matching param and no form for a stale param)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/sets/[id]` stays dynamic)
 
 ---
 

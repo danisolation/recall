@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CardList } from "@/components/card-list";
 import { CreateCardForm } from "./create-card-form";
 import { DeleteSetButton } from "./delete-set-button";
+import { EditCardForm } from "./edit-card-form";
 import { listCards } from "@/lib/cards";
 import { getSet } from "@/lib/sets";
 
@@ -24,8 +25,10 @@ const longDate = new Intl.DateTimeFormat("en-US", {
 
 export default async function SetDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string }>;
 }) {
   const { id } = await params;
   const setId = Number(id);
@@ -43,6 +46,16 @@ export default async function SetDetailPage({
   }
 
   const cardsPage = await listCards(setId);
+
+  // Edit mode is URL state (§23): ?edit=<cardId> swaps the create form for
+  // an edit form prefilled with that card. A param matching no card is
+  // simply ignored.
+  const { edit } = await searchParams;
+  const editId = Number(edit);
+  const editingCard =
+    edit !== undefined && Number.isInteger(editId)
+      ? cardsPage.items.find((card) => card.id === editId)
+      : undefined;
 
   return (
     <div className="flex flex-col gap-6">
@@ -75,7 +88,11 @@ export default async function SetDetailPage({
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="text-xl font-semibold tracking-tight">Cards</h2>
-        <CreateCardForm setId={set.id} />
+        {editingCard ? (
+          <EditCardForm setId={set.id} card={editingCard} />
+        ) : (
+          <CreateCardForm setId={set.id} />
+        )}
         <CardList cards={cardsPage.items} />
       </section>
       <div>
