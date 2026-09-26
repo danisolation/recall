@@ -115,3 +115,34 @@ export const reviews = pgTable(
     ),
   ],
 );
+
+// ADR-009 / §45: a card's current learning state for one user — distinct
+// from the reviews table's history (§46). `streak` (consecutive correct
+// answers) is the scheduling state the study module's ladder reads, and
+// `next_review_at` is what it produces. One row per user per card, enforced
+// by the unique constraint the review endpoint's upsert relies on.
+export const userCardProgress = pgTable(
+  "user_card_progress",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    cardId: integer("card_id")
+      .notNull()
+      .references(() => cards.id, { onDelete: "cascade" }),
+    reviewCount: integer("review_count").notNull().default(0),
+    correctCount: integer("correct_count").notNull().default(0),
+    streak: integer("streak").notNull().default(0),
+    lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
+    nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("user_card_progress_user_id_card_id_unique").on(
+      table.userId,
+      table.cardId,
+    ),
+  ],
+);

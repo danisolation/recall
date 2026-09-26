@@ -84,6 +84,23 @@ One row per study session — an ordered pass over one of the user's sets (ADR-0
 
 One row per answered card — a historical event that is inserted once and never updated (§44, §46); `reviewed_at` doubles as the row's creation timestamp for exactly that reason. `reviews_session_id_card_id_unique` makes ADR-009's one-review-per-card-per-session rule race-proof at the database level; the study repository translates a violation into 409 `REVIEW_ALREADY_RECORDED`. Session history uses `reviews_session_id_index`; `reviews_card_id_index` serves the Progress phase's per-card joins (and cascade deletes). Migration: `0006_large_klaw.sql`.
 
+### user_card_progress
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `id` | serial | primary key |
+| `user_id` | integer | not null, FK → `users.id` **ON DELETE CASCADE** |
+| `card_id` | integer | not null, FK → `cards.id` **ON DELETE CASCADE** |
+| `review_count` | integer | not null, default `0` |
+| `correct_count` | integer | not null, default `0` |
+| `streak` | integer | not null, default `0` — consecutive correct answers, the scheduling state ADR-009's ladder reads |
+| `last_reviewed_at` | timestamp with time zone | nullable until the first review |
+| `next_review_at` | timestamp with time zone | nullable until the first review — produced by the study module's `schedule()` (ADR-009) |
+| `created_at` | timestamp with time zone | not null, default `now()` |
+| `updated_at` | timestamp with time zone | not null, default `now()` |
+
+One row per user per card — the **current** learning state (§45), kept strictly apart from the `reviews` history (§46). `user_card_progress_user_id_card_id_unique` guarantees a single row per user per card, the invariant the review endpoint's transactional upsert relies on; counts and `streak` are overwritten on every recorded review. The unique constraint's index also serves by-user reads, so no separate index exists. Deleting a user or a card removes the rows via the cascade. Migration: `0007_secret_sabra.sql`.
+
 ```mermaid
 erDiagram
     users ||--o{ sessions : "has"
@@ -93,6 +110,8 @@ erDiagram
     study_sets ||--o{ study_sessions : "studied in"
     study_sessions ||--o{ reviews : "recorded in"
     cards ||--o{ reviews : "answered in"
+    users ||--o{ user_card_progress : "progresses"
+    cards ||--o{ user_card_progress : "progressed on"
     users {
         serial id PK
         text email UK
@@ -140,6 +159,18 @@ erDiagram
         integer card_id FK
         boolean correct
         timestamptz reviewed_at "insert-once history"
+    }
+    user_card_progress {
+        serial id PK
+        integer user_id FK
+        integer card_id FK
+        integer review_count
+        integer correct_count
+        integer streak "consecutive correct"
+        timestamptz last_reviewed_at "nullable"
+        timestamptz next_review_at "nullable"
+        timestamptz created_at
+        timestamptz updated_at
     }
 ```
 

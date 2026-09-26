@@ -50,6 +50,13 @@
       "when": 1790429113460,
       "tag": "0006_large_klaw",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790429430761,
+      "tag": "0007_secret_sabra",
+      "breakpoints": true
     }
   ]
 }

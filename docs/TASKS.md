@@ -2619,11 +2619,11 @@ Define `user_card_progress` — the current learning state of a user's card (§4
 STUDY-002
 
 ### Status
-TODO
+DONE
 
 ### Files
 packages/database/src/schema.ts
-packages/database/drizzle/ (generated migration)
+packages/database/drizzle/0007_secret_sabra.sql
 docs/database/schema.md
 
 ### Acceptance Criteria
@@ -2631,9 +2631,13 @@ docs/database/schema.md
 - unique constraint on (user_id, card_id) — one progress row per user per card, the invariant the review endpoint's upsert relies on
 - migration is generated and applies cleanly
 
+### Decision
+Counts default to `0` and the two review timestamps are nullable: the row is created by the review endpoint's upsert on first review, and the defaults make the insert legible (no magic constants at the call site) while `null` timestamps honestly represent "never reviewed" for a provisioned-but-unstudied row. `streak` is the ladder's only scheduling state — the ADR's interval is derived from it, not stored. No separate by-user index: the unique constraint's index leads on `user_id`, covering the Progress phase's by-user reads for free.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed
-- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/database db:generate` produced `drizzle/0007_secret_sabra.sql` (table, cascade FKs, the unique constraint)
+- `pnpm --filter @danisolation-recall/database db:migrate` applied it; `user_card_progress` verified in psql (columns with defaults, both `ON DELETE CASCADE` FKs, unique constraint)
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed (dist refreshed for the API)
 
 ---
 
