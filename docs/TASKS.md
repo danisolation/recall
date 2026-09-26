@@ -2335,9 +2335,11 @@ CARD-004
 CARD-009
 
 ### Status
-TODO
+DONE
 
 ### Files
+apps/web/src/app/(protected)/sets/[id]/page.tsx
+apps/web/src/app/(protected)/sets/[id]/page.spec.tsx
 apps/web/src/app/(protected)/sets/[id]/create-card-form.tsx
 apps/web/src/app/(protected)/sets/[id]/create-card-form.spec.tsx
 apps/web/src/lib/api.ts
@@ -2345,10 +2347,13 @@ apps/web/src/lib/api.ts
 ### Acceptance Criteria
 - form validates with `createCardSchema` via `zodResolver`
 - success appends the card to the visible list (§25: refetch/refresh the stale list)
-- API errors show clear messages
+- API errors show clear messages (§56)
+
+### Decision
+The form stays on the page after success — flashcard authoring is a repeat action — so instead of SET-009's navigate-to-detail it clears the fields and calls `router.refresh()`: the card list is a server component, and refreshing re-runs its `listCards` fetch, which is the only stale cache (§25 — no client cache exists to invalidate, so TanStack Query is still unjustified). No optimistic insert; the refetch is authoritative and shows the server-assigned position. `createCard` returns `void` because the client needs nothing from the response, and maps `404 SET_NOT_FOUND` (set deleted in another tab) to "This set no longer exists." with everything else generic. The form sits in the panel register directly under the "Cards" heading, above the list, turning CARD-009's text-only empty state into a real offer. `page.tsx`/`page.spec.tsx` were touched beyond the original file list because the page is the form's only reachable mount point (SET-009 precedent).
 
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (form tests: empty submit blocked, success calls the API and refreshes, API failure shows the message)
+- `pnpm --filter @danisolation-recall/web test` (72 tests, incl. 5 new: the form renders Front/Back fields with an "Add card" submit; an empty submit shows both "Enter the front" and "Enter the back" without calling the API; success calls `createCard(setId, values)`, clears both fields, and triggers the refresh; an API failure shows the message and keeps the typed values; the detail page renders the form)
 - `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---

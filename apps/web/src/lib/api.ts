@@ -1,4 +1,5 @@
 import type {
+  CreateCardInput,
   CreateSetInput,
   LoginInput,
   RegisterInput,
@@ -118,6 +119,26 @@ export async function createSet(
   }
 
   throw new ApiError("UNKNOWN", "Creating your set failed. Try again.");
+}
+
+export async function createCard(
+  setId: number,
+  input: CreateCardInput,
+): Promise<void> {
+  const response = await request("POST", `/sets/${setId}/cards`, input);
+
+  if (response.ok) {
+    return;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "SET_NOT_FOUND"
+  ) {
+    throw new ApiError("SET_NOT_FOUND", "This set no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Adding the card failed. Try again.");
 }
 
 export async function updateSet(

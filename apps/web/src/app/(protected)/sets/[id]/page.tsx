@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CardList } from "@/components/card-list";
+import { CreateCardForm } from "./create-card-form";
 import { DeleteSetButton } from "./delete-set-button";
 import { listCards } from "@/lib/cards";
 import { getSet } from "@/lib/sets";
@@ -74,6 +75,7 @@ export default async function SetDetailPage({
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="text-xl font-semibold tracking-tight">Cards</h2>
+        <CreateCardForm setId={set.id} />
         <CardList cards={cardsPage.items} />
       </section>
       <div>

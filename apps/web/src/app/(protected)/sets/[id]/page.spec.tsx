@@ -128,4 +128,16 @@ describe("SetDetailPage", () => {
       screen.getByText("No cards yet. Add your first card to start studying."),
     ).toBeInTheDocument();
   });
+
+  it("offers a form to add a card", async () => {
+    getSetMock.mockResolvedValue(set);
+
+    render(await SetDetailPage({ params: Promise.resolve({ id: "42" }) }));
+
+    expect(screen.getByLabelText("Front")).toBeInTheDocument();
+    expect(screen.getByLabelText("Back")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add card" }),
+    ).toBeInTheDocument();
+  });
 });
