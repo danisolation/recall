@@ -2689,21 +2689,26 @@ STUDY-003
 STUDY-004
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/study/sessions.repository.ts
 apps/api/src/study/sessions.repository.integration.spec.ts
-packages/database/src/index.ts (any new helper re-exports)
+apps/api/src/study/schedule.ts
+apps/api/src/study/schedule.spec.ts
+packages/database/src/index.ts (no changes needed — `export * from "./schema"` already carried the new tables)
 
 ### Acceptance Criteria
 - repository supports: create (verifying the set is owned by the caller — a foreign set is indistinguishable from missing, §41), findById (owner-scoped), listByUser (offset-paginated, newest first, §36), complete/abandon status transitions per ADR-009, addReview, listReviewsBySession (chronological), and the progress upsert (insert-or-update review_count/correct_count/last_reviewed_at/next_review_at per ADR-009's minimal rule)
 - the progress upsert relies on the (user_id, card_id) unique constraint (STUDY-004)
 - every query is owner-scoped (§41)
 
+### Decision
+The scheduler from ADR-009 lives in its own pure module (`study/schedule.ts`, unit-tested with an explicit `now`, §49) — the ledger's file list gained it because the upsert cannot implement ADR-009's rule without it, and isolation is what keeps FSRS a body swap (§48). `addReview` is the transactional composition the acceptance implies rather than a bare insert: it verifies the session (owned, `ACTIVE`) and the card's membership in the session's set, inserts the review, and upserts progress (`onConflictDoUpdate` with SQL increments and the ladder's next state) atomically — a review without its progress update is unrepresentable (§34). Duplicate detection translates the `(session_id, card_id)` unique violation into the `duplicate` outcome; the one implementation wrinkle is that drizzle 0.45 wraps driver errors, so the pg `23505` code is read off `error.cause` when not on the error itself. Transitions return a discriminated result (`transitioned` / `unchanged` / `conflict` / `notFound`) so the endpoint can honor ADR-009's idempotent repeat-finish while still 409-ing the other terminal state; `listSessionCards` was added (again slightly beyond the list) because STUDY-007/008's payload contract needs the set's ordered cards through session ownership, and the study module querying the cards table directly matches the established cross-table repository style. `listReviewsBySession` returns `[]` for a foreign caller (scoped join) — the endpoint 404s via `findById` before it ever lists.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (repository integration: foreign set rejected, state transitions enforced per ADR-009, review append, progress upsert insert-then-update math, pagination)
-- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (156 tests, incl. 23 new: 5 scheduler unit tests — incorrect resets to 10 minutes, correct walks 1 → 3 → 7 days capped, input untouched; 18 repository integration tests — ACTIVE creation, foreign/unknown set rejected, owner-scoped findById, newest-first pagination, complete/abandon transitions with unchanged no-op and conflict, first-review progress insert, insert-then-update math across sessions, incorrect reset, duplicate review, card-outside-set rejection, non-ACTIVE rejection, foreign/unknown 404s, chronological owner-only review listing, position-ordered session cards)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
 
