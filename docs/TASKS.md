@@ -2485,7 +2485,7 @@ CARD-012
 CARD-013
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/e2e/cards.spec.ts
@@ -2493,8 +2493,12 @@ apps/web/e2e/cards.spec.ts
 ### Acceptance Criteria
 - register → create a set → add cards → see them on the detail page in order → edit one → move one → delete one → delete the set (cards cascade)
 
+### Decision
+One journey test, not per-feature tests (SET-014 precedent): the phase's value is that the pieces compose — the create form's `router.refresh()`, the URL-driven edit state, and the per-card move/delete controls all land on the same server-rendered list. Distinct card texts ("Capital of France/Japan/Peru") avoid substring collisions when asserting visibility; order assertions use `toHaveText` with an array of plain RegExps (the documented matcher form — `expect.stringMatching` silently never matches in array mode). Every list-level interaction is scoped through `getByRole("listitem").filter({ hasText: ... })` so multi-card controls stay unambiguous. The set deletion at the end exercises the cascade and lands on the dashboard's empty state.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test:e2e`
+- `pnpm --filter @danisolation-recall/web test:e2e` (6 Playwright tests, incl. the new cards journey: register through the UI → create the host set → add three cards in order → edit the second card via `?edit=` with the create form yielding → move the third card up with the order asserted → delete a card with confirmation → delete the set and see the dashboard empty state; the 4 auth tests and the sets journey still pass)
+- `pnpm --filter @danisolation-recall/web test` (98 component tests) unaffected
 
 ---
 
