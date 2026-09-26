@@ -2234,7 +2234,7 @@ Let the owner delete a card.
 CARD-006
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/cards/cards.controller.ts
@@ -2245,8 +2245,11 @@ apps/api/src/cards/delete-card.integration.spec.ts
 - 404 for missing card, foreign set, or malformed cardId; repeat delete returns 404
 - the gap left in the ordering is handled (decide and record: leave gaps vs. close them)
 
+### Decision
+Gaps are **left**, not closed — CARD-001's ordering decision already called gaps harmless, and this endpoint makes it official: `listBySet` sorts by `position`, so relative order is unaffected, and `move` shifts a position *range*, so it tolerates holes (verified by the HTTP test pinning the survivor's position). Closing gaps would cost a transaction and an extra UPDATE per delete for zero user-visible benefit. Upgrade path: close the gap transactionally in the repository if dense positions ever become a requirement. The 404 contract matches CARD-006 exactly: `CARD_NOT_FOUND` for malformed cardId, unknown card, foreign set (card left intact), and repeat deletes; `SET_NOT_FOUND` stays on malformed set ids via the shared `parseSetId`.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 204 then 404 on re-fetch, foreign set 404 leaving the card intact, repeat delete 404)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (128 tests, incl. 4 new HTTP-level tests: 204 deleting the first of two cards with the survivor's position still 2 (the gap decision made observable) and the deleted id gone from the list, 404 `CARD_NOT_FOUND` for an unknown and a malformed card id, 404 for a foreign set's card left intact, 404 on a repeat delete)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---

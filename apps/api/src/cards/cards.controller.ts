@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   NotFoundException,
   Param,
   Patch,
@@ -125,6 +127,28 @@ export class CardsController {
     }
 
     return card;
+  }
+
+  @Delete(":cardId")
+  @UseGuards(AuthGuard)
+  @HttpCode(204)
+  async remove(
+    @CurrentUser() user: User,
+    @Param("id") setId: string,
+    @Param("cardId") cardId: string,
+  ): Promise<void> {
+    const deleted = await this.cardsRepository.delete(
+      parseCardId(cardId),
+      parseSetId(setId),
+      user.id,
+    );
+
+    if (!deleted) {
+      throw new NotFoundException({
+        code: "CARD_NOT_FOUND",
+        message: "Card not found",
+      });
+    }
   }
 
   @Post()
