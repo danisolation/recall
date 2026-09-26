@@ -2551,11 +2551,11 @@ Define the `study_sessions` table in the database schema and generate its migrat
 STUDY-001
 
 ### Status
-TODO
+DONE
 
 ### Files
 packages/database/src/schema.ts
-packages/database/drizzle/ (generated migration)
+packages/database/drizzle/0005_material_gamma_corps.sql
 docs/database/schema.md
 
 ### Acceptance Criteria
@@ -2563,9 +2563,13 @@ docs/database/schema.md
 - index on `user_id` for history and progress queries
 - migration is generated and applies cleanly; schema documentation and the ER diagram are updated
 
+### Decision
+`status` is plain text carrying ADR-009's state tokens (`ACTIVE`, `COMPLETED`, `ABANDONED`) verbatim — no pgEnum and no check constraint: a domain enum constrains the value set but not the transitions, and the state machine is owned by the study repository as the single writer, exactly the tradeoff CARD-001 made for `position`. Storing the ADR's tokens verbatim means no mapping layer between the documented state machine, the column, and the API contract. `started_at` is kept alongside `created_at` per the task spec (identical at creation in MVP; `started_at` is the domain fact, `created_at` the row fact). Only the `user_id` index is added — the Progress phase reads by user; `set_id` needs no index until something queries sessions by set.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed; table verified in psql
-- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/database db:generate` produced `drizzle/0005_material_gamma_corps.sql` (table, cascade FKs, `study_sessions_user_id_index`)
+- `pnpm --filter @danisolation-recall/database db:migrate` applied it; `study_sessions` verified in psql (columns, both `ON DELETE CASCADE` FKs, index)
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed (dist refreshed for the API)
 
 ---
 

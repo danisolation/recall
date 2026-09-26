@@ -59,3 +59,28 @@ export const cards = pgTable(
   },
   (table) => [index("cards_set_id_index").on(table.setId)],
 );
+
+// ADR-009: a study session is one ordered pass over a set's cards. `status`
+// holds the state machine's tokens (ACTIVE, COMPLETED, ABANDONED) as plain
+// text; the transitions are owned by the study repository, the only writer,
+// like the cards table's position invariant.
+export const studySessions = pgTable(
+  "study_sessions",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    setId: integer("set_id")
+      .notNull()
+      .references(() => studySets.id, { onDelete: "cascade" }),
+    status: text("status").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("study_sessions_user_id_index").on(table.userId)],
+);

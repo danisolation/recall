@@ -57,11 +57,28 @@ One row per study set; every set belongs to exactly one owner. Deleting a user r
 
 One row per card; every card belongs to exactly one set, and deleting a set removes its cards via the cascade (SET-008). Set-scoped queries use `cards_set_id_index`. `position` is deliberately **not** unique-constrained: reordering shifts several rows at once, which a unique index would reject mid-transaction — ordering integrity is owned by the cards repository, the only writer (CARD-001). Migration: `0004_marvelous_makkari.sql`.
 
+### study_sessions
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `id` | serial | primary key |
+| `user_id` | integer | not null, FK → `users.id` **ON DELETE CASCADE** |
+| `set_id` | integer | not null, FK → `study_sets.id` **ON DELETE CASCADE** |
+| `status` | text | not null — `ACTIVE`, `COMPLETED`, or `ABANDONED` (ADR-009) |
+| `started_at` | timestamp with time zone | not null, default `now()` |
+| `finished_at` | timestamp with time zone | nullable, set on the terminal transitions |
+| `created_at` | timestamp with time zone | not null, default `now()` |
+| `updated_at` | timestamp with time zone | not null, default `now()` |
+
+One row per study session — an ordered pass over one of the user's sets (ADR-009). The session's state machine (`ACTIVE → COMPLETED | ABANDONED`) is owned by the study repository, the only writer, so `status` is plain text like `cards.position` is a plain integer; deleting a user or a set removes its sessions via the cascade. History queries use `study_sessions_user_id_index`. Migration: `0005_material_gamma_corps.sql`.
+
 ```mermaid
 erDiagram
     users ||--o{ sessions : "has"
     users ||--o{ study_sets : "owns"
     study_sets ||--o{ cards : "contains"
+    users ||--o{ study_sessions : "studies"
+    study_sets ||--o{ study_sessions : "studied in"
     users {
         serial id PK
         text email UK
@@ -90,6 +107,16 @@ erDiagram
         text front
         text back
         integer position "study order within the set"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    study_sessions {
+        serial id PK
+        integer user_id FK
+        integer set_id FK
+        text status "ACTIVE | COMPLETED | ABANDONED"
+        timestamptz started_at
+        timestamptz finished_at "nullable"
         timestamptz created_at
         timestamptz updated_at
     }
