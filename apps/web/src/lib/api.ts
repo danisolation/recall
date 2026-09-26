@@ -187,6 +187,31 @@ export async function deleteCard(
   throw new ApiError("UNKNOWN", "Deleting the card failed. Try again.");
 }
 
+export async function moveCard(
+  setId: number,
+  cardId: number,
+  position: number,
+): Promise<void> {
+  const response = await request(
+    "PATCH",
+    `/sets/${setId}/cards/${cardId}/position`,
+    { position },
+  );
+
+  if (response.ok) {
+    return;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "CARD_NOT_FOUND"
+  ) {
+    throw new ApiError("CARD_NOT_FOUND", "This card no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Moving the card failed. Try again.");
+}
+
 export async function updateSet(
   id: number,
   input: UpdateSetInput,

@@ -2446,20 +2446,26 @@ CARD-008
 CARD-009
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/(protected)/sets/[id]/move-card-button.tsx (or reorder control component)
+apps/web/src/components/card-list.tsx
+apps/web/src/components/card-list.spec.tsx
+apps/web/src/app/(protected)/sets/[id]/move-card-button.tsx
 apps/web/src/app/(protected)/sets/[id]/move-card-button.spec.tsx
 apps/web/src/lib/api.ts
+apps/web/src/lib/api.spec.ts
 
 ### Acceptance Criteria
 - each card offers move up/down (keyboard-accessible; no drag-and-drop library — §81), matching the reorder contract chosen in CARD-008
 - boundary cards have their move control disabled
 - success re-renders the new order
 
+### Decision
+Each card gets plain "Move up" / "Move down" text buttons in its action row (keyboard-accessible by nature; no drag-and-drop dependency, §81). The move target is the **neighbouring card's position**, not `position ± 1` — CARD-007 leaves gaps after deletes, and the reorder contract (CARD-008) needs a real position to swap past the neighbour; using the neighbour's stored position is correct in both dense and gapped orderings. A boundary card's control is disabled because it *has no neighbour* — the absence is the boundary, which also satisfies the strict-index type rule without assertions (an inert fallback target keeps the props total while disabled). Success — and a `404 CARD_NOT_FOUND` from a card deleted elsewhere — calls `router.refresh()`: the URL is unchanged, so the server refetch is the only invalidation (§25), and the returned order is authoritative. Other failures show an error under the control without refreshing. `moveCard` maps `CARD_NOT_FOUND` to "This card no longer exists." and is unit-tested like `deleteCard`.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component tests: move calls the API, boundaries disabled, error state)
+- `pnpm --filter @danisolation-recall/web test` (98 tests, incl. 9 new: the button renders its direction and moves to the target position with a refresh; a disabled control never calls the API; a `CARD_NOT_FOUND` 404 refreshes without an error; other failures show the error and don't refresh; with two cards the first card's "Move up" and the last card's "Move down" are disabled while the opposite directions stay enabled; `moveCard` patches `/position` with the position body and maps the 404 and generic failures)
 - `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---

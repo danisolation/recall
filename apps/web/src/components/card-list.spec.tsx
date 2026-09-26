@@ -61,6 +61,20 @@ describe("CardList", () => {
     expect(screen.getAllByRole("button", { name: "Delete" })).toHaveLength(2);
   });
 
+  it("disables the move control at the study-order boundaries", () => {
+    render(<CardList cards={cards} />);
+
+    const upButtons = screen.getAllByRole("button", { name: "Move up" });
+    const downButtons = screen.getAllByRole("button", { name: "Move down" });
+
+    expect(upButtons).toHaveLength(2);
+    expect(downButtons).toHaveLength(2);
+    expect(upButtons[0]).toBeDisabled();
+    expect(downButtons[0]).toBeEnabled();
+    expect(upButtons[1]).toBeEnabled();
+    expect(downButtons[1]).toBeDisabled();
+  });
+
   it("offers adding the first card when there are none", () => {
     render(<CardList cards={[]} />);
 
