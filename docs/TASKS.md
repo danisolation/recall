@@ -2170,7 +2170,7 @@ CARD-003
 CARD-004
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/cards/cards.controller.ts
@@ -2181,8 +2181,11 @@ apps/api/src/cards/list-cards.integration.spec.ts
 - explicit paginated envelope (items + next offset), same shape and limits as GET /sets
 - 404 for a missing or foreign set
 
+### Decision
+The query schema is a file-local `listCardsQuerySchema` mirroring `listSetsQuerySchema` (limit default 20 capped at 100 with a 400 `VALIDATION_ERROR` for violations rather than silent clamping, offset ≥ 0) — still not promoted to contracts since the web constructs no queries. `listBySet`'s contract does the authorization: `null` (missing or foreign set) becomes 404 `SET_NOT_FOUND` via the controller's existing `parseSetId`/NotFound path, while an owned empty set returns a 200 with `items: []` for the eventual UI empty state (CARD-009). The envelope's `nextOffset` follows the sets rule (`offset + limit` on a full page, else `null`), and `PaginatedCards` is exported from the controller the way `PaginatedSets` is.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: envelope with position order, pagination, foreign set 404, validation limits)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (118 tests, incl. 4 new HTTP-level tests: envelope with position order and full row shape, limit/offset slicing with `nextOffset` transitions 2 → null, 404 `SET_NOT_FOUND` for a foreign set and an unknown id, 400 `VALIDATION_ERROR` for `limit=101` and `offset=-1`)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
