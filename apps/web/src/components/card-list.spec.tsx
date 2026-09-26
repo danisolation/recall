@@ -1,7 +1,11 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CardList } from "./card-list";
 import type { Card } from "@/lib/cards";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 
 const cards: Card[] = [
   {
@@ -49,6 +53,12 @@ describe("CardList", () => {
     expect(editLinks).toHaveLength(2);
     expect(editLinks[0]).toHaveAttribute("href", "?edit=1");
     expect(editLinks[1]).toHaveAttribute("href", "?edit=2");
+  });
+
+  it("offers a delete control for each card", () => {
+    render(<CardList cards={cards} />);
+
+    expect(screen.getAllByRole("button", { name: "Delete" })).toHaveLength(2);
   });
 
   it("offers adding the first card when there are none", () => {

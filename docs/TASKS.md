@@ -2409,20 +2409,26 @@ CARD-007
 CARD-009
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/(protected)/sets/[id]/delete-card-button.tsx (or per-card control)
+apps/web/src/components/card-list.tsx
+apps/web/src/components/card-list.spec.tsx
+apps/web/src/app/(protected)/sets/[id]/delete-card-button.tsx
 apps/web/src/app/(protected)/sets/[id]/delete-card-button.spec.tsx
 apps/web/src/lib/api.ts
+apps/web/src/lib/api.spec.ts
 
 ### Acceptance Criteria
 - a per-card delete control asks for confirmation before deleting (same inline pattern as SET-013)
 - success removes the card from the visible list
 - a 404 after the card is gone is handled
 
+### Decision
+`DeleteCardButton` mirrors SET-013's two-step inline confirmation, scaled to a per-card control rendered inside each `CardList` item next to its "Edit" link (trigger styled as the same text link, confirm step swaps in place with the secondary Buttons). The one behavioral difference from the set version: the page stays valid after deletion, so success — and a `404 CARD_NOT_FOUND` from a card already deleted elsewhere, where the intent is achieved either way — calls `router.refresh()` instead of navigating; the server refetch drops the card from the list. If the deleted card was in edit mode, the stale `?edit` param simply matches no card and the page falls back to the create form (CARD-011's ignore rule). Other failures keep the confirm step open with an error. `deleteCard` maps `CARD_NOT_FOUND` to "This card no longer exists." and is unit-tested like `deleteSet` (SET-013 precedent).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component tests: confirmation, success, 404, error)
+- `pnpm --filter @danisolation-recall/web test` (89 tests, incl. 9 new: the button requires confirmation and cancels back to one control; success calls `deleteCard(setId, cardId)` and refreshes; a `CARD_NOT_FOUND` 404 refreshes without an error; other failures show the error and don't refresh; every card offers a Delete control; `deleteCard` sends DELETE with credentials and maps the 404 and generic failures)
 - `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---

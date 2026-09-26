@@ -167,6 +167,26 @@ export async function updateCard(
   throw new ApiError("UNKNOWN", "Saving your changes failed. Try again.");
 }
 
+export async function deleteCard(
+  setId: number,
+  cardId: number,
+): Promise<void> {
+  const response = await request("DELETE", `/sets/${setId}/cards/${cardId}`);
+
+  if (response.ok) {
+    return;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "CARD_NOT_FOUND"
+  ) {
+    throw new ApiError("CARD_NOT_FOUND", "This card no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Deleting the card failed. Try again.");
+}
+
 export async function updateSet(
   id: number,
   input: UpdateSetInput,

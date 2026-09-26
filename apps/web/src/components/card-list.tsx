@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeleteCardButton } from "../app/(protected)/sets/[id]/delete-card-button";
 import type { Card } from "@/lib/cards";
 
 // Same link register as the dashboard's "New set" link.
@@ -26,9 +27,12 @@ export function CardList({ cards }: { cards: Card[] }) {
         <li key={card.id} className={item}>
           <span className="block font-medium">{card.front}</span>
           <span className="mt-1 block text-sm text-ink-soft">{card.back}</span>
-          <Link href={`?edit=${card.id}`} className={`${textLink} mt-2 inline-block text-sm`}>
-            Edit
-          </Link>
+          <div className="mt-2 flex items-center gap-3">
+            <Link href={`?edit=${card.id}`} className={`${textLink} text-sm`}>
+              Edit
+            </Link>
+            <DeleteCardButton setId={card.setId} cardId={card.id} />
+          </div>
         </li>
       ))}
     </ul>

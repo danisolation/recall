@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, deleteSet, updateSet } from "./api";
+import { ApiError, deleteCard, deleteSet, updateSet } from "./api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -108,6 +108,56 @@ describe("deleteSet", () => {
 
     await expect(deleteSet(42)).rejects.toThrow(
       "Deleting your set failed. Try again.",
+    );
+  });
+});
+
+describe("deleteCard", () => {
+  it("sends the delete with credentials and resolves on success", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(deleteCard(42, 7)).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/sets/42/cards/7",
+      expect.objectContaining({
+        method: "DELETE",
+        credentials: "include",
+      }),
+    );
+  });
+
+  it("maps an already-deleted card to a clear error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ code: "CARD_NOT_FOUND", message: "x" }),
+      }),
+    );
+
+    const error = await deleteCard(42, 7).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe("CARD_NOT_FOUND");
+    await expect(deleteCard(42, 7)).rejects.toThrow(
+      "This card no longer exists.",
+    );
+  });
+
+  it("maps other failures to a generic error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => null,
+      }),
+    );
+
+    await expect(deleteCard(42, 7)).rejects.toThrow(
+      "Deleting the card failed. Try again.",
     );
   });
 });
