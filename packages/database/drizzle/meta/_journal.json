@@ -43,6 +43,13 @@
       "when": 1790428788158,
       "tag": "0005_material_gamma_corps",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790429113460,
+      "tag": "0006_large_klaw",
+      "breakpoints": true
     }
   ]
 }

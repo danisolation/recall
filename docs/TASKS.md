@@ -2585,11 +2585,11 @@ Define the `reviews` table — the historical record of answered cards (§44, §
 STUDY-002
 
 ### Status
-TODO
+DONE
 
 ### Files
 packages/database/src/schema.ts
-packages/database/drizzle/ (generated migration)
+packages/database/drizzle/0006_large_klaw.sql
 docs/database/schema.md
 
 ### Acceptance Criteria
@@ -2597,9 +2597,13 @@ docs/database/schema.md
 - index on `session_id` for session history; `card_id` indexed for the Progress phase's per-card joins
 - migration is generated and applies cleanly
 
+### Decision
+The acceptance criteria gained one constraint beyond the two indexes: a unique `(session_id, card_id)` — ADR-009's one-review-per-card-per-session rule (409 `REVIEW_ALREADY_RECORDED`) must survive a double-submit race, and check-then-insert inside the transaction cannot guarantee that; the constraint is the same DB-level guarantee STUDY-004 gives progress with its `(user_id, card_id)` unique (§32). The repository's job shrinks to translating the violation into the 409. `reviewed_at` doubles as the row's creation timestamp — reviews are insert-only history, so a separate `created_at` would be a permanent duplicate of the same fact (§46).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed
-- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/database db:generate` produced `drizzle/0006_large_klaw.sql` (table, cascade FKs, both indexes, the unique constraint)
+- `pnpm --filter @danisolation-recall/database db:migrate` applied it; `reviews` verified in psql (columns, both `ON DELETE CASCADE` FKs, indexes, unique constraint)
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed (dist refreshed for the API)
 
 ---
 

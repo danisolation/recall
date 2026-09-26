@@ -72,6 +72,18 @@ One row per card; every card belongs to exactly one set, and deleting a set remo
 
 One row per study session — an ordered pass over one of the user's sets (ADR-009). The session's state machine (`ACTIVE → COMPLETED | ABANDONED`) is owned by the study repository, the only writer, so `status` is plain text like `cards.position` is a plain integer; deleting a user or a set removes its sessions via the cascade. History queries use `study_sessions_user_id_index`. Migration: `0005_material_gamma_corps.sql`.
 
+### reviews
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `id` | serial | primary key |
+| `session_id` | integer | not null, FK → `study_sessions.id` **ON DELETE CASCADE** |
+| `card_id` | integer | not null, FK → `cards.id` **ON DELETE CASCADE** |
+| `correct` | boolean | not null — ADR-009's binary answer model |
+| `reviewed_at` | timestamp with time zone | not null, default `now()` |
+
+One row per answered card — a historical event that is inserted once and never updated (§44, §46); `reviewed_at` doubles as the row's creation timestamp for exactly that reason. `reviews_session_id_card_id_unique` makes ADR-009's one-review-per-card-per-session rule race-proof at the database level; the study repository translates a violation into 409 `REVIEW_ALREADY_RECORDED`. Session history uses `reviews_session_id_index`; `reviews_card_id_index` serves the Progress phase's per-card joins (and cascade deletes). Migration: `0006_large_klaw.sql`.
+
 ```mermaid
 erDiagram
     users ||--o{ sessions : "has"
@@ -79,6 +91,8 @@ erDiagram
     study_sets ||--o{ cards : "contains"
     users ||--o{ study_sessions : "studies"
     study_sets ||--o{ study_sessions : "studied in"
+    study_sessions ||--o{ reviews : "recorded in"
+    cards ||--o{ reviews : "answered in"
     users {
         serial id PK
         text email UK
@@ -119,6 +133,13 @@ erDiagram
         timestamptz finished_at "nullable"
         timestamptz created_at
         timestamptz updated_at
+    }
+    reviews {
+        serial id PK
+        integer session_id FK
+        integer card_id FK
+        boolean correct
+        timestamptz reviewed_at "insert-once history"
     }
 ```
 

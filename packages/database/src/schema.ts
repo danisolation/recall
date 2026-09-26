@@ -1,10 +1,12 @@
 import {
+  boolean,
   index,
   integer,
   pgTable,
   serial,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -83,4 +85,33 @@ export const studySessions = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("study_sessions_user_id_index").on(table.userId)],
+);
+
+// ADR-009: a review is a historical event — inserted once, never updated
+// (§46). One review per card per session; the unique constraint makes that
+// rule race-proof, and the study repository translates a violation into
+// 409 REVIEW_ALREADY_RECORDED.
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: serial("id").primaryKey(),
+    sessionId: integer("session_id")
+      .notNull()
+      .references(() => studySessions.id, { onDelete: "cascade" }),
+    cardId: integer("card_id")
+      .notNull()
+      .references(() => cards.id, { onDelete: "cascade" }),
+    correct: boolean("correct").notNull(),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("reviews_session_id_index").on(table.sessionId),
+    index("reviews_card_id_index").on(table.cardId),
+    unique("reviews_session_id_card_id_unique").on(
+      table.sessionId,
+      table.cardId,
+    ),
+  ],
 );
