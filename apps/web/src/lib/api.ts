@@ -248,3 +248,34 @@ export async function deleteSet(id: number): Promise<void> {
 
   throw new ApiError("UNKNOWN", "Deleting your set failed. Try again.");
 }
+
+export async function startSession(input: {
+  setId: number;
+}): Promise<{ id: number }> {
+  const response = await request("POST", "/study-sessions", input);
+
+  if (response.ok) {
+    const body: unknown = await response.json();
+
+    if (
+      typeof body === "object" &&
+      body !== null &&
+      "session" in body &&
+      typeof body.session === "object" &&
+      body.session !== null &&
+      "id" in body.session &&
+      typeof body.session.id === "number"
+    ) {
+      return { id: body.session.id };
+    }
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "SET_NOT_FOUND"
+  ) {
+    throw new ApiError("SET_NOT_FOUND", "This set no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Starting the study session failed. Try again.");
+}

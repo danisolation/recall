@@ -5,6 +5,7 @@ import { CardList } from "@/components/card-list";
 import { CreateCardForm } from "./create-card-form";
 import { DeleteSetButton } from "./delete-set-button";
 import { EditCardForm } from "./edit-card-form";
+import { StartStudyButton } from "./start-study-button";
 import { listCards } from "@/lib/cards";
 import { getSet } from "@/lib/sets";
 
@@ -61,9 +62,12 @@ export default async function SetDetailPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">{set.title}</h1>
-        <Link href={`/sets/${set.id}/edit`} className={textLink}>
-          Edit set
-        </Link>
+        <div className="flex items-center gap-4">
+          <StartStudyButton setId={set.id} />
+          <Link href={`/sets/${set.id}/edit`} className={textLink}>
+            Edit set
+          </Link>
+        </div>
       </div>
       <section className="rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6">
         {set.description && <p className="text-ink-soft">{set.description}</p>}

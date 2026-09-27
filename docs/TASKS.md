@@ -2862,7 +2862,7 @@ STUDY-007
 CARD-009
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/sets/[id]/start-study-button.tsx
@@ -2877,9 +2877,12 @@ apps/web/src/app/(protected)/study/[sessionId]/page.tsx
 - starting navigates to the study screen for the new session
 - API errors show clear messages (§56)
 
+### Decision
+`StartStudyButton` is the first control to use the Button's default `primary` variant — ADR-008 reserved the marker accent for primary actions, and studying is the product's primary action; it sits in the detail page's header row beside the neutral "Edit set" text link. It mirrors the LogoutButton shape (pending state, FieldError) and navigates to `/study/<session.id>` on success, where the only thing the client consumes from the 201 payload is the session id (SET-009 precedent: the response's cards are for the screen that renders them, not the navigation). `startSession` in `lib/api.ts` parses the `{ session: { id } }` envelope and maps `404 SET_NOT_FOUND` to "This set no longer exists." with everything else generic — the button displays the `ApiError` message it receives. The study route ships as a protected server-component shell (`(protected)/study/[sessionId]/page.tsx`) that folds malformed ids into `notFound()` (SET-011 precedent) and renders the session id; STUDY-012 replaces its body with the card-by-card interaction, so the navigation target is real from day one.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (button calls the API and navigates; error state; page renders the control)
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/web test` (102 tests, incl. 4 new: the button calls `startSession({ setId })` and pushes `/study/7`, a `SET_NOT_FOUND` failure shows "This set no longer exists." without navigating and re-enables the control, an unexpected failure shows the generic message; the detail page renders the "Study" control)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/study/[sessionId]` is dynamic under the protected layout)
 
 ---
 

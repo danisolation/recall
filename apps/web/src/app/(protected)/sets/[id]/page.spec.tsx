@@ -159,6 +159,19 @@ describe("SetDetailPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("offers the primary Study control", async () => {
+    getSetMock.mockResolvedValue(set);
+
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(
+      screen.getByRole("button", { name: "Study" }),
+    ).toBeInTheDocument();
+  });
+
   it("renders the edit form prefilled for the card in the edit param", async () => {
     getSetMock.mockResolvedValue(set);
     listCardsMock.mockResolvedValue({ items: cards, nextOffset: null });
