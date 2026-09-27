@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { ApiError, moveCard } from "@/lib/api";
 import { FieldError } from "@/components/ui/field-error";
 import { linkClassName } from "@/components/ui/text-link";
@@ -50,6 +51,11 @@ export function MoveCardButton({
         disabled={disabled || isMoving}
         onClick={handleClick}
       >
+        {direction === "up" ? (
+          <ArrowUp aria-hidden className="h-4 w-4 shrink-0" />
+        ) : (
+          <ArrowDown aria-hidden className="h-4 w-4 shrink-0" />
+        )}
         {direction === "up" ? "Move up" : "Move down"}
       </button>
       {error ? <FieldError>{error}</FieldError> : null}

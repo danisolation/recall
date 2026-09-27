@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { TextLink, linkClassName } from "./text-link";
+import { TextLink, buttonLinkClassName, linkClassName } from "./text-link";
 
 afterEach(() => {
   cleanup();
@@ -31,5 +31,23 @@ describe("TextLink", () => {
   it("exports the register string for link-styled buttons", () => {
     expect(linkClassName).toContain("rounded-sm");
     expect(linkClassName).toContain("focus-visible:outline-2");
+  });
+
+  it("renders the button variant with button weight but link semantics", () => {
+    render(
+      <TextLink href="/sets/new" variant="button">
+        New set
+      </TextLink>,
+    );
+
+    const link = screen.getByRole("link", { name: "New set" });
+    expect(link).toHaveAttribute("href", "/sets/new");
+    expect(link).toHaveClass("min-h-11", "rounded-md", "bg-card");
+    expect(link).not.toHaveClass("underline");
+  });
+
+  it("exports the button register string", () => {
+    expect(buttonLinkClassName).toContain("min-h-11");
+    expect(buttonLinkClassName).toContain("gap-2");
   });
 });

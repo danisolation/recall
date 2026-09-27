@@ -1,3 +1,4 @@
+import { Layers, Pencil } from "lucide-react";
 import { Panel, panelClassName } from "@/components/ui/panel";
 import { TextLink } from "@/components/ui/text-link";
 import { DeleteCardButton } from "../app/(protected)/sets/[id]/delete-card-button";
@@ -7,7 +8,8 @@ import type { Card } from "@/lib/cards";
 export function CardList({ cards }: { cards: Card[] }) {
   if (cards.length === 0) {
     return (
-      <Panel>
+      <Panel className="flex flex-col items-center gap-2 py-8 text-center">
+        <Layers aria-hidden className="h-6 w-6 text-ink-soft" />
         <p className="text-ink-soft">
           No cards yet. Add your first card to start studying.
         </p>
@@ -47,6 +49,7 @@ export function CardList({ cards }: { cards: Card[] }) {
                 disabled={!next}
               />
               <TextLink href={`?edit=${card.id}`} className="text-sm">
+                <Pencil aria-hidden className="h-4 w-4 shrink-0" />
                 Edit
               </TextLink>
               <DeleteCardButton setId={card.setId} cardId={card.id} />

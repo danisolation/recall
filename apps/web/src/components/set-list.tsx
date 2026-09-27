@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BookOpen } from "lucide-react";
 import { Panel, panelClassName } from "@/components/ui/panel";
 import { TextLink } from "@/components/ui/text-link";
 import type { StudySet } from "@/lib/sets";
@@ -6,7 +7,8 @@ import type { StudySet } from "@/lib/sets";
 export function SetList({ sets }: { sets: StudySet[] }) {
   if (sets.length === 0) {
     return (
-      <Panel>
+      <Panel className="flex flex-col items-center gap-2 py-8 text-center">
+        <BookOpen aria-hidden className="h-6 w-6 text-ink-soft" />
         <p className="text-ink-soft">
           Create your first study set to start learning.
         </p>

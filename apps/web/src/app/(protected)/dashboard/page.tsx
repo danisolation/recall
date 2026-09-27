@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Plus, SearchX, TrendingUp } from "lucide-react";
 import { SearchInput } from "@/components/search-input";
 import { SetList } from "@/components/set-list";
 import { Panel } from "@/components/ui/panel";
@@ -67,15 +68,21 @@ export default async function DashboardPage({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         <div className="flex flex-wrap items-center gap-4">
-          <TextLink href="/progress">View progress</TextLink>
-          <TextLink href="/sets/new">New set</TextLink>
+          <TextLink href="/progress" variant="button">
+            <TrendingUp aria-hidden className="h-4 w-4 shrink-0" />
+            View progress
+          </TextLink>
+          <TextLink href="/sets/new" variant="button">
+            <Plus aria-hidden className="h-4 w-4 shrink-0" />
+            New set
+          </TextLink>
         </div>
       </div>
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Your sets</h2>
         <SearchInput initialQuery={query} tagId={tagId} />
         {tags.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {tags.map((t) => (
               <Link
                 key={t.id}
@@ -83,8 +90,8 @@ export default async function DashboardPage({
                 aria-current={t.id === tagId ? "true" : undefined}
                 className={
                   t.id === tagId
-                    ? "rounded-sm font-semibold underline underline-offset-4"
-                    : "rounded-sm font-medium text-ink-soft underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                    ? "rounded-full border border-ink/25 bg-marker/40 px-3 py-1.5 text-sm font-semibold text-ink"
+                    : "rounded-full border border-ink/25 bg-card px-3 py-1.5 text-sm text-ink-soft transition-colors hover:border-ink/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none"
                 }
               >
                 {t.name}
@@ -96,7 +103,8 @@ export default async function DashboardPage({
           </div>
         ) : null}
         {(query || tagId !== undefined) && sets.items.length === 0 ? (
-          <Panel>
+          <Panel className="flex flex-col items-center gap-2 py-8 text-center">
+            <SearchX aria-hidden className="h-6 w-6 text-ink-soft" />
             <p className="text-ink-soft">
               {`No sets match ${filterHint}.`}
               {tagId !== undefined

@@ -1,3 +1,4 @@
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -30,7 +31,10 @@ export function SearchInput({
           className="sm:w-72"
         />
       </div>
-      <Button type="submit">Search</Button>
+      <Button type="submit">
+        <Search aria-hidden className="h-4 w-4 shrink-0" />
+        Search
+      </Button>
     </form>
   );
 }

@@ -3780,19 +3780,28 @@ Give every action visual weight: icons beside text, nav actions as button-styled
 UX-002
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/package.json (+ lucide-react, pnpm-lock.yaml)
-components/ui/text-link.tsx (variant: "button"), components/search-input.tsx, components/set-list.tsx, components/card-list.tsx, dashboard/page.tsx, sets/[id]/page.tsx + start-study-button.tsx + delete-card-button.tsx + move-card-button.tsx, study/[sessionId]/*, progress/page.tsx, app/page.tsx, layout.tsx (wordmark)
+apps/web/src/components/ui/text-link.tsx (+ spec)
+apps/web/src/components/search-input.tsx, set-list.tsx, card-list.tsx
+apps/web/src/app/(protected)/dashboard/page.tsx
+apps/web/src/app/(protected)/sets/[id]/page.tsx, start-study-button.tsx, delete-card-button.tsx, move-card-button.tsx
+apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx, completion-view.tsx
+apps/web/src/app/(protected)/progress/page.tsx
 
 ### Acceptance Criteria
 - lucide-react icons are decorative (aria-hidden) beside unchanged text labels: Plus/New set, TrendingUp/View progress, Pencil/Edit set, Play/Study, Search, ArrowUp/ArrowDown/Move, Trash2/Delete, Hash/tag chips, empty-state icons
 - TextLink gains a button variant (bg-card border rounded-md, Button-secondary padding); nav actions use it; tag filter links become rounded-full chips keeping aria-current, hrefs, names
 - inline confirms stay inline; every accessible name and href unchanged
 
+### Decision
+`buttonLinkClassName` transcribes the Button primitive's base + secondary colors onto a link (min-h-11, rounded-md, active:translate-y-px) plus `gap-2` for icon seating — the two registers stay visually identical by construction. All icons are `aria-hidden` at h-4 w-4 (h-6 for empty states), so every accessible name and href is byte-identical. **Tag chips lean into the highlighter metaphor: the active chip fills with `bg-marker/40` (highlighted = selected), inactive chips are card-bordered pills** — aria-current, hrefs, and names unchanged. Empty states gained centered icons (BookOpen/SetList, Layers/CardList + study's empty set, SearchX/dashboard no-matches, CalendarCheck/progress due, History/progress history) with copy untouched. Study screen buttons got Eye/Check/X; completion-view's two ways out got ArrowLeft. Two scope trims recorded: the wordmark (layout.tsx was in the task's file list) stays icon-free — the marker-highlight chip on "Recall" already is the mark, and an icon would be decoration without information; Hash on chips was dropped for the same reason (the pill shape already says "tag"). Hash remains available if a future surface needs it.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` — existing specs pass unmodified (names/copy preserved); typecheck + build
+- `pnpm --filter @danisolation-recall/web test` — **178 passed (32 files)**: every pre-existing spec unmodified + 2 new TextLink tests (button variant renders button-weight classes but keeps link role/href; buttonLinkClassName export)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---
 

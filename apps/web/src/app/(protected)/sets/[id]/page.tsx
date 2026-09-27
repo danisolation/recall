@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Pencil } from "lucide-react";
 import { CardList } from "@/components/card-list";
 import { Panel } from "@/components/ui/panel";
 import { TextLink } from "@/components/ui/text-link";
@@ -64,7 +65,10 @@ export default async function SetDetailPage({
         <h1 className="text-2xl font-semibold tracking-tight">{set.title}</h1>
         <div className="flex items-center gap-4">
           <StartStudyButton setId={set.id} />
-          <TextLink href={`/sets/${set.id}/edit`}>Edit set</TextLink>
+          <TextLink href={`/sets/${set.id}/edit`} variant="button">
+            <Pencil aria-hidden className="h-4 w-4 shrink-0" />
+            Edit set
+          </TextLink>
         </div>
       </div>
       <Panel>

@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { Panel } from "@/components/ui/panel";
 import { TextLink } from "@/components/ui/text-link";
 
@@ -39,8 +40,14 @@ export function CompletionView({
           </p>
         )}
         <div className="flex flex-wrap gap-4">
-          <TextLink href={`/sets/${setId}`}>Back to the set</TextLink>
-          <TextLink href="/dashboard">Back to the dashboard</TextLink>
+          <TextLink href={`/sets/${setId}`}>
+            <ArrowLeft aria-hidden className="h-4 w-4 shrink-0" />
+            Back to the set
+          </TextLink>
+          <TextLink href="/dashboard">
+            <ArrowLeft aria-hidden className="h-4 w-4 shrink-0" />
+            Back to the dashboard
+          </TextLink>
         </div>
       </Panel>
     </div>

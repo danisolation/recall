@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, Eye, Layers, X } from "lucide-react";
 import {
   ApiError,
   finishSession,
@@ -158,7 +159,8 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
     return (
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold tracking-tight">Study</h1>
-        <Panel className="flex flex-col gap-4">
+        <Panel className="flex flex-col items-center gap-2 py-8 text-center">
+          <Layers aria-hidden className="h-6 w-6 text-ink-soft" />
           <p className="text-ink-soft">This set has no cards to study yet.</p>
           <TextLink href={`/sets/${data.session.setId}`}>
             Back to the set
@@ -206,6 +208,7 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
                 onClick={() => answer(current.id, true)}
                 disabled={isRecording}
               >
+                <Check aria-hidden className="h-4 w-4 shrink-0" />
                 Correct
               </Button>
               <Button
@@ -213,11 +216,15 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
                 onClick={() => answer(current.id, false)}
                 disabled={isRecording}
               >
+                <X aria-hidden className="h-4 w-4 shrink-0" />
                 Incorrect
               </Button>
             </>
           ) : (
-            <Button onClick={() => setRevealed(true)}>Reveal answer</Button>
+            <Button onClick={() => setRevealed(true)}>
+              <Eye aria-hidden className="h-4 w-4 shrink-0" />
+              Reveal answer
+            </Button>
           )}
         </div>
         {error ? <FieldError>{error}</FieldError> : null}

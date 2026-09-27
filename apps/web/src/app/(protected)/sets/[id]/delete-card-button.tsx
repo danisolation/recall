@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { ApiError, deleteCard } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
@@ -47,6 +48,7 @@ export function DeleteCardButton({
         className={linkClassName}
         onClick={() => setConfirming(true)}
       >
+        <Trash2 aria-hidden className="h-4 w-4 shrink-0" />
         Delete
       </button>
     );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CalendarCheck, History } from "lucide-react";
 import { panelClassName } from "@/components/ui/panel";
 import {
   getProgressSummary,
@@ -66,7 +67,8 @@ export default async function ProgressPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Due now</h2>
         {due.items.length === 0 ? (
-          <section className={panelClassName}>
+          <section className={`${panelClassName} flex flex-col items-center gap-2 py-8 text-center`}>
+            <CalendarCheck aria-hidden className="h-6 w-6 text-ink-soft" />
             <p className="text-ink-soft">Nothing is due right now.</p>
           </section>
         ) : (
@@ -88,7 +90,8 @@ export default async function ProgressPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Recent sessions</h2>
         {history.items.length === 0 ? (
-          <section className={panelClassName}>
+          <section className={`${panelClassName} flex flex-col items-center gap-2 py-8 text-center`}>
+            <History aria-hidden className="h-6 w-6 text-ink-soft" />
             <p className="text-ink-soft">
               You have not studied anything yet.
             </p>
