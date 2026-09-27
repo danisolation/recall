@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarCheck, History } from "lucide-react";
-import { panelClassName } from "@/components/ui/panel";
+import { AlarmClock, CalendarCheck, History, RotateCcw, Target } from "lucide-react";
+import { Panel, panelClassName } from "@/components/ui/panel";
 import {
   getProgressSummary,
   listDueCards,
@@ -44,24 +44,37 @@ export default async function ProgressPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
 
-      <section className={panelClassName}>
+      <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Summary</h2>
-        <dl className="mt-4 grid gap-4 sm:grid-cols-3">
-          <div className="flex flex-col gap-1">
-            <dt className="text-sm text-ink-soft">Reviews</dt>
-            <dd className="font-medium">{summary.totalReviews}</dd>
-          </div>
-          <div className="flex flex-col gap-1">
-            <dt className="text-sm text-ink-soft">Accuracy</dt>
-            <dd className="font-medium">
-              {accuracy === null ? "No answers yet" : `${accuracy}%`}
-            </dd>
-          </div>
-          <div className="flex flex-col gap-1">
-            <dt className="text-sm text-ink-soft">Due cards</dt>
-            <dd className="font-medium">{summary.dueCount}</dd>
-          </div>
-        </dl>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Panel className="flex flex-col items-center gap-1 py-6 text-center">
+            <RotateCcw aria-hidden className="h-5 w-5 text-ink-soft" />
+            <p className="text-4xl font-semibold tracking-tight">
+              {summary.totalReviews}
+            </p>
+            <p className="text-sm text-ink-soft">Reviews</p>
+          </Panel>
+          <Panel className="flex flex-col items-center gap-1 py-6 text-center">
+            <Target aria-hidden className="h-5 w-5 text-ink-soft" />
+            {accuracy === null ? (
+              <p className="text-lg font-medium text-ink-soft">
+                No answers yet
+              </p>
+            ) : (
+              <p className="text-4xl font-semibold tracking-tight">
+                {`${accuracy}%`}
+              </p>
+            )}
+            <p className="text-sm text-ink-soft">Accuracy</p>
+          </Panel>
+          <Panel className="flex flex-col items-center gap-1 py-6 text-center">
+            <AlarmClock aria-hidden className="h-5 w-5 text-ink-soft" />
+            <p className="text-4xl font-semibold tracking-tight">
+              {summary.dueCount}
+            </p>
+            <p className="text-sm text-ink-soft">Due cards</p>
+          </Panel>
+        </div>
       </section>
 
       <section className="flex flex-col gap-3">
@@ -102,7 +115,19 @@ export default async function ProgressPage() {
               <li key={session.id} className={panelClassName}>
                 <Link href={`/sets/${session.setId}`} className="block">
                   <span className="block font-medium">{session.setTitle}</span>
-                  <span className="mt-1 block text-sm text-ink-soft">
+                  {/* The status dot is decorative; the full pinned string
+                      stays this span's direct text so text queries match. */}
+                  <span className="mt-1 inline-flex items-center gap-1.5 text-sm text-ink-soft">
+                    <span
+                      aria-hidden
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        session.status === "ABANDONED"
+                          ? "bg-alert"
+                          : session.status === "ACTIVE"
+                            ? "bg-marker-deep"
+                            : "bg-ink/60"
+                      }`}
+                    />
                     {`${statusLabels[session.status] ?? session.status} — ${longDate.format(new Date(session.startedAt))}`}
                   </span>
                 </Link>

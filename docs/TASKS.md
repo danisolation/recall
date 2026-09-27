@@ -3849,18 +3849,22 @@ Give the stats hierarchy without faking data: stat panels, badge styling, no cha
 UX-003
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/(protected)/progress/page.tsx (+ spec if needed)
+apps/web/src/app/(protected)/progress/page.tsx
 
 ### Acceptance Criteria
 - summary dl becomes three stat panels (big numeral, small label, icon) with identical copy ("50%", "No answers yet", counts)
 - session status labels may be badge-styled but each full pinned string ("Completed — February 1, 2026") stays within ONE containing element (getByText constraint)
 - no charts — ADR-010 is counts-only; empty states unchanged
 
+### Decision
+The summary `dl` became a `sm:grid-cols-3` row of Panel stats — icon (RotateCcw/Reviews, Target/Accuracy, AlarmClock/Due cards), a `text-4xl` numeral, and the label beneath. The exact-match test numerals ("4", "2", "50%") each live in their own `<p>`, so uniqueness held; "No answers yet" replaces the numeral at a smaller size rather than posing as a fake 0%. Session status got a **status dot badge**: a decorative colored dot (ACTIVE → marker-deep, COMPLETED → ink/60, ABANDONED → alert) inside the same span that holds the full pinned string as its direct text — the dot contributes no text nodes, so `getByText("Completed — February 1, 2026")` semantics survive while the spec's `toHaveTextContent` checks pass on the link. No charts, per ADR-010's counts-only API; the due/history empty states keep their UX-003 icons.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` — progress spec passes unmodified; typecheck + build
+- `pnpm --filter @danisolation-recall/web test` — **181 passed (32 files)**, the progress spec completely unmodified (zero-churn invariant held again)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---
 
