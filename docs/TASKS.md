@@ -2761,7 +2761,7 @@ Return a session with its reviews so the study screen can render and resume.
 STUDY-007
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/study/sessions.controller.ts
@@ -2772,8 +2772,11 @@ apps/api/src/study/get-session.integration.spec.ts
 - missing or foreign session returns 404 with a stable error code (chosen from the §54 register and recorded in the task)
 - malformed ids fold into the 404 like every other id route
 
+### Decision
+The error code is `SESSION_NOT_FOUND` — ADR-009 fixed it in advance ("404 `SESSION_NOT_FOUND` for a missing or foreign session, indistinguishable, §41"), so this task only records it. The payload is `{ session, reviews, cards }` per ADR-009's resume-is-one-fetch rule: the session from the owner-scoped `findById`, its chronological reviews from `listReviewsBySession`, and the set's current ordered cards from `listSessionCards` — the same card list the start payload carries, so the study screen and its completion view read identical shapes. The controller composes the repository directly (no service — the SET-006 precedent for reads; STUDY-007's service exists because start composes with a create decision, this route is three queries and a 404 translation); reviews and cards are fetched with `Promise.all` since neither depends on the other. `parseSessionId` folds a malformed id into the same 404, mirroring `parseSetId`. GET imposes no status filter — terminal sessions stay readable (the state machine only rejects transitions and reviews), which the completion view (STUDY-013) depends on; a test pins it.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: owner 200 with reviews, foreign/missing/malformed 404)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (166 tests, incl. 4 new HTTP-level tests: 200 with the session, reviews in recorded order with their `correct` flags, and position-ordered cards; 200 for a `COMPLETED` session with `finished_at` set — GET does not filter by status; 404 `SESSION_NOT_FOUND` for a foreign session and an unknown id; 404 `SESSION_NOT_FOUND` for a malformed id)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
