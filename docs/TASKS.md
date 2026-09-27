@@ -3712,7 +3712,7 @@ Record the decisions that deepen ADR-008's design system without replacing it.
 ORG-008
 
 ### Status
-TODO
+DONE
 
 ### Files
 docs/adr/ADR-013-ui-polish.md
@@ -3722,8 +3722,11 @@ docs/adr/ADR-013-ui-polish.md
 - decides: lucide-react as the single new runtime dep (stroke icons, labels always visible — no icon-only controls, §57); registers centralized as real components in components/ui; motion policy (transform/opacity only, 150–250ms, dies under the existing prefers-reduced-motion kill-switch, CSS-only — hydration-safe); no webfont (ADR-008 holds); dark mode and toasts explicitly deferred/rejected; interactions stay architectural (§23 URL state, inline confirms, zero client-JS search, §25 router.refresh)
 - records the phase-wide test invariant: copy, accessible names, hrefs, roles frozen; the 170-test suite pins roles/copy, zero class assertions
 
+### Decision
+ADR-013 written in the house format (Context/Decision/Alternatives/Why/Tradeoffs/Consequences). Key framings beyond the acceptance list: the §59 foundation "written down, not grown" (centralizing deletes duplication rather than adding a layer); icons justified by stroke-weight match with the existing 2px ink borders; dark mode deferred with the cost bounded to a token-file change because the palette is centralized OKLCH; per-task test budget recorded (zero expected changes outside UX-004's additive tests). Rejected alternatives documented: shadcn/Radix reskin, bold rebrand, icon-only controls, dialog confirms, a packages/ui extraction, framer-motion.
+
 ### Tests
-- none (decision task; DOC-002-style artifact check)
+- none (decision task). Artifact check per §73: claims verified against the code before writing — `toHaveClass|getByTestId|data-testid` = 0 occurrences in apps/web/src (zero class assertions), and 13 register comments across 11 files (dashboard and card-list carry two each). Test counts cited from this session's runs: 170 unit, 10 E2E journeys.
 
 ---
 
