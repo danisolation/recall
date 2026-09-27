@@ -10,10 +10,12 @@ export function createDb(connectionString: string) {
 export {
   and,
   asc,
+  count,
   desc,
   eq,
   gt,
   gte,
+  isNotNull,
   lt,
   lte,
   sql,

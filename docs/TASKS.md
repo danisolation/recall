@@ -3042,12 +3042,12 @@ Provide a Drizzle repository for owner-scoped progress reads.
 PROGRESS-001
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/progress/progress.repository.ts
 apps/api/src/progress/progress.repository.integration.spec.ts
-packages/database/src/index.ts (only if a helper re-export is needed)
+packages/database/src/index.ts (added the `count` and `isNotNull` helper re-exports)
 
 ### Acceptance Criteria
 - totals query: review count and correct count for the caller, computed from `reviews` scoped through `study_sessions` (ownership in SQL, §41)
@@ -3055,8 +3055,12 @@ packages/database/src/index.ts (only if a helper re-export is needed)
 - every query is owner-scoped (§41); no N+1 (§35)
 - queries match ADR-010's recorded decisions
 
+### Decision
+`ProgressRepository` exposes three reads, all taking `now` explicitly (§49, the `schedule()` convention) so "due" is a deterministic point in time. `getSummary` computes both totals in **one query** — a `count()` plus a `count(*) filter (where correct)` over `reviews` joined to `study_sessions` for ownership, exactly the ADR's facts-only shape (no accuracy field). `listDue` implements the recorded rule verbatim: `next_review_at <= now` with an `isNotNull` guard (never-reviewed rows are not due), most-overdue first with the card id tiebreaker (same-transaction timestamps can tie, the sets-list precedent), joined through `cards` → `study_sets` for `front`/`setId`/`setTitle` in the same query — no N+1. The nullable column type cannot express the WHERE guarantee, so the narrowing to `Date` happens once at the repository boundary with a comment. `countDue` reuses the identical predicate aggregated in SQL, so PROGRESS-003's summary is three cheap reads. The due predicate lives in two places (list + count) by design — it is ADR-010's rule, stable enough that a shared private helper would buy nothing.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (integration: totals across sessions, due ordering and pagination, other users' rows excluded)
+- `pnpm --filter @danisolation-recall/database build` refreshed the dist the API consumes (the recorded workspace gotcha — the first test run failed on the stale dist before the rebuild)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (189 tests, incl. 6 new repository integration tests: totals summed across sessions (5 reviews / 2 correct) with a foreign user's rows excluded, a zero-review user getting an all-zero summary and empty queue, due ordering most-overdue first with the exact ladder timestamp and `setTitle` join verified, a rescheduled-to-future card and a never-reviewed card both excluded, limit/offset pagination across the queue, and the due count matching the list)
 - `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
