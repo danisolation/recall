@@ -3971,3 +3971,241 @@ The orphaned-`next dev` lock (PID 13248) was killed before the E2E run — the t
 - `pnpm --filter @danisolation-recall/web test` + typecheck + build — 183 passed
 
 ---
+
+# Folders phase (Phase 2)
+
+Phase 2 opens per `docs/ROADMAP.md` ("tags/folders — whichever was not chosen in MVP"): tags shipped in ADR-012, so folders are the recorded §80 deferral arriving **on top of the labeling layer as containment** ("file a set into a folder", ADR-012's own wording). One phase, one ADR, the same atomic loop.
+
+### FOLD-001
+
+### Title
+Write ADR-014: folders as containment
+
+### Goal
+Record the folders design: single-parent containment over the tagging layer, content-safe deletion, and the dashboard's third filter axis.
+
+### Dependencies
+UX-008
+
+### Status
+DONE
+
+### Files
+docs/adr/ADR-014-folders.md
+
+### Acceptance Criteria
+- decides the containment model (a set lives in at most one folder — `folders` table + `study_sets.folder_id`, not a join table), content-safe deletion (`ON DELETE SET NULL` — a deleted folder unfiles its sets, never deletes them), per-user case-insensitive unique names (the tags naming discipline), counts on `GET /folders` (navigationally essential, unlike the deferred tag counts), set placement via `folderId` on the set contracts (one assignment path, no move endpoint), and `?folder=` composing with `?q=` and `?tag=`
+- records the deferrals: nested folders, bulk move, an "Unfiled" view, folder-level sharing
+- the alternatives (join-table symmetry, nesting, a dedicated move endpoint) documented with rejection reasons
+
+### Decision
+ADR-014 written in the house format. Framings beyond the acceptance list: containment chosen over membership because "a folder is a shelf, not a label" — the join-table alternative would duplicate ADR-012's model and blur "where does this set live?"; counts on `GET /folders` deliberately break symmetry with the deferred tag counts because a folder list without counts cannot answer "where is my stuff", which is the feature's point; the phase decomposition (FOLD-001..008) was registered in this task's ledger edit so the ADR's consequences name the real chain. Two copy-level notes carried into later tasks: the `/folders` management page's delete confirm must say sets survive unfiled (§56 honesty), and the dashboard's no-matches hint becomes a three-filter composer.
+
+### Tests
+- none (decision task). Artifact check per §73: ROADMAP's Phase-2 line ("tags/folders — whichever was not chosen in MVP") and ADR-012's recorded promise ("Phase 2's folder addition will treat folders as containment over this labeling layer") verified by grep before writing; the schema's existing tables (9, no folder artifacts) confirmed so the migration plan starts from the real state.
+
+---
+
+### FOLD-002
+
+### Title
+Folders schema and migration
+
+### Goal
+Add the `folders` table and the `study_sets.folder_id` edge.
+
+### Dependencies
+FOLD-001
+
+### Status
+TODO
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/0009_*.sql (+ journal/snapshot)
+packages/database/src/index.ts (re-exports as needed; rebuild dist)
+docs/database/schema.md (folders table + ER edges)
+
+### Acceptance Criteria
+- `folders` (id, user_id FK cascade, name, timestamps) with the expression unique index on `(user_id, lower(name))`
+- `study_sets.folder_id` nullable FK → folders, `ON DELETE SET NULL`
+- migration applied; `@danisolation-recall/database` dist rebuilt
+
+### Tests
+- `pnpm --filter @danisolation-recall/database build` + migration applied against the running Postgres
+
+---
+
+### FOLD-003
+
+### Title
+Folders repository
+
+### Goal
+Owner-scoped folder CRUD with set counts, and the set-side placement checks.
+
+### Dependencies
+FOLD-002
+
+### Status
+TODO
+
+### Files
+apps/api/src/folders/folders.repository.ts (+ integration spec)
+apps/api/src/folders/folders.module.ts
+apps/api/src/app.module.ts (registration)
+packages/database/src/index.ts (re-exports as needed; rebuild dist)
+
+### Acceptance Criteria
+- `listByUser` (with per-folder set counts via one GROUP BY), `create`, `rename` (outcome union: renamed | notFound | conflict for a duplicate name), `remove` (sets survive, unfiled)
+- every query owner-scoped in SQL (§41); counts come from one GROUP BY join
+- `assertOwned`/placement helper for the set contracts' folderId validation
+
+### Tests
+- `pnpm --filter @danisolation-recall/api test` — folders.repository.integration.spec (list counts, create, rename conflict, delete-unfiles, foreign-set/foreign-folder scoping)
+
+---
+
+### FOLD-004
+
+### Title
+Folders endpoints and the set contracts' folderId
+
+### Goal
+`GET/POST/PATCH/DELETE /folders`, plus `folderId` on `POST /sets` and `PATCH /sets/:id`.
+
+### Dependencies
+FOLD-003
+
+### Status
+TODO
+
+### Files
+packages/contracts/src/folders.schema.ts (+ spec, exported from index)
+packages/contracts/src/sets.schema.ts (folderId on create/update)
+apps/api/src/folders/folders.controller.ts (+ integration spec)
+apps/api/src/sets/sets.controller.ts, sets.service.ts / sets.repository.ts (folderId validation on write)
+docs/api/*.md (none per precedent — skip)
+
+### Acceptance Criteria
+- folder contracts (name 1–50 chars) validated like tags (§53); 404 `FOLDER_NOT_FOUND` for foreign/missing folders
+- `GET /folders` returns `{ id, name, setCount }`; rename conflict → 409 or 400 per the house error register (record which)
+- `POST /sets` / `PATCH /sets/:id` accept an optional `folderId` (null = unfile); a foreign folderId is rejected (400 with a clear code, or 404 — record the decision)
+
+### Tests
+- `pnpm --filter @danisolation-recall/contracts test` + `pnpm --filter @danisolation-recall/api test` (folders endpoints integration spec; set-placement cases)
+
+---
+
+### FOLD-005
+
+### Title
+Dashboard folder filter
+
+### Goal
+`?folder=` joins `?q=` and `?tag=` as the library's third URL-state filter, with a folder list that shows counts.
+
+### Dependencies
+FOLD-004
+
+### Status
+TODO
+
+### Files
+apps/web/src/lib/folders.ts (+ spec)
+apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
+apps/web/src/lib/sets.ts (folderId param, + spec)
+
+### Acceptance Criteria
+- `listFolders` follows the cookie-forwarding pattern; the dashboard lists folders (name + count) as filter links composing with `?q=` and `?tag=`
+- §56 states stay distinct: folder+tag+text no-matches names all active filters; malformed folder param folds to no filter; an unknown folder id keeps the escape hatch
+- every href/aria-current/name discipline from the tag work repeats
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (lib + dashboard spec extensions, the ORG-007 pattern)
+
+---
+
+### FOLD-006
+
+### Title
+Folder management page and the set forms' folder select
+
+### Goal
+A `/folders` page for create/rename/delete, and a folder dropdown on the set create/edit forms.
+
+### Dependencies
+FOLD-005
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/folders/page.tsx (+ spec), folder forms/components (+ specs)
+apps/web/src/lib/folders.ts (mutations, + spec)
+apps/web/src/app/(protected)/sets/new/create-set-form.tsx (+ spec)
+apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec)
+apps/web/src/app/(protected)/sets/[id]/edit/page.tsx (folder prefill)
+apps/web/src/lib/api.ts (createFolder/renameFolder/deleteFolder, + spec)
+apps/web/src/lib/sets.ts (folderId on create/update, + spec)
+
+### Acceptance Criteria
+- `/folders`: create form, per-folder rename/delete with the inline two-step confirm register (§56 states distinct; a deleted folder's sets survive unfiled — say so in the confirm copy)
+- set forms: folder select (the caller's folders + "No folder") wired through `folderId`; the create form's two-phase save keeps working
+- every visible name/copy discipline holds; deletion confirm names follow the house register
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (folders page + forms + lib specs)
+
+---
+
+### FOLD-007
+
+### Title
+Folders E2E journey
+
+### Goal
+Cover the loop in a browser: create folders, file sets, filter by folder composing with tag and search, delete a folder and watch its sets survive.
+
+### Dependencies
+FOLD-006
+
+### Status
+TODO
+
+### Files
+apps/web/e2e/folders.spec.ts
+
+### Acceptance Criteria
+- one journey test (house precedent): create a folder → file two sets → filter by folder → compose folder + tag + search → the combined no-matches state → delete the folder → both sets back under All sets
+- kill any orphaned next dev webServer before the run
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test:e2e`
+
+---
+
+### FOLD-008
+
+### Title
+Folders docs sweep
+
+### Goal
+Leave the docs honest about the third organizational axis.
+
+### Dependencies
+FOLD-007
+
+### Status
+TODO
+
+### Files
+ARCHITECTURE.md (ADR-014 row), docs/PROGRESS.md (folders section + counts), README.md (status line)
+
+### Acceptance Criteria
+- counts re-verified against fresh suite runs (§73), ADR-014 row in the decision table, PROGRESS gains the folders section
+
+### Tests
+- full suites re-run for the counts cited in PROGRESS.md
+
+---
