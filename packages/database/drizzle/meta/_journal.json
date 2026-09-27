@@ -64,6 +64,13 @@
       "when": 1790501698607,
       "tag": "0008_silky_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790526269180,
+      "tag": "0009_faithful_scalphunter",
+      "breakpoints": true
     }
   ]
 }

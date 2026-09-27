@@ -36,12 +36,13 @@ One row per live session; a user may have several (multiple devices). Deleting a
 | --- | --- | --- |
 | `id` | serial | primary key |
 | `owner_id` | integer | not null, FK → `users.id` **ON DELETE CASCADE** |
+| `folder_id` | integer | nullable, FK → `folders.id` **ON DELETE SET NULL** — ADR-014's single-parent containment: at most one folder per set, and a deleted folder unfiles its sets instead of deleting them |
 | `title` | text | not null |
 | `description` | text | nullable |
 | `created_at` | timestamp with time zone | not null, default `now()` |
 | `updated_at` | timestamp with time zone | not null, default `now()` |
 
-One row per study set; every set belongs to exactly one owner. Deleting a user removes their sets via the cascade. Owner-scoped queries use `study_sets_owner_id_index`. Migration: `0003_lazy_oracle.sql`.
+One row per study set; every set belongs to exactly one owner. Deleting a user removes their sets via the cascade. Owner-scoped queries use `study_sets_owner_id_index`; folder-scoped library queries use `study_sets_folder_id_index`. Migration: `0003_lazy_oracle.sql`; `folder_id` added in `0009_faithful_scalphunter.sql`.
 
 ### cards
 
@@ -122,6 +123,18 @@ One row per user-owned tag (ADR-012). `tags_user_id_lower_name_unique` is an **e
 
 The many-to-many join between sets and their owner's tags; the `(set_id, tag_id)` pair is the row's identity (composite primary key — the ADR's uniqueness, race-proof by construction). `set_tags_tag_id_index` serves "everything labeled X" lookups and cascade deletes. Ownership flows through both parents: a tag must belong to the set's owner to be assignable, enforced by the tags repository (§41). Deleting a set or a tag removes only the join rows — never content. Migration: `0008_silky_thena.sql`.
 
+### folders
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `id` | serial | primary key |
+| `user_id` | integer | not null, FK → `users.id` **ON DELETE CASCADE** |
+| `name` | text | not null — the folder's name as typed (display casing preserved) |
+| `created_at` | timestamp with time zone | not null, default `now()` |
+| `updated_at` | timestamp with time zone | not null, default `now()` |
+
+One row per user-owned folder (ADR-014) — a **shelf**, not a label: a set is filed in at most one folder via `study_sets.folder_id`, which is what distinguishes containment from the tags' many-to-many labeling. `folders_user_id_lower_name_unique` is the tags naming discipline reused — an expression index on `(user_id, lower(name))`, unique per user case-insensitively, display casing preserved. Deleting a folder never touches sets: their `folder_id` is set to null (unfiled, back at the library root) by the column's `ON DELETE SET NULL`; deleting a user removes their folders via the cascade. Folder list queries use `folders_user_id_index`. Migration: `0009_faithful_scalphunter.sql`.
+
 ```mermaid
 erDiagram
     users ||--o{ sessions : "has"
@@ -136,6 +149,8 @@ erDiagram
     users ||--o{ tags : "labels with"
     study_sets ||--o{ set_tags : "tagged via"
     tags ||--o{ set_tags : "applied via"
+    users ||--o{ folders : "files into"
+    folders ||--o{ study_sets : "contains"
     users {
         serial id PK
         text email UK
@@ -206,6 +221,13 @@ erDiagram
     set_tags {
         integer set_id PK, FK
         integer tag_id PK, FK
+    }
+    folders {
+        serial id PK
+        integer user_id FK
+        text name "unique per user, case-insensitive"
+        timestamptz created_at
+        timestamptz updated_at
     }
 ```
 

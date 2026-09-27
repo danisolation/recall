@@ -37,12 +37,21 @@ export const studySets = pgTable(
     ownerId: integer("owner_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // ADR-014: single-parent containment — a set is filed in at most one
+    // folder, and deleting the folder unfiles its sets instead of deleting
+    // them (the organizer is disposable; the content is not).
+    folderId: integer("folder_id").references(() => folders.id, {
+      onDelete: "set null",
+    }),
     title: text("title").notNull(),
     description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("study_sets_owner_id_index").on(table.ownerId)],
+  (table) => [
+    index("study_sets_owner_id_index").on(table.ownerId),
+    index("study_sets_folder_id_index").on(table.folderId),
+  ],
 );
 
 // `position` carries the study order within a set. It is a plain index, not a
@@ -191,5 +200,30 @@ export const setTags = pgTable(
   (table) => [
     primaryKey({ columns: [table.setId, table.tagId] }),
     index("set_tags_tag_id_index").on(table.tagId),
+  ],
+);
+
+// ADR-014: a folder is a shelf the user files sets into — single-parent
+// containment, not a second labeling system (that's tags). Names follow the
+// tags discipline: unique per user case-insensitively via the expression
+// index, display casing preserved. Deleting a folder sets its sets'
+// folder_id to null (the column's ON DELETE), never touching content.
+export const folders = pgTable(
+  "folders",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("folders_user_id_index").on(table.userId),
+    uniqueIndex("folders_user_id_lower_name_unique").on(
+      table.userId,
+      sql`lower(${table.name})`,
+    ),
   ],
 );
