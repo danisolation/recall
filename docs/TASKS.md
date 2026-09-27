@@ -2725,7 +2725,7 @@ STUDY-005
 STUDY-006
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/study/sessions.module.ts
@@ -2740,8 +2740,11 @@ apps/api/src/app.module.ts
 - 201 with an explicit response shape per ADR-009 (what the client needs to display the first card without extra round trips); 401 `UNAUTHENTICATED` without a session
 - invalid body returns 400 `VALIDATION_ERROR` via the global pipe
 
+### Decision
+The response is `{ session, cards }` — ADR-009's session-plus-ordered-cards payload under explicit keys, mirroring how STUDY-008 will add `reviews` beside them, so the study screen renders its first card from this one response. `StartSessionService` composes the repository's existing `create` (owner-checked, ACTIVE) with `listSessionCards` (owner-scoped position order) — no new SQL, both queries already belong to the study module; the card lookup cannot miss after a successful create, so its null branch is a type-satisfying fallback. A null from `create` — unknown or foreign `setId`, indistinguishable per §41 — is translated by the controller into 404 `SET_NOT_FOUND`, the same code the cards phase uses when the set in the path is missing or foreign (CARD-004); a malformed `setId` needs no path parsing here because it arrives as a validated JSON number (`startSessionSchema` rejects non-integers with 400). `SessionsController` mounts at `study-sessions` with `AuthGuard`, and `SessionsModule` imports `AuthModule` exactly like `SetsModule`/`CardsModule` so the guard's `SessionService` resolves.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (service unit + HTTP-level: 201 shape, 401, 400, 404 foreign/missing set)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (162 tests, incl. 6 new: 2 service unit tests — session plus ordered cards returned, null without touching cards for a foreign/unknown set; 4 HTTP-level tests — 201 with `session` (ACTIVE, ownership, `finishedAt` null) and position-ordered cards with front/back, 401 `UNAUTHENTICATED`, 400 `VALIDATION_ERROR` for a non-integer `setId`, 404 `SET_NOT_FOUND` for an unknown and a foreign set left intact)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
