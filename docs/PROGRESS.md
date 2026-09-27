@@ -45,23 +45,27 @@ This file summarizes what has been achieved and where the project is going. `doc
 
 - `UX-001..008`, designed once in ADR-013 (amends ADR-008): the panel/link registers centralized as real `components/ui` exports, `lucide-react` icons beside unchanged labels app-wide, button-variant nav links, tag chips, a true 3D card flip with keyboard shortcuts (Space/1/2) and a progress bar on the study screen, stat panels and status badges on progress, a landing hero with a feature trio, skeleton loading states, and a favicon with theme metadata. All copy, accessible names, and hrefs survived the restyle; the pre-existing tests passed unmodified throughout.
 
+### Folders (Phase 2)
+
+- `FOLD-001..008`, designed once in ADR-014 (Phase 2's opening slice, per §80's deferral): single-parent containment — `folders` plus `study_sets.folder_id` with `ON DELETE SET NULL`, so deleting a folder unfiles its sets instead of deleting them; per-user case-insensitive names on the tags discipline; `GET/POST/PATCH/DELETE /folders` with per-folder set counts; `folderId` on the set contracts (absent leaves placement, null unfiles, a number files); a `?folder=` dashboard filter composing with `?q=` and `?tag=`; a `/folders` management page with inline rename and two-step delete; the folder select on both set forms; and an E2E journey covering composition and the safe delete. An accessibility audit (A11Y-001) landed a skip link along the way.
+
 ### Documentation
 
-- DOCS-001 handoff set plus DOCS-002's refresh: README, ARCHITECTURE (module map, route map, data model, key decisions), CONTRIBUTING, environment docs, schema reference, tech-debt ledger, and the ADR series (ORM, contracts, sessions, design system, study sessions, progress, search, organization, UI polish).
+- DOCS-001 handoff set plus DOCS-002's refresh: README, ARCHITECTURE (module map, route map, data model, key decisions), CONTRIBUTING, environment docs, schema reference, tech-debt ledger, and the ADR series (ORM, contracts, sessions, design system, study sessions, progress, search, organization, UI polish, folders).
 
 ---
 
 ## Current state
 
-- 6 pnpm workspace packages; 9 tables; migrations applied through `0008_silky_thena.sql`.
-- Test suites green: API 234 (unit + HTTP/DB integration), web 183 (component + lib), contracts 51 (schema), E2E 10 (Playwright journeys: auth, sets, cards, study, progress, search, organization).
-- **The §78 MVP surface is shipped**, including organization (tags, ADR-012), and the post-MVP UI polish phase (ADR-013) has landed on top of it.
+- 6 pnpm workspace packages; 10 tables; migrations applied through `0009_faithful_scalphunter.sql`.
+- Test suites green: API 260 (unit + HTTP/DB integration), web 214 (component + lib), contracts 59 (schema), E2E 11 (Playwright journeys: auth, sets, cards, study, progress, search, organization, folders).
+- **The §78 MVP surface is shipped** (including organization — tags, ADR-012), the UI polish phase landed (ADR-013), and **Phase 2 has opened with folders** (ADR-014): sets can be filed, browsed, and filtered by folder alongside tags and search.
 
 ## Plans for the future
 
 ### Now
 
-- Phase 2 per `docs/ROADMAP.md`: sharing, folders on top of tags (§80), media, streaks, notifications — each new phase opens with an ADR (the house pattern).
+- The rest of Phase 2 per `docs/ROADMAP.md`: sharing, media, streaks, notifications — each new phase opens with an ADR (the house pattern). Recorded folder deferrals ride along: nested folders, bulk move, an "Unfiled" view, folder-level sharing.
 
 ### Next
 

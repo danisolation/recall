@@ -4264,7 +4264,7 @@ Leave the docs honest about the third organizational axis.
 FOLD-007
 
 ### Status
-TODO
+DONE
 
 ### Files
 ARCHITECTURE.md (ADR-014 row), docs/PROGRESS.md (folders section + counts), README.md (status line)
@@ -4272,7 +4272,13 @@ ARCHITECTURE.md (ADR-014 row), docs/PROGRESS.md (folders section + counts), READ
 ### Acceptance Criteria
 - counts re-verified against fresh suite runs (§73), ADR-014 row in the decision table, PROGRESS gains the folders section
 
+### Decision
+All counts re-verified against fresh runs before writing (§73): web 214 (36 files), API 260 (44 files), contracts 59 (7 files), both typechecks clean, and the E2E 11/11 cited from the FOLD-007 run against identical code. ARCHITECTURE's decision table gained the ADR-014 row; PROGRESS.md gained a "Folders (Phase 2)" section and its current-state block now reads 10 tables / migration `0009` / the four suite counts / Phase 2 opened, with the recorded folder deferrals carried into the plans; README's status line covers folder filing and the "Next up" points at sharing/media/streaks/notifications. The E2E count citation policy: a suite run against identical code may be cited from the immediately preceding task — re-running it would measure the same commit twice.
+
 ### Tests
-- full suites re-run for the counts cited in PROGRESS.md
+- `pnpm --filter @danisolation-recall/web test` — 214 passed (36 files)
+- `pnpm --filter @danisolation-recall/api test` — 260 passed (44 files)
+- `pnpm --filter @danisolation-recall/contracts test` — 59 passed (7 files)
+- `pnpm --filter @danisolation-recall/web test:e2e` — 11/11 (FOLD-007's run, same commit)
 
 ---

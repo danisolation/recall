@@ -147,6 +147,7 @@ Key properties:
 | Search: `q` filter on `GET /sets` (collection filtering), `ILIKE` substring on title/description, no index at MVP scale | ADR-011 |
 | Organization: tags (many-to-many, case-insensitive per-user names), replace-style `PUT /sets/:id/tags`, `?tag=` filter composing with `q` | ADR-012 |
 | UI polish: ADR-008 deepened — `lucide-react` icons (always beside labels), centralized panel/link registers, CSS-only transform/opacity motion, copy/roles frozen for the test suite | ADR-013 |
+| Folders: single-parent containment (`folders` + `study_sets.folder_id`, `ON DELETE SET NULL`), per-user case-insensitive names, counts on `GET /folders`, `?folder=` composing with `q` and `tag` | ADR-014 |
 | Next.js rewrite proxy instead of CORS — first-party session cookie, no API CORS surface | AUTH-020 task rationale + `ENVIRONMENT.md` |
 | Per-IP login rate limiting, in-memory storage (Redis swap deferred) | AUTH-020A task rationale |
 
