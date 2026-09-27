@@ -71,6 +71,13 @@
       "when": 1790526269180,
       "tag": "0009_faithful_scalphunter",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790534224578,
+      "tag": "0010_powerful_hiroim",
+      "breakpoints": true
     }
   ]
 }

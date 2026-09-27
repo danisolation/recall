@@ -1,0 +1,1 @@
+ALTER TABLE "study_sets" ADD COLUMN "visibility" text DEFAULT 'private' NOT NULL;

@@ -43,6 +43,10 @@ export const studySets = pgTable(
     folderId: integer("folder_id").references(() => folders.id, {
       onDelete: "set null",
     }),
+    // ADR-015: sharing by URL — `private` is the default, so every existing
+    // set stays private. The `private` | `public` tokens are owned by the
+    // sets repository, the only writer, like the sessions table's status.
+    visibility: text("visibility").notNull().default("private"),
     title: text("title").notNull(),
     description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -37,12 +37,13 @@ One row per live session; a user may have several (multiple devices). Deleting a
 | `id` | serial | primary key |
 | `owner_id` | integer | not null, FK → `users.id` **ON DELETE CASCADE** |
 | `folder_id` | integer | nullable, FK → `folders.id` **ON DELETE SET NULL** — ADR-014's single-parent containment: at most one folder per set, and a deleted folder unfiles its sets instead of deleting them |
+| `visibility` | text | not null, default `private` — `private` or `public` (ADR-015): a public set is readable by anyone holding its URL through the unauthenticated `GET /public/sets/:id`; the tokens are owned by the sets repository, the only writer |
 | `title` | text | not null |
 | `description` | text | nullable |
 | `created_at` | timestamp with time zone | not null, default `now()` |
 | `updated_at` | timestamp with time zone | not null, default `now()` |
 
-One row per study set; every set belongs to exactly one owner. Deleting a user removes their sets via the cascade. Owner-scoped queries use `study_sets_owner_id_index`; folder-scoped library queries use `study_sets_folder_id_index`. Migration: `0003_lazy_oracle.sql`; `folder_id` added in `0009_faithful_scalphunter.sql`.
+One row per study set; every set belongs to exactly one owner. Deleting a user removes their sets via the cascade. Owner-scoped queries use `study_sets_owner_id_index`; folder-scoped library queries use `study_sets_folder_id_index`. Migration: `0003_lazy_oracle.sql`; `folder_id` added in `0009_faithful_scalphunter.sql`; `visibility` added in `0010_powerful_hiroim.sql` (defaulting every existing set to `private`).
 
 ### cards
 
@@ -168,6 +169,8 @@ erDiagram
     study_sets {
         serial id PK
         integer owner_id FK
+        integer folder_id FK "nullable, unfiles on folder delete"
+        text visibility "private | public (default private)"
         text title
         text description "nullable"
         timestamptz created_at
