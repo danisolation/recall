@@ -3,6 +3,7 @@ import {
   ApiError,
   deleteCard,
   deleteSet,
+  finishSession,
   moveCard,
   updateSet,
 } from "./api";
@@ -216,6 +217,37 @@ describe("moveCard", () => {
 
     await expect(moveCard(42, 7, 2)).rejects.toThrow(
       "Moving the card failed. Try again.",
+    );
+  });
+});
+
+describe("finishSession", () => {
+  it("posts the finish with credentials and resolves on success", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(finishSession(5)).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/study-sessions/5/finish",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+      }),
+    );
+  });
+
+  it("maps other failures to a generic error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => null,
+      }),
+    );
+
+    await expect(finishSession(5)).rejects.toThrow(
+      "Finishing the session failed. Try again.",
     );
   });
 });

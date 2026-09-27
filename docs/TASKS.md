@@ -2969,17 +2969,26 @@ STUDY-012
 STUDY-013
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/e2e/study.spec.ts
+apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx
+apps/web/src/app/(protected)/study/[sessionId]/study-client.spec.tsx
+apps/web/src/lib/api.ts
+apps/web/src/lib/api.spec.ts
 
 ### Acceptance Criteria
 - register → create a set → add cards → start a session → answer every card → reach the completion summary → the session is finished
 - one journey test, not per-feature tests (SET-014/CARD-014 precedent)
 
+### Decision
+Writing the journey exposed a real product gap: nothing called the finish endpoint — STUDY-012/013 rendered the summary but left the session `ACTIVE` forever (no sweeper until the worker phase). The fix is the smallest behavior that makes "answer every card → the session is finished" literally true: **completing the pass finishes the session**. `StudyClient` fires `finishSession` once when an `ACTIVE` session has no unreviewed cards left (fire-and-forget with a swallowed failure — the summary is already shown, and because the effect is derived from session data, the next visit to a stranded session re-fires and self-heals). ADR-009's idempotent repeat-finish makes the single-call assumption safe even under a StrictMode double-run; an already-finished session and an empty set never trigger the call (unit-pinned). The journey itself follows SET-014/CARD-014: one test through the real UI — register → dashboard → new set → three cards → the primary "Study" control → reveal/answer each card (2 correct, 1 incorrect) with the progress line asserted at every step → "Session complete" with "2 of 3 correct (67% accuracy)" → the session's `status` polled to `COMPLETED` through the same-origin `/api` proxy with the browser's cookie → "Back to the set". Two E2E lessons recorded by the failing first run: Playwright's `name` matching is substring-based, so `getByRole("button", { name: "Correct" })` also matches "Incorrect" — `exact: true` is required for substring-sibling labels.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test:e2e`
+- `pnpm --filter @danisolation-recall/web test:e2e` (7 Playwright tests, incl. the new study journey; the 4 auth, sets, and cards journeys still pass)
+- `pnpm --filter @danisolation-recall/web test` (118 tests, incl. 3 new unit tests: the finish call fires on pass completion with `finishSession(5)`, a failed finish keeps the summary without an error and without a second call, `finishSession` posts to `/finish` with credentials and maps failures to the generic message; plus pinned non-calls for an already-finished session and an empty set)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ApiError,
+  finishSession,
   getSession,
   recordReview,
   type RecordedReview,
@@ -53,6 +54,49 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
       active = false;
     };
   }, [sessionId]);
+
+  // Completing the pass finishes the session (ADR-009: ACTIVE → COMPLETED).
+  // The finish call is idempotent, so a retry or a StrictMode double-run is
+  // a no-op; if it fails the summary stays and the next visit retries it.
+  useEffect(() => {
+    if (!data || data.session.status !== "ACTIVE" || data.cards.length === 0) {
+      return;
+    }
+
+    const answeredIds = new Set([
+      ...data.reviews.map((review) => review.cardId),
+      ...skipped,
+    ]);
+    const hasRemaining = data.cards.some((card) => !answeredIds.has(card.id));
+
+    if (hasRemaining) {
+      return;
+    }
+
+    let active = true;
+
+    finishSession(sessionId)
+      .then(() => {
+        if (active) {
+          setData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  session: { ...prev.session, status: "COMPLETED" },
+                }
+              : prev,
+          );
+        }
+      })
+      .catch(() => {
+        // The completion summary is already shown; the session is finished
+        // on the next visit when this effect re-fires.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [data, skipped, sessionId]);
 
   async function answer(cardId: number, correct: boolean) {
     setIsRecording(true);

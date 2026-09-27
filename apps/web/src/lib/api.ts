@@ -356,3 +356,16 @@ export async function recordReview(
 
   throw new ApiError("UNKNOWN", "Recording your answer failed. Try again.");
 }
+
+export async function finishSession(sessionId: number): Promise<void> {
+  const response = await request(
+    "POST",
+    `/study-sessions/${sessionId}/finish`,
+  );
+
+  if (response.ok) {
+    return;
+  }
+
+  throw new ApiError("UNKNOWN", "Finishing the session failed. Try again.");
+}

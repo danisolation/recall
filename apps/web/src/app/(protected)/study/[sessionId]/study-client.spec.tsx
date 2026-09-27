@@ -4,10 +4,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
 import { StudyClient } from "./study-client";
 
-const { getSessionMock, recordReviewMock } = vi.hoisted(() => ({
-  getSessionMock: vi.fn(),
-  recordReviewMock: vi.fn(),
-}));
+const { getSessionMock, recordReviewMock, finishSessionMock } = vi.hoisted(
+  () => ({
+    getSessionMock: vi.fn(),
+    recordReviewMock: vi.fn(),
+    finishSessionMock: vi.fn(),
+  }),
+);
 
 vi.mock("@/lib/api", () => ({
   ApiError: class ApiError extends Error {
@@ -20,6 +23,7 @@ vi.mock("@/lib/api", () => ({
   },
   getSession: getSessionMock,
   recordReview: recordReviewMock,
+  finishSession: finishSessionMock,
 }));
 
 afterEach(() => {
@@ -100,6 +104,7 @@ describe("StudyClient", () => {
       cards: [{ id: 1, front: "Only card", back: "Only back" }],
     });
     recordReviewMock.mockResolvedValue({ id: 1, cardId: 1, correct: false });
+    finishSessionMock.mockResolvedValue(undefined);
 
     render(<StudyClient sessionId={5} />);
 
@@ -122,6 +127,35 @@ describe("StudyClient", () => {
     expect(
       screen.getByRole("link", { name: "Back to the dashboard" }),
     ).toHaveAttribute("href", "/dashboard");
+    // Completing the pass finishes the session (ADR-009).
+    await vi.waitFor(() =>
+      expect(finishSessionMock).toHaveBeenCalledWith(5),
+    );
+  });
+
+  it("keeps the completion summary when finishing fails", async () => {
+    getSessionMock.mockResolvedValue({
+      ...sessionData,
+      cards: [{ id: 1, front: "Only card", back: "Only back" }],
+    });
+    recordReviewMock.mockResolvedValue({ id: 1, cardId: 1, correct: true });
+    finishSessionMock.mockRejectedValue(
+      new ApiError("UNKNOWN", "Finishing the session failed. Try again."),
+    );
+
+    render(<StudyClient sessionId={5} />);
+
+    await screen.findByText("Only card");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Reveal answer" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Correct" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Session complete" }),
+    ).toBeInTheDocument();
+    expect(finishSessionMock).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("renders the summary for a session that is not active", async () => {
@@ -143,6 +177,8 @@ describe("StudyClient", () => {
     expect(
       screen.getByRole("link", { name: "Back to the set" }),
     ).toHaveAttribute("href", "/sets/42");
+    // An already-finished session must not be finished again.
+    expect(finishSessionMock).not.toHaveBeenCalled();
   });
 
   it("offers the way back when the set has no cards", async () => {
@@ -156,6 +192,7 @@ describe("StudyClient", () => {
     expect(
       screen.getByRole("link", { name: "Back to the set" }),
     ).toHaveAttribute("href", "/sets/42");
+    expect(finishSessionMock).not.toHaveBeenCalled();
   });
 
   it("shows an error and stays on the card when recording fails", async () => {
