@@ -3111,7 +3111,7 @@ Return the caller's due cards — the study queue the scheduling ladder produces
 PROGRESS-002
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/progress/progress.controller.ts
@@ -3122,8 +3122,11 @@ apps/api/src/progress/list-due.integration.spec.ts
 - items carry what the UI needs per ADR-010 (card front, set id/title) — no over-fetching
 - 401 without a session; 400 `VALIDATION_ERROR` for limit/offset violations
 
+### Decision
+`GET /progress/due` is a straight composition of the repository's `listDue` with the house list envelope: file-local `listDueQuerySchema` (limit default 20 capped at 100 with a 400, not silent clamping — §53), `nextOffset` = `offset + limit` on a full page and null otherwise, and `new Date()` supplied at the boundary so the queue's "due" instant is the request's. The items are exactly ADR-010's projection — `cardId`, `front`, `setId`, `setTitle`, `nextReviewAt` — because the repository query selects nothing more; the back is deliberately absent since studying happens on the set page, not in the queue. No service layer: a read composing one repository call and an envelope, the SET-006 precedent.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: envelope with due ordering, pagination transitions, foreign rows excluded, 401, 400)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (197 tests, incl. 5 new HTTP-level tests: the queue most-overdue first with set info and a past `nextReviewAt`, `nextOffset` transitions 2 → null across pages, a foreign user's due card excluded from the owner's queue while their own queue returns exactly their one card, 400 `VALIDATION_ERROR` for `limit=101` and `offset=-1`, 401 `UNAUTHENTICATED`)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
