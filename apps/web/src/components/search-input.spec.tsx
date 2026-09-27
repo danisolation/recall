@@ -35,4 +35,24 @@ describe("SearchInput", () => {
     expect(form).toHaveAttribute("action", "/dashboard");
     expect(form).toHaveAttribute("method", "get");
   });
+
+  it("carries the active tag filter as a hidden field", () => {
+    render(<SearchInput tagId={7} />);
+
+    const form = (screen.getByLabelText("Search sets") as HTMLInputElement)
+      .form;
+    expect(form?.querySelector('input[type="hidden"][name="tag"]')).toHaveValue(
+      "7",
+    );
+  });
+
+  it("omits the hidden tag field without an active filter", () => {
+    render(<SearchInput />);
+
+    const form = (screen.getByLabelText("Search sets") as HTMLInputElement)
+      .form;
+    expect(
+      form?.querySelector('input[type="hidden"][name="tag"]'),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -3638,10 +3638,12 @@ ORG-004
 ORG-005
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/lib/tags.ts (+ spec)
+apps/web/src/lib/sets.ts (+ spec)
+apps/web/src/components/search-input.tsx (+ spec)
 apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
 
 ### Acceptance Criteria
@@ -3649,8 +3651,11 @@ apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
 - `listTags` follows the cookie-forwarding lib pattern
 - §56 states stay distinct (empty library, no matches for the tag/text combination, results)
 
+### Decision
+The API side already existed (ORG-005's `tag` semijoin), so this is web-only. `listTags` (lib/tags) follows the house cookie-forwarding pattern (empty list without a cookie, throw on API failure). `listSets` gained an optional `tagId` composed into the query string the same hand-rolled way as `q` (URLSearchParams would re-encode space as `+` and break the pinned `%20` expectations). **Composition needed one non-listed file: `SearchInput`.** It is a zero-JS GET form, so an active `?tag=` would be silently dropped on submit — the component now takes `tagId` and renders a hidden `tag` field, keeping both filters composed with no client JavaScript. On the page, `?tag=` folds per its nature: a *malformed* param folds into "no filter" (it is filter state, §23 — unlike a resource id which 404s), while a *well-formed but unknown/foreign* id stays an active filter that matches nothing (§41 owner-scoped semijoin) and keeps its escape hatch — the "Clear filter" link renders whenever `tagId` is set, so the URL state is never a dead end. §56 states: empty library keeps SetList's create offer; no-matches hint names the active filters (`"query"` / `the selected tag` / both joined "with"), with the q-only wording byte-identical to the SEARCH-003 string; the active tag is marked `aria-current="true"`.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (lib forwards the cookie; the page renders the filter links, composes tag + query, and keeps the §56 states distinct)
+- `pnpm --filter @danisolation-recall/web test` (170 tests, incl. 15 new: 3 lib/tags `listTags` tests; 2 lib/sets tests — `?tag=7` and the composed `?q=biology&tag=7`; 2 search-input tests — hidden tag field present/absent; 8 dashboard tests — filter links with hrefs, links composing with `?q=`, `aria-current` + clear href, query preserved when clearing, tag-only and combined no-matches hints, malformed param folding to no filter, unknown tag id keeping the clear link)
 - `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---
