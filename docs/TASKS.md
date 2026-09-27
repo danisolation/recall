@@ -4361,21 +4361,27 @@ Sharing API: the public endpoint and the visibility contract
 SHARE-002
 
 ### Status
-TODO
+DONE
 
 ### Files
 packages/contracts/src/set.schema.ts (visibility enum on update, + spec)
 apps/api/src/sets/sets.controller.ts (PublicSetsController without AuthGuard; PATCH visibility)
+apps/api/src/sets/sets.module.ts (PublicSetsController registered)
 apps/api/src/sets/sets.repository.ts (findPublicById; update handles visibility)
-apps/api/src/sets/sets.integration.spec.ts or new spec (public/private/foreign cases)
+apps/api/src/sets/public-sets.integration.spec.ts
 
 ### Acceptance Criteria
 - `GET /public/sets/:id` → 200 with the set + cards (study order) + tags when public; 404 `SET_NOT_FOUND` for private, foreign, or missing — indistinguishable (§41 extended)
 - `PATCH /sets/:id` accepts `visibility: "private" | "public"` (validated enum); the set's cards/tags are never exposed for private sets
 - the public controller lives in the sets module without the auth guard; every existing owner-scoped surface unchanged
 
+### Decision
+The public payload is a **whitelist**, not the row: the controller maps the repository result to `{ title, description, tags: [{id, name}], cards: [{id, front, back}] }` — the owner's id, the folder placement, and the visibility token never leave the API (pinned by `toBeUndefined` assertions). `findPublicById` filters on `visibility = 'public'` in the WHERE (private/foreign/missing → the same null → 404) and orders cards by the cards repository's own `(position, id)`. `visibility` rides `updateSetSchema` via `.extend()` **after** `.partial()` — sharing rides the update path only (new sets start private), and the "Nothing to update" refine now accepts a visibility-only PATCH. The integration fixture caught a real mistake immediately: `CardsRepository.create(setId, ownerId, input)` — my fixture had omitted `ownerId`, poisoning the ownership query (the spec's `Failed query` was the cards create's owner check, not the tags replace it resembled). The service-spec mocks gained `visibility: "private"` (the StudySet type ripple).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/contracts test` + `pnpm --filter @danisolation-recall/api test` (public endpoint cases: public 200, private 404, foreign 404, malformed 404, cards in study order, tags included; PATCH visibility toggles)
+- `pnpm --filter @danisolation-recall/contracts test` — **61 passed**: +2 (visibility-only update accepted for both tokens; "secret" rejected)
+- `pnpm --filter @danisolation-recall/api test` — **264 passed (45 files)**: +4 (unauthenticated 200 with study-ordered cards, alphabetical tags, and the whitelist assertions; private-set 404 even for its owner; unknown/malformed 404; the unshare→404 toggle path through PATCH visibility)
+- `pnpm --filter @danisolation-recall/api typecheck` — clean
 
 ---
 

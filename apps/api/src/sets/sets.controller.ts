@@ -78,6 +78,43 @@ function parseSetId(setId: string): number {
   return id;
 }
 
+// ADR-015: the app's only unauthenticated endpoint — a narrow, read-only
+// view of a set that is explicitly public. The response whitelists what a
+// visitor needs (title, description, cards, tags); the owner's id, the
+// folder placement, and the visibility token stay out of the payload.
+// Private, foreign, and missing fold into the same 404 (§41 extended to
+// visibility), and no listing endpoint exists — nothing is discoverable
+// that was not handed to you.
+@Controller("public/sets")
+export class PublicSetsController {
+  constructor(private readonly setsRepository: SetsRepository) {}
+
+  @Get(":id")
+  async get(@Param("id") setId: string) {
+    const result = await this.setsRepository.findPublicById(
+      parseSetId(setId),
+    );
+
+    if (!result) {
+      throw new NotFoundException({
+        code: "SET_NOT_FOUND",
+        message: "Study set not found",
+      });
+    }
+
+    return {
+      title: result.set.title,
+      description: result.set.description,
+      tags: result.tags.map((tag) => ({ id: tag.id, name: tag.name })),
+      cards: result.cards.map((card) => ({
+        id: card.id,
+        front: card.front,
+        back: card.back,
+      })),
+    };
+  }
+}
+
 @Controller("sets")
 export class SetsController {
   constructor(

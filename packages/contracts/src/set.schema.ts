@@ -21,13 +21,20 @@ export const createSetSchema = z.object({
   folderId: z.number().int().positive().nullable().optional(),
 });
 
-export const updateSetSchema = createSetSchema.partial().refine(
-  (data) =>
-    data.title !== undefined ||
-    data.description !== undefined ||
-    data.folderId !== undefined,
-  { message: "Nothing to update" },
-);
+export const updateSetSchema = createSetSchema
+  .partial()
+  // ADR-015: sharing rides the update path only — new sets start private.
+  .extend({
+    visibility: z.enum(["private", "public"]).optional(),
+  })
+  .refine(
+    (data) =>
+      data.title !== undefined ||
+      data.description !== undefined ||
+      data.folderId !== undefined ||
+      data.visibility !== undefined,
+    { message: "Nothing to update" },
+  );
 
 export type CreateSetInput = z.infer<typeof createSetSchema>;
 export type UpdateSetInput = z.infer<typeof updateSetSchema>;

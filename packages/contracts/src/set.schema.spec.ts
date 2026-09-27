@@ -89,4 +89,19 @@ describe("updateSetSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts a visibility-only update", () => {
+    expect(updateSetSchema.parse({ visibility: "public" })).toEqual({
+      visibility: "public",
+    });
+    expect(updateSetSchema.parse({ visibility: "private" })).toEqual({
+      visibility: "private",
+    });
+  });
+
+  it("rejects a visibility outside the token set", () => {
+    expect(
+      updateSetSchema.safeParse({ visibility: "secret" }).success,
+    ).toBe(false);
+  });
 });
