@@ -4229,13 +4229,13 @@ New fifth+sixth ui primitives: **`Select`** (native control with Input's exact c
 Folders E2E journey
 
 ### Goal
-Cover the loop in a browser: create folders, file sets, filter by folder composing with tag and search, delete a folder and watch its sets survive.
+Cover the loop in a browser: create folders, file sets, filter by folder composing with tag and search, delete a folder and watch the sets survive.
 
 ### Dependencies
 FOLD-006
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/e2e/folders.spec.ts
@@ -4244,8 +4244,11 @@ apps/web/e2e/folders.spec.ts
 - one journey test (house precedent): create a folder → file two sets → filter by folder → compose folder + tag + search → the combined no-matches state → delete the folder → both sets back under All sets
 - kill any orphaned next dev webServer before the run
 
+### Decision
+One journey through the real stack: register → /folders create "University" (row + "0 sets" visible) → file two sets at creation via the form's folder select (one tagged "language") → dashboard folder chip "University · 2" filters to both → tag chip composes (`?tag=N&folder=N`) keeping only the tagged set → search composes through the hidden fields (param-wise URL assertions, the ORG-008 lesson) → the all-three no-matches hint → the clear link unwinds the tag first (`q` + folder kept, folder-only hint) → delete the folder with the two-step confirm → the empty-library hint on /folders, and both sets back under All sets with no folder chips. Selector disciplines held: `exact: true` on the tag chip, param-wise composed URLs, and the first-run failure was mine — the journey clicked "Manage folders" from the landing page, but that link lives on the dashboard; the goto the other journeys use was missing (impl correct, test corrected).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test:e2e`
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11/11 journeys passed** (the new folders journey plus the 10 existing); the orphaned-`next dev` lock (PID 2708) killed before the run (fourth occurrence — my proactive CommandLine filter missed it, Next's own error output names the PID reliably)
 
 ---
 
