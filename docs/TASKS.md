@@ -3491,12 +3491,12 @@ Provide a Drizzle repository for tag persistence and per-set assignment.
 ORG-002
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/tags/tags.repository.ts
 apps/api/src/tags/tags.repository.integration.spec.ts
-packages/database/src/index.ts (only if a helper re-export is needed)
+packages/database/src/index.ts (added the `inArray` helper re-export)
 
 ### Acceptance Criteria
 - list by user (id + name), list by set, create-or-get by (owner, name)
@@ -3504,8 +3504,12 @@ packages/database/src/index.ts (only if a helper re-export is needed)
 - assignment requires the tag to belong to the set's owner (§41)
 - every query owner-scoped; no N+1 (§35)
 
+### Decision
+`TagsRepository.listByUser` / `listBySet` are plain owner-scoped reads (alphabetical by name — the filter UI's vocabulary). The heart is `replace(setId, ownerId, names)`, one transaction (§34): ownership check → **batched create-or-get** (select existing by `lower(name) in (...)`, insert only the missing with `onConflictDoNothing` — the ORG-002 expression index turns a raced duplicate into a no-op — then re-select to map names to ids) → delete **all** of the set's join rows → insert the target joins. Delete-all-then-insert-all beats a notInArray diff: `set_tags` rows carry no timestamps, so surviving rows are indistinguishable after the write, and the empty-list edge disappears. The repository normalizes names (trim, drop empties, dedupe case-insensitively, first casing wins) because it is the only writer and owns the invariant; the length/ceiling bounds stay in ORG-004's schema (§53 boundary). The acceptance's "create-or-get by (owner, name)" exists **batched** — a public per-name variant would be dead code until an endpoint needs it (§107, §35). Ordering assertions in the tests avoid mixed-case collation dependence: ascending order is pinned on a single-case subset.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (integration: create-or-get dedupes case-insensitively, replace adds/removes/keeps rows, foreign set rejected, foreign tag not assignable, per-user and per-set listings scoped)
+- `pnpm --filter @danisolation-recall/database build` refreshed the dist (the workspace gotcha) before the suite ran
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (218 tests, incl. 8 new repository integration tests: replace creates unknown names and trims input, case-insensitive dedupe with first-casing-wins, a surviving name keeps the same tag row across replaces (create-or-get, not recreate), dropped tags leave the set but stay in the user's vocabulary, an empty replace clears the set's tags without touching the user's, foreign/unknown sets return notFound with nothing leaked, the same name under a different user is a different tag row, and listByUser is alphabetical and owner-scoped)
 - `pnpm --filter @danisolation-recall/api typecheck` succeeds
 
 ---
