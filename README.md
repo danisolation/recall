@@ -7,7 +7,7 @@ A modern flashcard and learning platform inspired by concepts behind tools like 
 - **Monorepo** — pnpm workspaces + Turborepo: `apps/web` (Next.js 16), `apps/api` (NestJS 11), `packages/` (database, contracts, eslint-config, typescript-config)
 - **The MVP is shipped end to end** (see [`docs/TASKS.md`](docs/TASKS.md)): authentication, study sets (with dashboard search), cards with reordering, the card-by-card study loop with Leitner-ladder scheduling (ADR-009), a progress page with review counts, accuracy, history, and a due queue (ADR-010) — every slice backed by unit, integration, and browser E2E journeys
 - **PostgreSQL 17** via Docker Compose with Drizzle ORM migrations (seven tables)
-- Next up: the organization decision (folders or tags — §78's choose-one) and Phase 2 per [`docs/ROADMAP.md`](docs/ROADMAP.md)
+- Next up: the organization phase — tags per ADR-012 (`docs/TASKS.md`, ORG-001..008) — then Phase 2 per [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 ## Requirements
 

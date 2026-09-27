@@ -3408,6 +3408,256 @@ One journey, following the phase's form mechanics exactly: the two sets are crea
 
 ---
 
+## Organization phase
+
+§78's last open MVP decision: folders or tags — choose one. ADR-012 chooses **tags**: many-to-many labeling matches how a personal library grows, keeps the MVP free of hierarchy decisions, and composes with the search filter rather than competing with it. The decision is recorded once (ORG-001) and the tasks inherit it: two tables, a replace-style assignment endpoint, a composed `?tag=` filter, and two small UI additions. Deleting a tag must never touch a set — content is content (§46), organization is not.
+
+### ORG-001
+
+### Title
+Record the organization decision (ADR-012)
+
+### Goal
+Choose between folders and tags for MVP and fix the schema, API, and UI shape before any table exists.
+
+### Dependencies
+SEARCH-004
+
+### Status
+DONE
+
+### Files
+docs/adr/ADR-012-organization.md
+ARCHITECTURE.md (key-decisions table: registered ADR-012)
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+- decides folders vs. tags with the reasoning recorded against the current dashboard/search reality
+- decides the schema shape (tables, ownership, uniqueness, caps) and the deletion semantics
+- decides the API shape (list, assignment strategy, filter parameter) and the UI surface
+- states what is deferred (the other option, tag rename/delete, counts)
+
+### Decision
+ADR-012 chooses **tags**: a set can carry several of the user's own labels, which matches reality better than single-bucket containment, and the MVP slice stays free of tree/move complexity. Schema: `tags` (user-owned, name unique per user case-insensitively via an expression index, 1–50 chars) and `set_tags` (unique `(set_id, tag_id)`, index leading on `tag_id`, no `user_id` — ownership flows through both parents, and assignment requires the tag to belong to the set's owner). At most 10 tags per set (§53 ceiling, 400 beyond). API: `GET /tags` (id + name) and `PUT /sets/:id/tags` — a **replace** contract (`{ tags: string[] }`, unknown names created for the caller, owner-only, idempotent by nature) because the natural UI is one field on the set forms. Filter: `GET /sets?tag=<tagId>` composing with `q` — the id, not the name, for URL stability. UI: a comma-separated tags field on the set forms (no picker component yet) and dashboard tag filter links. Deferred to Phase 2: folders (§80), tag rename/delete, counts, autocomplete. Content safety: removing a tag never touches a set.
+
+### Tests
+None (documentation only)
+
+---
+
+### ORG-002
+
+### Title
+Add the tags tables and migration
+
+### Goal
+Define `tags` and `set_tags` in the database schema and generate the migration.
+
+### Dependencies
+ORG-001
+
+### Status
+TODO
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/0008_*.sql
+docs/database/schema.md
+
+### Acceptance Criteria
+- `tags`: id, user_id (FK → users, on delete cascade), name (not null), created_at, updated_at — house conventions (§49); unique case-insensitive name per user (expression unique index on `(user_id, lower(name))`)
+- `set_tags`: set_id (FK → study_sets, on delete cascade), tag_id (FK → tags, on delete cascade), unique `(set_id, tag_id)`; index leading on `tag_id`
+- migration generated and applies cleanly; schema documentation updated
+
+### Tests
+- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed; tables verified in psql (FKs, unique constraints, indexes)
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed (dist refreshed for the API)
+
+---
+
+### ORG-003
+
+### Title
+Add tag database access
+
+### Goal
+Provide a Drizzle repository for tag persistence and per-set assignment.
+
+### Dependencies
+ORG-002
+
+### Status
+TODO
+
+### Files
+apps/api/src/tags/tags.repository.ts
+apps/api/src/tags/tags.repository.integration.spec.ts
+packages/database/src/index.ts (only if a helper re-export is needed)
+
+### Acceptance Criteria
+- list by user (id + name), list by set, create-or-get by (owner, name)
+- replace a set's assignments in one transaction: verify the set is owned (foreign set indistinguishable from missing, §41), create-or-get every incoming name, delete the join rows that fell out, insert the new ones
+- assignment requires the tag to belong to the set's owner (§41)
+- every query owner-scoped; no N+1 (§35)
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (integration: create-or-get dedupes case-insensitively, replace adds/removes/keeps rows, foreign set rejected, foreign tag not assignable, per-user and per-set listings scoped)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+
+---
+
+### ORG-004
+
+### Title
+Add the tag endpoints
+
+### Goal
+Expose `GET /tags` and the replace-style `PUT /sets/:id/tags`.
+
+### Dependencies
+ORG-003
+
+### Status
+TODO
+
+### Files
+apps/api/src/tags/tags.module.ts
+apps/api/src/tags/tags.controller.ts
+apps/api/src/tags/get-tags.integration.spec.ts
+apps/api/src/tags/put-set-tags.integration.spec.ts
+packages/contracts/src/set-tags.schema.ts
+packages/contracts/src/set-tags.schema.spec.ts
+packages/contracts/src/index.ts
+apps/api/src/app.module.ts
+
+### Acceptance Criteria
+- `GET /tags`: the caller's tags, 401 without a session
+- `PUT /sets/:id/tags`: replaces the set's tags from a shared schema (`{ tags: string[] }` — trimmed, deduped, each 1–50 chars, at most 10 with 400 beyond, per ADR-012); 200 with the set's tags after replace; 404 `SET_NOT_FOUND` for a foreign/missing set; 401 without a session
+- contracts schema lives in `packages/contracts` with user-facing messages (the register/card precedent) — the web form validates with the same schema
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: list, replace creating and reusing tags, replace removing a dropped tag, 404, 401, 400 for over-cap/over-length)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### ORG-005
+
+### Title
+Add the tag filter to GET /sets
+
+### Goal
+Extend the sets collection with `?tag=<tagId>`, composing with `q`.
+
+### Dependencies
+ORG-003
+
+### Status
+TODO
+
+### Files
+apps/api/src/sets/sets.repository.ts
+apps/api/src/sets/sets.controller.ts
+apps/api/src/sets/list-sets.integration.spec.ts
+
+### Acceptance Criteria
+- `listByOwner` accepts an optional tag id and filters through the `set_tags` join, owner-scoped in SQL (§41) — a tag the caller does not own yields an empty page, not another user's sets
+- composes with `q` and the existing limit/offset pagination and `nextOffset` rule
+- absent `tag` behaves exactly as before
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: filter by tag, composition with `q`, a foreign tag id yields an empty page, absent-tag unchanged)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### ORG-006
+
+### Title
+Add tags to the set forms
+
+### Goal
+Let the owner label a set from the create and edit forms.
+
+### Dependencies
+ORG-004
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/sets/new/create-set-form.tsx (+ spec)
+apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec)
+apps/web/src/lib/api.ts (+ spec)
+
+### Acceptance Criteria
+- both forms gain a labeled Tags field (comma-separated names) validated with the shared schema
+- submission sends the tag names with the set payload (or the replace call after create) and errors show clear messages (§56)
+- the detail page shows the set's tags
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (forms send the parsed tag list; API errors surface; the detail page renders the tags)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### ORG-007
+
+### Title
+Add the dashboard tag filter
+
+### Goal
+Let the user filter the library by tag from the dashboard.
+
+### Dependencies
+ORG-004
+ORG-005
+
+### Status
+TODO
+
+### Files
+apps/web/src/lib/tags.ts (+ spec)
+apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
+
+### Acceptance Criteria
+- the dashboard lists the caller's tags as filter links composing with `?q=` (URL state, §23); the active tag is visible in the URL and clearable
+- `listTags` follows the cookie-forwarding lib pattern
+- §56 states stay distinct (empty library, no matches for the tag/text combination, results)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (lib forwards the cookie; the page renders the filter links, composes tag + query, and keeps the §56 states distinct)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### ORG-008
+
+### Title
+Add the organization E2E journey
+
+### Goal
+Cover the loop in a browser: label sets, filter by tag, compose with search.
+
+### Dependencies
+ORG-006
+ORG-007
+
+### Status
+TODO
+
+### Files
+apps/web/e2e/organization.spec.ts
+
+### Acceptance Criteria
+- register → create two sets → label them via the forms → filter the dashboard by tag → compose tag + search text → the no-matches state
+- one journey test, not per-feature tests (SET-014/CARD-014/STUDY-014/PROGRESS-007/SEARCH-004 precedent)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test:e2e`
+
+---
+
 ## Remaining MVP phases (coarse — not yet decomposed)
 
-None. With Search decomposed above, every §78 MVP slice (authentication, study sets, cards, study, progress, search, organization) is either shipped or has an atomic task chain — the organization item (folders or tags, §78's "choose one") remains an explicit MVP decision to make and decompose, and everything beyond it is the Phase-2 block in `docs/ROADMAP.md`.
+None. With the organization phase decomposed above, every §78 MVP slice has shipped or has an atomic task chain; everything beyond it is the Phase-2 block in `docs/ROADMAP.md`.

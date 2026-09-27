@@ -145,6 +145,7 @@ Key properties:
 | Study sessions: `ACTIVE → COMPLETED/ABANDONED` state machine, binary reviews, isolated Leitner ladder scheduler | ADR-009 |
 | Progress: dedicated `/progress` page, due = `next_review_at <= now`, counts-only API (accuracy derived client-side) | ADR-010 |
 | Search: `q` filter on `GET /sets` (collection filtering), `ILIKE` substring on title/description, no index at MVP scale | ADR-011 |
+| Organization: tags (many-to-many, case-insensitive per-user names), replace-style `PUT /sets/:id/tags`, `?tag=` filter composing with `q` | ADR-012 |
 | Next.js rewrite proxy instead of CORS — first-party session cookie, no API CORS surface | AUTH-020 task rationale + `ENVIRONMENT.md` |
 | Per-IP login rate limiting, in-memory storage (Redis swap deferred) | AUTH-020A task rationale |
 
