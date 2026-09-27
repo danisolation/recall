@@ -4,8 +4,11 @@ import {
   desc,
   eq,
   ilike,
+  inArray,
   or,
+  setTags,
   studySets,
+  tags,
 } from "@danisolation-recall/database";
 import type { CreateSetInput, UpdateSetInput } from "@danisolation-recall/contracts";
 import { DATABASE_PROVIDER, type Database } from "../database/database.module";
@@ -43,14 +46,17 @@ export class SetsRepository {
     return set ?? null;
   }
 
-  // ADR-011: an optional free-text filter over the caller's own sets.
-  // Ownership stays in this WHERE clause (§41) — a foreign set is never
-  // searchable. An empty q (the schema trims) means no filter, and and()
-  // ignores the undefined branch, so the search composes cleanly.
+  // ADR-011 + ADR-012: an optional free-text filter and an optional tag
+  // filter over the caller's own sets. Ownership stays in this WHERE clause
+  // (§41) — a foreign set is never searchable, and a foreign tag id yields
+  // an empty page because the tag subquery requires the tag to be the
+  // caller's. An empty q (the schema trims) and an absent tag mean no
+  // filter, and and() ignores the undefined branches.
   async listByOwner(
     ownerId: number,
     page: { limit: number; offset: number },
     q?: string,
+    tagId?: number,
   ): Promise<StudySet[]> {
     // Escape the LIKE metacharacters so a user's % or _ matches literally,
     // then wrap the whole query in wildcards.
@@ -66,6 +72,24 @@ export class SetsRepository {
             ? or(
                 ilike(studySets.title, pattern),
                 ilike(studySets.description, pattern),
+              )
+            : undefined,
+          // A semijoin instead of a join in the outer query: conditional
+          // INNER JOINs would either duplicate multi-tagged sets or vanish
+          // untagged ones.
+          tagId !== undefined
+            ? inArray(
+                studySets.id,
+                this.db
+                  .select({ id: setTags.setId })
+                  .from(setTags)
+                  .innerJoin(tags, eq(setTags.tagId, tags.id))
+                  .where(
+                    and(
+                      eq(setTags.tagId, tagId),
+                      eq(tags.userId, ownerId),
+                    ),
+                  ),
               )
             : undefined,
         ),

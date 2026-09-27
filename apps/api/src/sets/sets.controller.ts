@@ -42,6 +42,12 @@ const listSetsQuerySchema = z.object({
     .transform((value) => value.trim())
     .pipe(z.string().max(200, "Search query must be at most 200 characters"))
     .optional(),
+  // ADR-012: the tag filter takes the tag's id — stable and unambiguous.
+  tag: z.coerce
+    .number()
+    .int("Tag must be a whole number")
+    .positive("Tag must be a positive number")
+    .optional(),
 });
 
 export class ListSetsQueryDto extends createZodDto(listSetsQuerySchema) {}
@@ -93,6 +99,7 @@ export class SetsController {
         offset: query.offset,
       },
       query.q,
+      query.tag,
     );
 
     return {

@@ -3566,7 +3566,7 @@ Extend the sets collection with `?tag=<tagId>`, composing with `q`.
 ORG-003
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/sets/sets.repository.ts
@@ -3578,8 +3578,11 @@ apps/api/src/sets/list-sets.integration.spec.ts
 - composes with `q` and the existing limit/offset pagination and `nextOffset` rule
 - absent `tag` behaves exactly as before
 
+### Decision
+The tag filter is a **semijoin via `inArray(studySets.id, subquery)`** rather than a conditional join in the outer query: conditional INNER JOINs would either duplicate multi-tagged sets or vanish untagged ones, and a LEFT JOIN would need a DISTINCT — the subquery keeps one query shape, one row per set, and composes with `q` as just another `and()` branch (`and()` ignores the undefined when no tag is given). The subquery itself requires `tags.user_id = ownerId`, so a foreign tag id yields an empty page *in SQL*, not by application filtering (§41, §32). The controller's schema coerces `tag` to a positive integer with 400 outside (the limit/offset precedent); the parameter is the tag's **id** per ADR-012 — stable and unambiguous where a name would break under a future rename.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: filter by tag, composition with `q`, a foreign tag id yields an empty page, absent-tag unchanged)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (234 tests, incl. 4 new HTTP-level tests: the science tag returning exactly its two sets newest-first, composition with `q` in both the matching and conflicting directions, a foreign user's same-named tag id yielding an empty page, and a malformed tag id rejected with 400; the tag fixtures live on the spec's third seeded user so the pre-existing exact-list assertions stay untouched)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---

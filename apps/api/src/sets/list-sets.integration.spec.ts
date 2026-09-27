@@ -8,6 +8,7 @@ import { AppModule } from "../app.module";
 import { DATABASE_PROVIDER, type Database } from "../database/database.module";
 import { hashPassword } from "../auth/password";
 import { UsersRepository } from "../auth/users.repository";
+import { TagsRepository } from "../tags/tags.repository";
 import { SetsRepository } from "./sets.repository";
 
 describe("GET /sets (integration)", () => {
@@ -21,6 +22,8 @@ describe("GET /sets (integration)", () => {
   let sessionCookie: string;
   let searchCookie: string;
   let ownerId: number;
+  let scienceTagId!: number;
+  let foreignTagId!: number;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -54,11 +57,13 @@ describe("GET /sets (integration)", () => {
     await setsRepository.create(ownerId, { title: "List A" });
     await setsRepository.create(ownerId, { title: "List B" });
     await setsRepository.create(ownerId, { title: "List C" });
-    await setsRepository.create(other.id, { title: "Intruder set" });
+    const intruderSet = await setsRepository.create(other.id, {
+      title: "Intruder set",
+    });
 
     // A separate library for the search tests, so the exact-list assertions
     // above and below stay untouched by the extra fixtures.
-    await setsRepository.create(searchUser.id, {
+    const biologyBasics = await setsRepository.create(searchUser.id, {
       title: "Biology basics",
       description: "Cells and organelles",
     });
@@ -66,10 +71,40 @@ describe("GET /sets (integration)", () => {
       title: "History of Rome",
       description: "The republic and its emperors",
     });
-    await setsRepository.create(searchUser.id, {
+    const advancedBiology = await setsRepository.create(searchUser.id, {
       title: "Advanced biology",
       description: "Genetics",
     });
+
+    // Tag fixtures for ORG-005: one tag across two of the search user's
+    // sets, and a same-named tag owned by the other user — whose id must
+    // never match the search user's filter.
+    const tagsRepository = app.get(TagsRepository);
+    const scienceResult = await tagsRepository.replace(
+      biologyBasics.id,
+      searchUser.id,
+      ["science"],
+    );
+    await tagsRepository.replace(advancedBiology.id, searchUser.id, [
+      "science",
+    ]);
+    const foreignResult = await tagsRepository.replace(
+      intruderSet.id,
+      other.id,
+      ["science"],
+    );
+
+    if (
+      scienceResult.outcome !== "replaced" ||
+      !scienceResult.tags[0] ||
+      foreignResult.outcome !== "replaced" ||
+      !foreignResult.tags[0]
+    ) {
+      throw new Error("Failed to create tag fixtures");
+    }
+
+    scienceTagId = scienceResult.tags[0].id;
+    foreignTagId = foreignResult.tags[0].id;
 
     const login = async (userEmail: string) => {
       const response = await supertest(app.getHttpServer())
@@ -298,6 +333,59 @@ describe("GET /sets (integration)", () => {
     const response = await supertest(app.getHttpServer())
       .get("/sets")
       .query({ q: "a".repeat(201) })
+      .set("Cookie", searchCookie);
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("filters by tag", async () => {
+    const response = await supertest(app.getHttpServer())
+      .get("/sets")
+      .query({ tag: scienceTagId })
+      .set("Cookie", searchCookie);
+
+    expect(response.status).toBe(200);
+    expect(
+      response.body.items.map((set: { title: string }) => set.title),
+    ).toEqual(["Advanced biology", "Biology basics"]);
+  });
+
+  it("composes the tag filter with the text query", async () => {
+    const matching = await supertest(app.getHttpServer())
+      .get("/sets")
+      .query({ tag: scienceTagId, q: "advanced" })
+      .set("Cookie", searchCookie);
+
+    expect(matching.status).toBe(200);
+    expect(
+      matching.body.items.map((set: { title: string }) => set.title),
+    ).toEqual(["Advanced biology"]);
+
+    const conflicting = await supertest(app.getHttpServer())
+      .get("/sets")
+      .query({ tag: scienceTagId, q: "history" })
+      .set("Cookie", searchCookie);
+
+    expect(conflicting.status).toBe(200);
+    expect(conflicting.body.items).toEqual([]);
+  });
+
+  it("yields an empty page for a tag the caller does not own", async () => {
+    const response = await supertest(app.getHttpServer())
+      .get("/sets")
+      .query({ tag: foreignTagId })
+      .set("Cookie", searchCookie);
+
+    expect(response.status).toBe(200);
+    expect(response.body.items).toEqual([]);
+    expect(response.body.nextOffset).toBeNull();
+  });
+
+  it("rejects a malformed tag id with 400", async () => {
+    const response = await supertest(app.getHttpServer())
+      .get("/sets")
+      .query({ tag: "not-a-number" })
       .set("Cookie", searchCookie);
 
     expect(response.status).toBe(400);
