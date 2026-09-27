@@ -17,6 +17,7 @@ import { z } from "zod";
 import { AuthGuard, CurrentUser } from "../auth/auth.guard";
 import { type User } from "../auth/users.repository";
 import { CreateSetService } from "./create-set.service";
+import { FoldersRepository } from "../folders/folders.repository";
 import { type StudySet, SetsRepository } from "./sets.repository";
 
 export class CreateSetDto extends createZodDto(createSetSchema) {}
@@ -75,6 +76,7 @@ export class SetsController {
   constructor(
     private readonly createSetService: CreateSetService,
     private readonly setsRepository: SetsRepository,
+    private readonly foldersRepository: FoldersRepository,
   ) {}
 
   @Post()
@@ -137,6 +139,18 @@ export class SetsController {
     @Param("id") setId: string,
     @Body() body: UpdateSetDto,
   ): Promise<StudySet> {
+    // ADR-014: a numbered folderId must be one of the caller's folders —
+    // a foreign folder is indistinguishable from a missing one (§41).
+    if (
+      typeof body.folderId === "number" &&
+      !(await this.foldersRepository.isOwnedBy(body.folderId, user.id))
+    ) {
+      throw new NotFoundException({
+        code: "FOLDER_NOT_FOUND",
+        message: "Folder not found",
+      });
+    }
+
     const set = await this.setsRepository.update(
       parseSetId(setId),
       user.id,

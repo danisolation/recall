@@ -26,6 +26,7 @@ export class SetsRepository {
         ownerId,
         title: input.title,
         description: input.description ?? null,
+        folderId: input.folderId ?? null,
       })
       .returning();
 
@@ -114,6 +115,12 @@ export class SetsRepository {
 
     if (input.description !== undefined) {
       values.description = input.description;
+    }
+
+    // ADR-014: absent leaves the placement alone; null unfiles; a number
+    // files — ownership was checked by the controller (§41).
+    if (input.folderId !== undefined) {
+      values.folderId = input.folderId;
     }
 
     const [set] = await this.db

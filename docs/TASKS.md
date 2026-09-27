@@ -4115,22 +4115,27 @@ Folders endpoints and the set contracts' folderId
 FOLD-003
 
 ### Status
-TODO
+DONE
 
 ### Files
 packages/contracts/src/folders.schema.ts (+ spec, exported from index)
-packages/contracts/src/sets.schema.ts (folderId on create/update)
+packages/contracts/src/set.schema.ts (folderId on create/update)
 apps/api/src/folders/folders.controller.ts (+ integration spec)
-apps/api/src/sets/sets.controller.ts, sets.service.ts / sets.repository.ts (folderId validation on write)
-docs/api/*.md (none per precedent — skip)
+apps/api/src/folders/folders.module.ts (controller added)
+apps/api/src/sets/sets.controller.ts, sets.module.ts, create-set.service.ts (+ spec), sets.repository.ts
 
 ### Acceptance Criteria
 - folder contracts (name 1–50 chars) validated like tags (§53); 404 `FOLDER_NOT_FOUND` for foreign/missing folders
 - `GET /folders` returns `{ id, name, setCount }`; rename conflict → 409 or 400 per the house error register (record which)
 - `POST /sets` / `PATCH /sets/:id` accept an optional `folderId` (null = unfile); a foreign folderId is rejected (400 with a clear code, or 404 — record the decision)
 
+### Decision
+Two register decisions, recorded as the acceptance asked: **rename/create conflict → 409 `FOLDER_NAME_TAKEN`** (the house conflict status, matching `REVIEW_ALREADY_RECORDED`), and **a foreign folderId → 404 `FOLDER_NOT_FOUND`** — §41's foreign-equals-missing principle applied to the referenced folder, mirroring the tags precedent, with the error body naming the folder so the 404 is unambiguous. Contract shape: `folderId: number().int().positive().nullable().optional()` — absent leaves placement alone, null unfiles, a number files; the update schema's "Nothing to update" refine now accepts a folderId-only PATCH. Placement enforcement sits where the house puts write decisions: the **create path validates in `CreateSetService`** (the service owns a create decision; a foreign folder throws 404 before anything is created), the **update path validates in the controller** (which already composes the repository directly), and `FoldersRepository.isOwnedBy` is the shared check; `SetsRepository.create/update` thread `folderId` through (`create` defaults to null). `SetsModule` imports `FoldersModule` for the injection. `GET /folders` returns the full rows plus `setCount` (superset of the acceptance shape). Contracts dist rebuilt after the schema change.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/contracts test` + `pnpm --filter @danisolation-recall/api test` (folders endpoints integration spec; set-placement cases)
+- `pnpm --filter @danisolation-recall/contracts test` — **59 passed**: +4 folders-schema tests (trim, blank, >50, missing) + 4 placement tests (folderId number/null/omitted on create, non-positive/non-integer rejected, folderId-only PATCH allowed, empty PATCH still rejected)
+- `pnpm --filter @danisolation-recall/api test` — **260 passed (44 files)**: +15 folders endpoint tests (full CRUD through supertest: create 201, case-insensitive duplicate 409, same-name-other-user 201, list with counts 0→1, set filed via PATCH, foreign folder on set update 404, placement at creation, unknown folderId 404, rename, foreign rename 404, unfile via null, delete-unfiles proof via GET /sets/:id, repeated delete 404, unauthenticated 401) + 2 service tests (owned folder passes through, foreign rejects before create)
+- `pnpm --filter @danisolation-recall/api typecheck` — clean
 
 ---
 
