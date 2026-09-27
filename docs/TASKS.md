@@ -3358,7 +3358,7 @@ Cover the loop in a browser: create sets, search them, hit the no-matches state,
 SEARCH-003
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/e2e/search.spec.ts
@@ -3367,8 +3367,11 @@ apps/web/e2e/search.spec.ts
 - register → create two distinguishable sets → search matches one and not the other → a nonsense query shows the no-matches state → clearing the query restores the full list
 - one journey test, not per-feature tests (SET-014/CARD-014/STUDY-014/PROGRESS-007 precedent)
 
+### Decision
+One journey, following the phase's form mechanics exactly: the two sets are created through the UI (navigating between creations via `goto("/dashboard")`, the auth journey's established full-navigation idiom), the search box is driven by fill + Search click, and every leg asserts the URL state — `/dashboard?q=Spanish` with the matching set visible and the other absent (`toHaveCount(0)`), then the no-matches panel quoting the query with the input still holding it (the retry affordance), then clearing (`/dashboard?q=` with the empty value) restoring both sets. One API-name fix from the first run: `getByLabelText` is Testing Library, not Playwright — the correct method is `getByLabel`. Run-environment note: the previous E2E run's `next dev` webServer survived again on Windows and held the directory lock; the kill-and-rerun pattern from PROGRESS-007 applies and may be worth a pre-test cleanup hook someday.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test:e2e`
+- `pnpm --filter @danisolation-recall/web test:e2e` (9 Playwright tests, incl. the new search journey; the auth, sets, cards, study, and progress journeys still pass)
 
 ---
 
