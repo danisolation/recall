@@ -4072,6 +4072,33 @@ The tags repository's conventions carried over: `@Inject(DATABASE_PROVIDER)` db 
 
 ---
 
+### A11Y-001
+
+### Title
+Add a skip link to the protected layout
+
+### Goal
+Close the one genuine gap from the 2026-09-27 ui-ux-pro-max audit: a bypass for the repeated header (WCAG 2.4.1 hygiene).
+
+### Dependencies
+FOLD-003
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/layout.tsx (+ spec)
+
+### Acceptance Criteria
+- a "Skip to content" link as the layout's first focusable element, visually hidden until focused (the standard sr-only-until-focus pattern), targeting an id on `<main>`
+- additive only: no existing copy, name, or role changes; the layout spec's 2 tests stay green
+- the audit's no-defect findings are recorded here as the durable record (auth autocomplete already WCAG-2.2-conformant; no sticky UI so focus-obscured is N/A; error-summary pattern covered by per-field aria-describedby + RHF focus; keyboard shortcuts already guard interactive targets; password-visibility toggle noted as a deferred taste item, not queued)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` — layout spec extended with one test (the skip link is the first focusable element and targets #main) or the existing tests extended minimally; typecheck + build
+
+---
+
 ### FOLD-004
 
 ### Title
@@ -4127,6 +4154,9 @@ apps/web/src/lib/sets.ts (folderId param, + spec)
 - §56 states stay distinct: folder+tag+text no-matches names all active filters; malformed folder param folds to no filter; an unknown folder id keeps the escape hatch
 - every href/aria-current/name discipline from the tag work repeats
 
+### Design (ui-ux-pro-max pass, 2026-09-27)
+Folder chips join the dashboard as a **separate row above the tag chips** — containment ("where") above labeling ("what"), each folder chip carrying the Folder icon (lucide, aria-hidden) + name + count as text ("University · 4" — counts are never color-only, per the skill's compact-label-semantics rule). The chip register is reused exactly: active folder = `aria-current="true"` + the `bg-marker/40` fill (the skill's active-state rule, already our idiom), inactive = card pill. **Both chip rows gain `min-h-11` + `inline-flex items-center`** — the skill's 44px touch-target floor flags the shipped tag chips (~32px) as a mobile miss; the fix covers both rows rather than splitting the register. Chips wrap via the existing `flex flex-wrap` (the skill's high-severity chip-reflow rule bans clipped rows). Conflict with the dataset noted and resolved by house law: the icons dataset recommends Phosphor — ADR-013 locked lucide, so the same glyph semantics (folder/folder-plus) map to lucide names; no toast/`--persist` artifacts — the ledger owns design decisions.
+
 ### Tests
 - `pnpm --filter @danisolation-recall/web test` (lib + dashboard spec extensions, the ORG-007 pattern)
 
@@ -4159,6 +4189,9 @@ apps/web/src/lib/sets.ts (folderId on create/update, + spec)
 - `/folders`: create form, per-folder rename/delete with the inline two-step confirm register (§56 states distinct; a deleted folder's sets survive unfiled — say so in the confirm copy)
 - set forms: folder select (the caller's folders + "No folder") wired through `folderId`; the create form's two-phase save keeps working
 - every visible name/copy discipline holds; deletion confirm names follow the house register
+
+### Design (ui-ux-pro-max pass, 2026-09-27)
+The management page is a panel list, one row per folder: name + set count, with Rename and Delete as link-register buttons. **Rename is an inline swap** (row becomes a labeled input + Save/Cancel — the delete-confirm pattern reused for editing), validated on submit through the FOLD-004 contracts schema with the duplicate-name conflict surfacing inline ("A folder with this name already exists.") — the skill's inline-validation rule. **Delete keeps the inline two-step confirm** (high-severity destructive rule) with copy naming the ADR-014 outcome: filed sets stay, unfiled. Success feedback follows the house register rather than the dataset's toast suggestion: the visible list change IS the confirmation, errors are inline FieldErrors (ADR-013 rejected toasts). The set forms' folder field is a **native `<select>` labeled "Folder"** through the FormField register (visible label per the skill's form-labels rule; native control per its semantic-controls rule; "No folder" = empty value), styled to match Input. Icons: FolderPlus (create), Pencil (rename), Trash2 (delete) — house glyphs at h-4 w-4, aria-hidden beside text; the create form's two-phase save keeps the select inside the created-set flow (createSet gains folderId, then replaceTags as today).
 
 ### Tests
 - `pnpm --filter @danisolation-recall/web test` (folders page + forms + lib specs)
