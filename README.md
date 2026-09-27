@@ -5,9 +5,9 @@ A modern flashcard and learning platform inspired by concepts behind tools like 
 ## Status
 
 - **Monorepo** — pnpm workspaces + Turborepo: `apps/web` (Next.js 16), `apps/api` (NestJS 11), `packages/` (database, contracts, eslint-config, typescript-config)
-- **Authentication is complete end to end** — register and login screens validating with the same schemas as the API, httpOnly-cookie sessions, a protected `/dashboard` gated server-side, guarded API routes, logout, login rate limiting, and a Playwright journey over the real stack
-- **PostgreSQL 17** via Docker Compose with Drizzle ORM migrations
-- Next up (see [`docs/TASKS.md`](docs/TASKS.md)): the study-sets phase
+- **The MVP is shipped end to end** (see [`docs/TASKS.md`](docs/TASKS.md)): authentication, study sets (with dashboard search), cards with reordering, the card-by-card study loop with Leitner-ladder scheduling (ADR-009), a progress page with review counts, accuracy, history, and a due queue (ADR-010) — every slice backed by unit, integration, and browser E2E journeys
+- **PostgreSQL 17** via Docker Compose with Drizzle ORM migrations (seven tables)
+- Next up: the organization decision (folders or tags — §78's choose-one) and Phase 2 per [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 ## Requirements
 
@@ -59,7 +59,7 @@ API integration tests hit the real PostgreSQL from Docker Compose and require `D
 ```text
 apps/
   web/      Next.js 16 App Router frontend (Tailwind v4, React Hook Form)
-  api/      NestJS 11 API (auth module, database module, health)
+  api/      NestJS 11 API (auth, sets, cards, study, progress modules + database, health)
 packages/
   database/       Drizzle schema, client, migrations
   contracts/      Zod schemas shared by API and web (ADR-004)
@@ -84,4 +84,4 @@ AGENT_RULES.md    Operating constitution for the (AI) engineer — read first
 | [`docs/api/auth.md`](docs/api/auth.md) | Auth API endpoint reference (shapes, error codes) |
 | [`docs/database/schema.md`](docs/database/schema.md) | Database schema and migration workflow |
 | [`docs/TECH-DEBT.md`](docs/TECH-DEBT.md) | Intentionally deferred work, with rationale |
-| [`docs/adr/`](docs/adr/) | Architecture decision records (ORM, contracts, sessions, design system) |
+| [`docs/adr/`](docs/adr/) | Architecture decision records (ORM, contracts, sessions, design system, study sessions, progress, search) |

@@ -1524,6 +1524,39 @@ None (documentation only; facts cross-checked against code, manifests, and runni
 
 ---
 
+### DOCS-002
+
+### Title
+Refresh the handoff documentation for the MVP-complete state
+
+### Goal
+Bring the standing documentation back in line with the shipped implementation (§73): the README status, ARCHITECTURE.md's module map / API surface / data model, and PROGRESS.md all predate the sets, cards, study, progress, and search phases.
+
+### Dependencies
+SEARCH-004
+
+### Status
+DONE
+
+### Files
+README.md
+ARCHITECTURE.md
+docs/PROGRESS.md
+
+### Acceptance Criteria
+- README's status and repository layout describe the shipped MVP, not the auth-era state
+- ARCHITECTURE.md's module map lists every API and web module that now exists; the API surface maps every route and the full error-code register; the data model covers all seven tables and the cascade story
+- PROGRESS.md reflects the completed phases with current test counts and names what actually comes next (the organization decision, Phase 2)
+- no aspirational content — every claim matches the repository (§73)
+
+### Decision
+The refresh is claim-by-claim against the repository, not a rewrite: README's status now says the MVP is shipped (naming each phase and its ADR) with the organization decision as what's next, and its layout line lists all five API modules; ARCHITECTURE.md's API module map gains sets/cards/study/progress rows, the web map covers every protected route and the four cookie-forwarding lib fetchers, the API surface section gains a complete route map (14 routes) plus the full ten-code error register — with the absence of per-domain `docs/api/*.md` files for the newer modules stated as a documented follow-up rather than papered over — and the data model tells the three-layer story (identity → content → learning) with the cascade rule. PROGRESS.md was rewritten around the completed phases with current counts (API 210 / web 139 / contracts 45 / E2E 9, seven tables, migration `0007`). One self-caught error: the draft claimed "eleven ADRs" — the directory holds seven, and the number was corrected to match the filesystem (§73 forbids aspirational documentation). Deliberately out of scope: writing `docs/api/` references for the four newer modules (a follow-up task if wanted) and the organization decision itself.
+
+### Tests
+None (documentation only; claims cross-checked against the module directories, the route map in the controllers, the migrations directory, the ADR directory, and the latest test-run counts)
+
+---
+
 ## Study sets phase
 
 API design per §52: `GET/POST /sets`, `GET/PATCH/DELETE /sets/:id`. Every endpoint requires an authenticated session (AuthGuard); ownership is enforced server-side (§41). Input schemas live in `packages/contracts` (ADR-004).

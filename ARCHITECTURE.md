@@ -27,6 +27,10 @@ The browser only ever talks to the web origin. `/api/*` requests are proxied ser
 | Path | Responsibility |
 | --- | --- |
 | `src/auth/` | The auth domain: controller, register/login services, session service, users repository, auth guard, rate-limit guard |
+| `src/sets/` | Study sets: `GET/POST /sets`, `GET/PATCH/DELETE /sets/:id`, with the `q` search filter (ADR-011) |
+| `src/cards/` | Cards, reached only through their set: list/create, update/delete, position reorder — ownership enforced via the set (§41) |
+| `src/study/` | The study loop (ADR-009): start/get sessions, record reviews (atomic review + progress upsert), finish/abandon transitions, session history, and the pure `schedule()` ladder |
+| `src/progress/` | Progress reads (ADR-010): summary totals and the due queue |
 | `src/database/` | Global `DatabaseModule` — provides the Drizzle client from `DATABASE_URL` |
 | `src/health/` | `GET /health` — runs `SELECT 1` |
 | `src/common/` | Cross-cutting: `ZodExceptionFilter` (reshapes validation failures) |
@@ -40,18 +44,22 @@ Domain modules own their controllers, services, and persistence (§28). Cross-mo
 | --- | --- |
 | `src/app/` | Routes (App Router). Server components by default; `"use client"` only where interactivity lives |
 | `src/app/page.tsx` | Home. Reads the session server-side and shows the signed-in user + logout control, or the auth links |
-| `src/app/login/` | Login page (server) + `LoginForm` (client): React Hook Form + `zodResolver` with the shared schema |
-| `src/app/register/` | Register page + `RegisterForm`; on success signs the new user in and redirects home |
-| `src/app/(protected)/` | Route group whose `layout.tsx` gates access server-side (`redirect("/login")`); `dashboard/` is the first page in it |
-| `src/components/` | `UserMenu`, `LogoutButton`, and `ui/` design-system primitives (Button, Input, FormField, FieldError) per ADR-008 |
-| `src/lib/api.ts` | Thin browser API client: `loginUser`, `registerUser`, `logoutUser`, typed `ApiError` with stable codes |
-| `src/lib/session.ts` | Server-side session read: forwards the request cookie to `GET /auth/me`, memoized per request with React `cache()` |
+| `src/app/login/`, `src/app/register/` | Auth pages (client forms: React Hook Form + `zodResolver` with the shared schemas; register signs the user in) |
+| `src/app/(protected)/` | Route group whose `layout.tsx` gates access server-side (`redirect("/login")`) |
+| `…/(protected)/dashboard/` | The library: sets list, search box (ADR-011's `?q=`), account panel |
+| `…/(protected)/sets/[id]/` | Set detail: card management (create/edit/move/delete), the primary Study control |
+| `…/(protected)/sets/new`, `…/sets/[id]/edit` | Set creation and editing forms |
+| `…/(protected)/study/[sessionId]/` | The card-by-card study screen and the completion view (ADR-009's study mode) |
+| `…/(protected)/progress/` | Summary, due queue, and session history (ADR-010) |
+| `src/components/` | `UserMenu`, `LogoutButton`, `SetList`, `CardList`, `SearchInput`, and `ui/` design-system primitives (Button, Input, FormField, FieldError) per ADR-008 |
+| `src/lib/api.ts` | Browser API client (`ApiError` with stable codes): auth flows, study-session start/record/finish |
+| `src/lib/session.ts`, `lib/sets.ts`, `lib/cards.ts`, `lib/progress.ts` | Server-side fetchers: forward the request cookie with `cache: "no-store"`; the protected layout has already gated the request |
 
 ### `packages/`
 
 | Package | Responsibility |
 | --- | --- |
-| `database` | Drizzle schema (`users`, `sessions`), `createDb()`, migrations |
+| `database` | Drizzle schema (seven tables), `createDb()`, migrations |
 | `contracts` | Zod schemas + inferred types shared by API and web (ADR-004) — single validation language |
 | `eslint-config`, `typescript-config` | Shared tooling configs |
 
@@ -96,14 +104,35 @@ Key properties:
 
 ## API surface
 
-- Endpoint reference with request/response shapes and error codes: [`docs/api/auth.md`](docs/api/auth.md)
-- Every error keeps the house shape `{ code, message }` (§54): `VALIDATION_ERROR`, `EMAIL_ALREADY_REGISTERED`, `INVALID_CREDENTIALS`, `UNAUTHENTICATED`, `RATE_LIMITED`
+- Endpoint reference with request/response shapes and error codes: [`docs/api/auth.md`](docs/api/auth.md) (per-domain references for the newer modules are a documented follow-up — the route map below and the task ledger's response shapes cover them meanwhile)
+- Every error keeps the house shape `{ code, message }` (§54). The register so far: `VALIDATION_ERROR`, `UNAUTHENTICATED`, `RATE_LIMITED`, `EMAIL_ALREADY_REGISTERED`, `INVALID_CREDENTIALS`, `SET_NOT_FOUND`, `CARD_NOT_FOUND`, `SESSION_NOT_FOUND`, `INVALID_STUDY_SESSION`, `REVIEW_ALREADY_RECORDED`
 - External input is always validated by shared Zod schemas via `nestjs-zod` DTOs (ADR-004)
+- Route map (every route below `/auth/*`, `/progress/*`, and the study/sets reads requires the session cookie):
+
+| Route | Purpose |
+| --- | --- |
+| `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/logout` | Account and session lifecycle (login rate-limited) |
+| `GET /sets`, `POST /sets` | List (`?q=` search filter, ADR-011) and create sets |
+| `GET/PATCH/DELETE /sets/:id` | Read, edit, delete a set (owner-only) |
+| `GET/POST /sets/:id/cards` | List and create cards in study order |
+| `PATCH/DELETE /sets/:id/cards/:cardId` | Edit and delete a card |
+| `PATCH /sets/:id/cards/:cardId/position` | Reorder (move-to-position, CARD-008) |
+| `POST /study-sessions` | Start a session — returns the session plus the set's ordered cards |
+| `GET /study-sessions` | Session history, newest first (ADR-010) |
+| `GET /study-sessions/:id` | One session with its reviews and cards (resume is one fetch) |
+| `POST /study-sessions/:id/reviews` | Record an answer — review + progress upsert in one transaction |
+| `POST /study-sessions/:id/finish`, `POST /study-sessions/:id/abandon` | Terminal transitions (finish is idempotent) |
+| `GET /progress` | Summary: review counts and due count (ADR-010) |
+| `GET /progress/due` | The due queue, most-overdue first |
+| `GET /health` | Liveness (`SELECT 1`) |
 
 ## Data model
 
 - Schema and migration workflow: [`docs/database/schema.md`](docs/database/schema.md)
-- `users` (identity) and `sessions` (live credentials) — one user has many sessions.
+- Identity and access: `users` ← `sessions` (one user, many live sessions; only the token hash is stored)
+- Content: `study_sets` ← `cards` (position-ordered, reached only through their set)
+- Learning: `study_sessions` (an interaction over one set, `ACTIVE → COMPLETED/ABANDONED` per ADR-009) ← `reviews` (append-only answer history), plus `user_card_progress` (one row per user+card: counts, streak, `next_review_at` — the ladder's scheduling state)
+- Deletes cascade from the user all the way down; deleting a set takes its cards, sessions, reviews, and progress with it (ADR-009's recorded tradeoff)
 
 ## Key decisions
 
