@@ -3143,10 +3143,11 @@ Promote the repository's existing `listByUser` (STUDY-006) to a paginated endpoi
 PROGRESS-001
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/study/sessions.controller.ts
+apps/api/src/study/sessions.repository.ts (the one ADR-010 touch: `listByUser` gained the `setTitle` join and now returns `SessionHistory[]`)
 apps/api/src/study/list-sessions.integration.spec.ts
 
 ### Acceptance Criteria
@@ -3154,8 +3155,11 @@ apps/api/src/study/list-sessions.integration.spec.ts
 - 401 without a session
 - no new repository queries — the endpoint composes what STUDY-006 already provides
 
+### Decision
+`GET /study-sessions` composes `listByUser` with the house list envelope (file-local query schema, limit default 20 capped at 100 with a 400, `nextOffset` = full page → `offset + limit`) — the same shape as every other list, no service layer. The one change to existing code is ADR-010's recorded touch: `listByUser` now inner-joins `study_sets` for `setTitle`, returning `SessionHistory = StudySession & { setTitle: string }`. The join is safe by construction (deleting a set cascades its sessions, so a session never lacks its set) and saves the history UI a per-row fetch (§35). Ordering stays `id` descending — sessions are serial, so id order is creation order, and started_at ties within one millisecond would otherwise be ambiguous. `SessionHistory` lives beside the other repository types; the shape change ripples nowhere else because nothing consumed `listByUser` before this endpoint.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: envelope newest-first, limit/offset slicing, other users' sessions excluded, 401)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (202 tests, incl. 5 new HTTP-level tests: newest-first envelope with `setTitle` and full session fields, `nextOffset` transitions 2 → null across pages, other users' sessions excluded in both directions with their own list intact, 400 `VALIDATION_ERROR` for `limit=101` and `offset=-1`, 401 `UNAUTHENTICATED`; the repository spec's existing `listByUser` assertions still pass unchanged)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---

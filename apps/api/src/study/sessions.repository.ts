@@ -19,6 +19,9 @@ export type Review = typeof reviews.$inferSelect;
 export type Progress = typeof userCardProgress.$inferSelect;
 export type StudyCard = typeof cards.$inferSelect;
 
+// A history item: the session row plus the name of the set it studied.
+export type SessionHistory = StudySession & { setTitle: string };
+
 export type TransitionResult =
   | { outcome: "transitioned"; session: StudySession }
   | { outcome: "unchanged"; session: StudySession }
@@ -75,17 +78,23 @@ export class SessionsRepository {
     return session ?? null;
   }
 
+  // ADR-010: history items name the studied set, so the join lives here —
+  // one query, no per-row fetch (§35). Every session has its set (deleting
+  // a set cascades its sessions), so the inner join cannot lose rows.
   async listByUser(
     userId: number,
     page: { limit: number; offset: number },
-  ): Promise<StudySession[]> {
-    return this.db
-      .select()
+  ): Promise<SessionHistory[]> {
+    const rows = await this.db
+      .select({ session: studySessions, setTitle: studySets.title })
       .from(studySessions)
+      .innerJoin(studySets, eq(studySessions.setId, studySets.id))
       .where(eq(studySessions.userId, userId))
       .orderBy(desc(studySessions.id))
       .limit(page.limit)
       .offset(page.offset);
+
+    return rows.map((row) => ({ ...row.session, setTitle: row.setTitle }));
   }
 
   // Terminal transitions per ADR-009: ACTIVE → target, repeat transition is

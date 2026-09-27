@@ -7,14 +7,17 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import { reviewSchema, startSessionSchema } from "@danisolation-recall/contracts";
 import { createZodDto } from "nestjs-zod";
+import { z } from "zod";
 import { AuthGuard, CurrentUser } from "../auth/auth.guard";
 import { type User } from "../auth/users.repository";
 import {
   type Review,
+  type SessionHistory,
   type StudyCard,
   type StudySession,
   SessionsRepository,
@@ -25,6 +28,29 @@ import { type StartSessionResult, StartSessionService } from "./start-session.se
 export class StartSessionDto extends createZodDto(startSessionSchema) {}
 
 export class ReviewDto extends createZodDto(reviewSchema) {}
+
+// File-local like every list query schema — the web constructs no queries
+// it needs to validate client-side yet (the list-sets precedent).
+const listSessionsQuerySchema = z.object({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1, "Limit must be at least 1")
+    .max(100, "Limit must be at most 100")
+    .default(20),
+  offset: z.coerce
+    .number()
+    .int()
+    .min(0, "Offset must be at least 0")
+    .default(0),
+});
+
+export class ListSessionsQueryDto extends createZodDto(listSessionsQuerySchema) {}
+
+export type PaginatedSessions = {
+  items: SessionHistory[];
+  nextOffset: number | null;
+};
 
 // ADR-009: a resume is one fetch — session, its reviews, and the set's
 // current ordered cards.
@@ -71,6 +97,25 @@ export class SessionsController {
     }
 
     return result;
+  }
+
+  // ADR-010's history surface: the caller's sessions, newest first.
+  @Get()
+  @UseGuards(AuthGuard)
+  async list(
+    @CurrentUser() user: User,
+    @Query() query: ListSessionsQueryDto,
+  ): Promise<PaginatedSessions> {
+    const items = await this.sessionsRepository.listByUser(user.id, {
+      limit: query.limit,
+      offset: query.offset,
+    });
+
+    return {
+      items,
+      nextOffset:
+        items.length === query.limit ? query.offset + query.limit : null,
+    };
   }
 
   @Get(":id")
