@@ -3817,10 +3817,10 @@ Make the daily instrument feel like one: animated reveal, visible progress, hand
 UX-003
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx (+ spec), completion-view.tsx (+ spec), app/globals.css (flip keyframes/utilities)
+apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx (+ spec), completion-view.tsx (+ spec), app/globals.css (flip classes)
 
 ### Acceptance Criteria
 - reveal flips the card (3D perspective + rotateY, ~200ms, backface-hidden); reduced-motion collapses to the current instant swap; `revealed` state machine unchanged
@@ -3828,8 +3828,12 @@ apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx (+ spec), comple
 - keyboard: Space/Enter reveals when hidden, 1 = Incorrect / 2 = Correct when revealed; ignored when the event originates from a button/input/link (no double-fire, no page scroll); preventDefault on handled keys
 - all copy unchanged; CompletionView gets big-numeral stats with byte-identical strings
 
+### Decision
+The flip is a **true two-face card**: both faces stay mounted (front in flow sizing the card, back absolutely positioned pre-rotated 180deg), the inner wrapper transitions `rotateY(180deg)` over 200ms driven by the unchanged `revealed` state via a `data-revealed` attribute, and `backface-visibility: hidden` on each face does the rest — all authored as plain CSS in globals.css, so the existing reduced-motion kill-switch (0.01ms durations) collapses it to the instant swap with zero JS. The a11y consequence is the improvement: the hidden face is `aria-hidden` until revealed. **Justified test repair (ADR-013's escape hatch):** "back not in the DOM before reveal" became "back face aria-hidden before reveal, front face aria-hidden after" — a stronger assertion pinning the accessibility state instead of DOM absence. The completion big numeral hit a Testing Library fact: `getByText` matches only an element's **direct** text nodes, so a styled `<span>{correct}</span>` inside the compound string is invisible to it even though the rendered string is byte-identical; the three affected assertions now match via a textContent function matcher. The progress bar fills with `scaleX` (transform-only per the motion policy — a width transition would have violated it), marker-colored: the highlighter literally fills as you cover the material. The keyboard effect derives the current card inside itself from `data` + `skipped` (no restructuring around the early returns) and ignores events from BUTTON/A/INPUT/TEXTAREA/contentEditable so native activation never double-fires.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` — study-client spec adds: progressbar value, Space reveals, 1/2 answers, shortcut suppressed on a focused button; typecheck + build
+- `pnpm --filter @danisolation-recall/web test` — **181 passed (32 files)**: +4 study-client (progressbar values, Space reveals → 1 answers incorrect → next card, Space/2 on the second card, the suppression test proving `recordReview` is NOT called while the Correct button holds focus and IS called after blur), 2 assertions repaired to the textContent matcher (completion-view ×2, study-client ×1), all other 176 untouched
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---
 

@@ -93,6 +93,62 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
     };
   }, [data, skipped, sessionId]);
 
+  // Keyboard shortcuts (ADR-013): Space/Enter reveal, 1 = Incorrect,
+  // 2 = Correct. Events from interactive elements are ignored so a focused
+  // button's own activation never double-fires, and handled keys are
+  // preventDefault-ed (Space would otherwise scroll the page).
+  useEffect(() => {
+    if (!data || data.session.status !== "ACTIVE") {
+      return;
+    }
+
+    const session = data;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === "BUTTON" ||
+          target.tagName === "A" ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const answeredIds = new Set([
+        ...session.reviews.map((review) => review.cardId),
+        ...skipped,
+      ]);
+      const card = session.cards.find(
+        (candidate) => !answeredIds.has(candidate.id),
+      );
+
+      if (!card) {
+        return;
+      }
+
+      if (!revealed && (event.key === " " || event.key === "Enter")) {
+        event.preventDefault();
+        setRevealed(true);
+        return;
+      }
+
+      if (
+        revealed &&
+        !isRecording &&
+        (event.key === "1" || event.key === "2")
+      ) {
+        event.preventDefault();
+        void answer(card.id, event.key === "2");
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [data, skipped, revealed, isRecording]);
+
   async function answer(cardId: number, correct: boolean) {
     setIsRecording(true);
     setError(null);
@@ -194,12 +250,43 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Study</h1>
       <Panel className="flex flex-col gap-4">
-        <p className="text-sm text-ink-soft">
-          {`${data.reviews.length} of ${data.cards.length} answered`}
-        </p>
-        <div className="flex flex-col gap-2">
-          <p className="text-lg font-medium">{current.front}</p>
-          {revealed ? <p className="text-ink-soft">{current.back}</p> : null}
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-ink-soft">
+            {`${data.reviews.length} of ${data.cards.length} answered`}
+          </p>
+          <div
+            role="progressbar"
+            aria-label="Session progress"
+            aria-valuemin={0}
+            aria-valuemax={data.cards.length}
+            aria-valuenow={data.reviews.length}
+            className="h-1.5 overflow-hidden rounded-full bg-ink/10"
+          >
+            <div
+              className="h-full w-full origin-left rounded-full bg-marker transition-transform duration-200 motion-reduce:transition-none"
+              style={{
+                transform: `scaleX(${data.reviews.length / data.cards.length})`,
+              }}
+            />
+          </div>
+        </div>
+        {/* Both faces stay mounted for the flip (ADR-013); the hidden face
+            is removed from the accessibility tree via aria-hidden. */}
+        <div className="flip-card" data-revealed={revealed || undefined}>
+          <div className="flip-card-inner">
+            <div
+              aria-hidden={revealed || undefined}
+              className="flip-card-face flex min-h-36 items-center rounded-card border border-ink/10 bg-card p-4"
+            >
+              <p className="text-xl font-medium">{current.front}</p>
+            </div>
+            <div
+              aria-hidden={!revealed || undefined}
+              className="flip-card-face flip-card-back flex min-h-36 items-center overflow-y-auto rounded-card border border-ink/10 bg-card p-4"
+            >
+              <p className="text-lg text-ink-soft">{current.back}</p>
+            </div>
+          </div>
         </div>
         <div className="flex flex-wrap gap-3">
           {revealed ? (

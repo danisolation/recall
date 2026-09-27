@@ -21,8 +21,13 @@ describe("CompletionView", () => {
       screen.getByRole("heading", { name: "Session complete" }),
     ).toBeInTheDocument();
     expect(screen.getByText("3 of 3 answered")).toBeInTheDocument();
+    // The accuracy numeral is a styled child, so the compound string is
+    // matched through textContent rather than direct text nodes.
     expect(
-      screen.getByText("2 of 3 correct (67% accuracy)"),
+      screen.getByText(
+        (_, element) =>
+          element?.textContent === "2 of 3 correct (67% accuracy)",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -37,7 +42,10 @@ describe("CompletionView", () => {
     );
 
     expect(
-      screen.getByText("1 of 3 correct (33% accuracy)"),
+      screen.getByText(
+        (_, element) =>
+          element?.textContent === "1 of 3 correct (33% accuracy)",
+      ),
     ).toBeInTheDocument();
   });
 

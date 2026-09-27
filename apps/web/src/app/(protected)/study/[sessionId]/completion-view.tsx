@@ -35,8 +35,13 @@ export function CompletionView({
             No answers were recorded in this session.
           </p>
         ) : (
-          <p className="text-lg font-medium">
-            {`${correct} of ${reviewed} correct (${accuracy}% accuracy)`}
+          // The count is the numeral; the pinned string stays whole inside
+          // this element so text queries keep matching it.
+          <p className="font-medium">
+            <span className="text-4xl font-semibold tracking-tight">
+              {correct}
+            </span>{" "}
+            of {reviewed} correct ({accuracy}% accuracy)
           </p>
         )}
         <div className="flex flex-wrap gap-4">

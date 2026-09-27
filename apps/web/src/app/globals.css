@@ -42,3 +42,34 @@
     }
   }
 }
+
+/*
+ * The study card's flip (ADR-013). Both faces stay mounted; the inner
+ * wrapper rotates and each face hides its own backface, so the answer
+ * replaces the question. Transform-only, so the reduced-motion kill-switch
+ * above collapses it to the instant swap.
+ */
+.flip-card {
+  perspective: 1200px;
+}
+
+.flip-card-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 200ms;
+}
+
+.flip-card[data-revealed] .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-card-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}

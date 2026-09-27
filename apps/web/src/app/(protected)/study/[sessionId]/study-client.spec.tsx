@@ -56,13 +56,95 @@ describe("StudyClient", () => {
     render(<StudyClient sessionId={5} />);
 
     expect(await screen.findByText("What is mitosis?")).toBeInTheDocument();
-    expect(screen.queryByText("Cell division")).not.toBeInTheDocument();
+    // Both flip faces stay mounted (ADR-013); before the reveal the answer
+    // is hidden from the accessibility tree.
+    expect(screen.getByText("Cell division").parentElement).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
 
     await userEvent.click(
       screen.getByRole("button", { name: "Reveal answer" }),
     );
 
+    expect(screen.getByText("Cell division").parentElement).not.toHaveAttribute(
+      "aria-hidden",
+    );
+    expect(
+      screen.getByText("What is mitosis?").parentElement,
+    ).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("tracks progress in a progressbar", async () => {
+    getSessionMock.mockResolvedValue({
+      ...sessionData,
+      reviews: [{ id: 9, cardId: 1, correct: true }],
+    });
+
+    render(<StudyClient sessionId={5} />);
+
+    const bar = await screen.findByRole("progressbar", {
+      name: "Session progress",
+    });
+    expect(bar).toHaveAttribute("aria-valuemin", "0");
+    expect(bar).toHaveAttribute("aria-valuemax", "2");
+    expect(bar).toHaveAttribute("aria-valuenow", "1");
+  });
+
+  it("reveals with Space and answers with 1 and 2", async () => {
+    getSessionMock.mockResolvedValue(sessionData);
+    recordReviewMock.mockResolvedValue({ id: 1, cardId: 1, correct: false });
+
+    render(<StudyClient sessionId={5} />);
+
+    await screen.findByText("What is mitosis?");
+    await userEvent.keyboard(" ");
+
     expect(screen.getByText("Cell division")).toBeInTheDocument();
+
+    await userEvent.keyboard("1");
+    expect(recordReviewMock).toHaveBeenCalledWith(5, {
+      cardId: 1,
+      correct: false,
+    });
+    expect(await screen.findByText("What is osmosis?")).toBeInTheDocument();
+
+    await userEvent.keyboard(" ");
+    expect(
+      await screen.findByText("Diffusion of water"),
+    ).toBeInTheDocument();
+    await userEvent.keyboard("2");
+    expect(recordReviewMock).toHaveBeenLastCalledWith(5, {
+      cardId: 2,
+      correct: true,
+    });
+  });
+
+  it("ignores the answer keys while a button has focus", async () => {
+    getSessionMock.mockResolvedValue(sessionData);
+    recordReviewMock.mockResolvedValue({ id: 1, cardId: 1, correct: true });
+
+    render(<StudyClient sessionId={5} />);
+
+    await screen.findByText("What is mitosis?");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Reveal answer" }),
+    );
+
+    // A focused button handles its own keys; the shortcuts must not
+    // double-fire behind it.
+    screen.getByRole("button", { name: "Correct" }).focus();
+    await userEvent.keyboard("2");
+    expect(recordReviewMock).not.toHaveBeenCalled();
+
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    await userEvent.keyboard("2");
+    expect(recordReviewMock).toHaveBeenCalledWith(5, {
+      cardId: 1,
+      correct: true,
+    });
   });
 
   it("records the review and advances to the next card", async () => {
@@ -118,8 +200,12 @@ describe("StudyClient", () => {
       await screen.findByRole("heading", { name: "Session complete" }),
     ).toBeInTheDocument();
     expect(screen.getByText("1 of 1 answered")).toBeInTheDocument();
+    // The accuracy numeral is a styled child (see CompletionView), so the
+    // compound string is matched through textContent.
     expect(
-      screen.getByText("0 of 1 correct (0% accuracy)"),
+      screen.getByText(
+        (_, element) => element?.textContent === "0 of 1 correct (0% accuracy)",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Back to the set" }),
