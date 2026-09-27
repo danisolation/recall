@@ -2992,12 +2992,223 @@ Writing the journey exposed a real product gap: nothing called the finish endpoi
 
 ---
 
+## Progress phase
+
+§78's progress basics — review count, accuracy, basic history, next review — surfaced from the data the study phase already writes (`reviews` for history and accuracy, `user_card_progress` for per-card scheduling state, `study_sessions` for history entries). This is a read-only phase: no migrations, no new invariants. As with the study phase, the surface decisions are made once (PROGRESS-001, ADR-010) before any endpoint exists — later tasks inherit those decisions rather than re-deciding them. Every read stays owner-scoped (§41) and paginated where it lists (§36).
+
+### PROGRESS-001
+
+### Title
+Record the progress surface decision (ADR-010)
+
+### Goal
+Decide what the MVP shows for progress — surfaces, aggregates, the "due" rule, and the endpoint list — before any progress endpoint exists.
+
+### Dependencies
+None (builds on the completed study phase)
+
+### Status
+READY
+
+### Files
+docs/adr/ADR-010-progress.md
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+- decides the MVP surface(s): a dedicated protected page vs. a dashboard section vs. per-set progress, and which surface carries which of §78's four basics
+- decides the "due" rule that turns `user_card_progress.next_review_at` into a study queue (due means `next_review_at <= now`, owner-scoped — or whatever the ADR records instead)
+- decides the endpoint list per §52 — expected candidates: `GET /progress` (summary: review count, accuracy, due count), `GET /progress/due` (paginated due cards with their set and card info), `GET /study-sessions` (paginated history, promoting the repository's existing `listByUser`) — and the accuracy representation (integer percent vs. fraction)
+- decides whether the set detail page shows per-card next review (or whether the due list is the only scheduling surface in MVP)
+- states explicitly that the phase requires no schema changes — it reads only what STUDY-002..004 store
+
+### Tests
+None (documentation only)
+
+---
+
+### PROGRESS-002
+
+### Title
+Add progress database access
+
+### Goal
+Provide a Drizzle repository for owner-scoped progress reads.
+
+### Dependencies
+PROGRESS-001
+
+### Status
+TODO
+
+### Files
+apps/api/src/progress/progress.repository.ts
+apps/api/src/progress/progress.repository.integration.spec.ts
+packages/database/src/index.ts (only if a helper re-export is needed)
+
+### Acceptance Criteria
+- totals query: review count and correct count for the caller, computed from `reviews` scoped through `study_sessions` (ownership in SQL, §41)
+- due-cards query: the caller's `user_card_progress` rows with `next_review_at <= now`, joined to `cards` (front) and their `study_sets` (id, title) for navigation, ordered by `next_review_at` ascending, offset-paginated (§36) like the other lists
+- every query is owner-scoped (§41); no N+1 (§35)
+- queries match ADR-010's recorded decisions
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (integration: totals across sessions, due ordering and pagination, other users' rows excluded)
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+
+---
+
+### PROGRESS-003
+
+### Title
+Add the progress summary endpoint (GET /progress)
+
+### Goal
+Return the caller's §78 basics: review count, accuracy, and due count in one response.
+
+### Dependencies
+PROGRESS-002
+
+### Status
+TODO
+
+### Files
+apps/api/src/progress/progress.module.ts
+apps/api/src/progress/progress.controller.ts
+apps/api/src/progress/get-progress.integration.spec.ts
+apps/api/src/app.module.ts
+
+### Acceptance Criteria
+- 200 with an explicit response shape per ADR-010; accuracy in the recorded representation
+- 401 `UNAUTHENTICATED` without a session
+- zero-review users get a legible summary (accuracy absent or null, not a fabricated 0% — the CompletionView precedent)
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: shape with data, zero-review shape, 401)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### PROGRESS-004
+
+### Title
+Add the due cards endpoint (GET /progress/due)
+
+### Goal
+Return the caller's due cards — the study queue the scheduling ladder produces.
+
+### Dependencies
+PROGRESS-002
+
+### Status
+TODO
+
+### Files
+apps/api/src/progress/progress.controller.ts
+apps/api/src/progress/list-due.integration.spec.ts
+
+### Acceptance Criteria
+- explicit paginated envelope (items + next offset), same shape and limits as the other lists; query schema file-local (the list-sets precedent)
+- items carry what the UI needs per ADR-010 (card front, set id/title) — no over-fetching
+- 401 without a session; 400 `VALIDATION_ERROR` for limit/offset violations
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: envelope with due ordering, pagination transitions, foreign rows excluded, 401, 400)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### PROGRESS-005
+
+### Title
+Add the session history endpoint (GET /study-sessions)
+
+### Goal
+Promote the repository's existing `listByUser` (STUDY-006) to a paginated endpoint — §78's "basic history".
+
+### Dependencies
+PROGRESS-001
+
+### Status
+TODO
+
+### Files
+apps/api/src/study/sessions.controller.ts
+apps/api/src/study/list-sessions.integration.spec.ts
+
+### Acceptance Criteria
+- owner-scoped, newest first, explicit paginated envelope (items + next offset) with the same limits as the other lists
+- 401 without a session
+- no new repository queries — the endpoint composes what STUDY-006 already provides
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: envelope newest-first, limit/offset slicing, other users' sessions excluded, 401)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### PROGRESS-006
+
+### Title
+Add the progress screen
+
+### Goal
+Surface the summary, the due queue, and the history in the browser per ADR-010.
+
+### Dependencies
+PROGRESS-003
+PROGRESS-004
+PROGRESS-005
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/progress/page.tsx (+ components and specs as needed)
+apps/web/src/lib/progress.ts (+ spec)
+apps/web/src/app/(protected)/dashboard/page.tsx (+ spec for the entry point)
+
+### Acceptance Criteria
+- the protected screen shows §78's four basics across the ADR-010 surfaces; due items link to their sets
+- the dashboard offers the entry point in the established link register
+- empty states per §56: nothing studied yet, nothing due; loading/error per the study screen's client-fetch pattern if used
+- dates render in the fixed-locale/UTC register for hydration safety
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (lib fetches forward the cookie or client-fetch states; components render summary, due items, history, and empty states; the dashboard renders the entry point)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### PROGRESS-007
+
+### Title
+Add the progress E2E journey
+
+### Goal
+Cover the loop end to end in a browser: study a set, then see the progress surface reflect it.
+
+### Dependencies
+PROGRESS-006
+
+### Status
+TODO
+
+### Files
+apps/web/e2e/progress.spec.ts
+
+### Acceptance Criteria
+- register → create a set → add cards → study them → the progress surface shows the session's counts and accuracy → a due card reappears in the queue
+- one journey test, not per-feature tests (SET-014/CARD-014/STUDY-014 precedent)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test:e2e`
+
+---
+
 ## Remaining MVP phases (coarse — not yet decomposed)
 
 ```text
-Progress
-  ↓
 Search
 ```
 
-Each phase will be decomposed into detailed atomic tasks when its implementation context is known. The Progress phase (§78: review count, accuracy, basic history, next review) reads the data this phase writes and should be decomposed once STUDY-001..010 land.
+Each phase will be decomposed into detailed atomic tasks when its implementation context is known. With Progress decomposed above, Search is the last MVP phase before the Phase-2 block in `docs/ROADMAP.md`.
