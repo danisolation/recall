@@ -3457,11 +3457,11 @@ Define `tags` and `set_tags` in the database schema and generate the migration.
 ORG-001
 
 ### Status
-TODO
+DONE
 
 ### Files
 packages/database/src/schema.ts
-packages/database/drizzle/0008_*.sql
+packages/database/drizzle/0008_silky_thena.sql
 docs/database/schema.md
 
 ### Acceptance Criteria
@@ -3469,9 +3469,13 @@ docs/database/schema.md
 - `set_tags`: set_id (FK → study_sets, on delete cascade), tag_id (FK → tags, on delete cascade), unique `(set_id, tag_id)`; index leading on `tag_id`
 - migration generated and applies cleanly; schema documentation updated
 
+### Decision
+ADR-012's schema lands with two judgment calls made concrete. The case-insensitive uniqueness is an **expression unique index** (`uniqueIndex(...).on(userId, sql\`lower(name)\`)`) rather than a table constraint — Postgres cannot put an expression in a table-level UNIQUE constraint, so the index is the mechanism; the column keeps the display casing. `set_tags`' pair identity is a **composite primary key** (`primaryKey({ columns: [...] })`) rather than a surrogate id plus unique constraint: the pair *is* the row's identity in a pure join table, the PK delivers the ADR's uniqueness with an implicit index, and no `serial id` is ever read. Both tables follow the house comment-per-table convention recording the ADR rationale, and the schema docs gained both tables plus ER diagram edges (`users → tags`, `set_tags` bridging `study_sets` and `tags`).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/database db:generate` and `db:migrate` succeed; tables verified in psql (FKs, unique constraints, indexes)
-- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed (dist refreshed for the API)
+- `pnpm --filter @danisolation-recall/database db:generate` produced `drizzle/0008_silky_thena.sql` (both tables, composite PK, cascade FKs, `set_tags_tag_id_index`, the expression unique index — SQL inspected before applying)
+- `pnpm --filter @danisolation-recall/database db:migrate` applied it (9 migrations in the journal); `tags` and `set_tags` verified in psql (columns, `tags_user_id_lower_name_unique` ON `(user_id, lower(name))`, composite PK, both cascade FKs, the tag_id index)
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` succeed (dist refreshed for the API); the API's 210 tests pass unchanged
 
 ---
 

@@ -101,6 +101,27 @@ One row per answered card — a historical event that is inserted once and never
 
 One row per user per card — the **current** learning state (§45), kept strictly apart from the `reviews` history (§46). `user_card_progress_user_id_card_id_unique` guarantees a single row per user per card, the invariant the review endpoint's transactional upsert relies on; counts and `streak` are overwritten on every recorded review. The unique constraint's index also serves by-user reads, so no separate index exists. Deleting a user or a card removes the rows via the cascade. Migration: `0007_secret_sabra.sql`.
 
+### tags
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `id` | serial | primary key |
+| `user_id` | integer | not null, FK → `users.id` **ON DELETE CASCADE** |
+| `name` | text | not null — the label as typed (display casing preserved) |
+| `created_at` | timestamp with time zone | not null, default `now()` |
+| `updated_at` | timestamp with time zone | not null, default `now()` |
+
+One row per user-owned tag (ADR-012). `tags_user_id_lower_name_unique` is an **expression index** on `(user_id, lower(name))`: names are unique per user case-insensitively while the column keeps the display casing — "Biology" blocks "biology" but displays as typed. Deleting a user removes their tags via the cascade; deleting a tag never touches sets (only its `set_tags` rows go). Migration: `0008_silky_thena.sql`.
+
+### set_tags
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `set_id` | integer | not null, FK → `study_sets.id` **ON DELETE CASCADE**, part of the composite primary key |
+| `tag_id` | integer | not null, FK → `tags.id` **ON DELETE CASCADE**, part of the composite primary key |
+
+The many-to-many join between sets and their owner's tags; the `(set_id, tag_id)` pair is the row's identity (composite primary key — the ADR's uniqueness, race-proof by construction). `set_tags_tag_id_index` serves "everything labeled X" lookups and cascade deletes. Ownership flows through both parents: a tag must belong to the set's owner to be assignable, enforced by the tags repository (§41). Deleting a set or a tag removes only the join rows — never content. Migration: `0008_silky_thena.sql`.
+
 ```mermaid
 erDiagram
     users ||--o{ sessions : "has"
@@ -112,6 +133,9 @@ erDiagram
     cards ||--o{ reviews : "answered in"
     users ||--o{ user_card_progress : "progresses"
     cards ||--o{ user_card_progress : "progressed on"
+    users ||--o{ tags : "labels with"
+    study_sets ||--o{ set_tags : "tagged via"
+    tags ||--o{ set_tags : "applied via"
     users {
         serial id PK
         text email UK
@@ -171,6 +195,17 @@ erDiagram
         timestamptz next_review_at "nullable"
         timestamptz created_at
         timestamptz updated_at
+    }
+    tags {
+        serial id PK
+        integer user_id FK
+        text name "unique per user, case-insensitive"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    set_tags {
+        integer set_id PK, FK
+        integer tag_id PK, FK
     }
 ```
 

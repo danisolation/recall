@@ -3,11 +3,14 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -144,5 +147,49 @@ export const userCardProgress = pgTable(
       table.userId,
       table.cardId,
     ),
+  ],
+);
+
+// ADR-012: a tag is the user's own label — names are unique per user
+// case-insensitively (the expression index folds the name to lower case for
+// the check while the column keeps the display casing). No tag delete/rename
+// exists in MVP; tags cascade with their owner and never touch sets.
+export const tags = pgTable(
+  "tags",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("tags_user_id_lower_name_unique").on(
+      table.userId,
+      sql`lower(${table.name})`,
+    ),
+  ],
+);
+
+// ADR-012: the many-to-many join between sets and the owner's tags. The
+// pair is the row's identity (composite primary key = the ADR's unique
+// constraint), and the tag_id index covers "everything labeled X" lookups.
+// Ownership flows through both parents — a tag must belong to the set's
+// owner to be assignable, which the tags repository enforces (§41).
+export const setTags = pgTable(
+  "set_tags",
+  {
+    setId: integer("set_id")
+      .notNull()
+      .references(() => studySets.id, { onDelete: "cascade" }),
+    tagId: integer("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.setId, table.tagId] }),
+    index("set_tags_tag_id_index").on(table.tagId),
   ],
 );
