@@ -3235,10 +3235,131 @@ The journey runs the whole loop through the real UI — register → dashboard �
 
 ---
 
+## Search phase
+
+§78's last MVP slice: basic set search. §51 pins the engine for MVP — PostgreSQL, with the module shaped so a later engine (Meilisearch, Typesense, OpenSearch) is a swap, not a rewrite. The MVP scope is the user's own sets searched by title and description; card content is a recorded deferral. As with the study and progress phases, the decisions land once (SEARCH-001, ADR-011) before implementation — and the lean shape they point at is a filter on the existing `GET /sets` collection rather than a new endpoint, with the dashboard's search box driven by URL state (§23). No schema changes are expected; every query stays owner-scoped (§41).
+
+### SEARCH-001
+
+### Title
+Record the search decision (ADR-011)
+
+### Goal
+Decide what "basic set search" means — fields, matching rule, API shape, and surface — before any search code exists.
+
+### Dependencies
+None (builds on the completed sets phase)
+
+### Status
+READY
+
+### Files
+docs/adr/ADR-011-search.md
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+- decides the searched fields (expected: title + description of the caller's own sets; card content and tags recorded as deferred with the reason)
+- decides the matching rule and its honest MVP mechanics (expected: case-insensitive substring match via `ILIKE` on a trimmed query — no index, no tsvector migration at personal scale — with the upgrade path to trigram/GIN full-text or an external engine recorded per §51)
+- decides the API shape (expected: an optional `q` parameter on `GET /sets`, the §52 collection-filtering shape, interacting with the existing limit/offset pagination) and where the query schema lives
+- decides the surface (expected: a search input on the dashboard driving `?q=` URL state, distinguishing "no sets yet" from "no matches" per §56) and whether a dedicated search module/page is justified today (§28 vs. §85/§87)
+- states explicitly whether the phase requires schema changes (expected: none)
+
+### Tests
+None (documentation only)
+
+---
+
+### SEARCH-002
+
+### Title
+Add set search to the sets API
+
+### Goal
+Let `GET /sets` filter the caller's sets by a free-text query.
+
+### Dependencies
+SEARCH-001
+
+### Status
+TODO
+
+### Files
+apps/api/src/sets/sets.repository.ts
+apps/api/src/sets/sets.controller.ts
+apps/api/src/sets/list-sets.integration.spec.ts
+
+### Acceptance Criteria
+- `listByOwner` accepts an optional query and filters owner-scoped in SQL (`ILIKE` on title and description per ADR-011) — a foreign set is never searchable, §41
+- the controller's query schema gains `q` (trimmed; bounds per ADR-011 with 400 `VALIDATION_ERROR` outside them) — file-local, the list-sets precedent
+- filtering composes with the existing limit/offset pagination and `nextOffset` rule
+- no filtering behavior changes when `q` is absent
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: matching title match, description match, case-insensitivity, non-matching sets excluded, foreign sets never returned regardless of query, pagination with a filter, absent-`q` behavior unchanged, 400 bounds)
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
+
+---
+
+### SEARCH-003
+
+### Title
+Add search to the dashboard
+
+### Goal
+Let the user filter their sets from the browser.
+
+### Dependencies
+SEARCH-002
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/dashboard/page.tsx
+apps/web/src/app/(protected)/dashboard/page.spec.tsx
+apps/web/src/components/search-input.tsx
+apps/web/src/components/search-input.spec.tsx
+apps/web/src/lib/sets.ts
+apps/web/src/lib/sets.spec.ts
+
+### Acceptance Criteria
+- the dashboard offers a labeled search input whose submission is URL state (`GET /dashboard?q=…`, §23) — server-rendered filtering, no client cache
+- `listSets` forwards the query to the API
+- results render through the existing SetList; a query with no matches shows a distinct no-results state (§56) that keeps the search box usable, while an empty library keeps the create-a-set offer
+- the input is keyboard-accessible with a visible focus state (ADR-008 floor)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (lib forwards `q`; the page reads `?q=`, passes it through, and renders the no-matches state distinctly from the empty library; the input is labeled and submittable)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/dashboard` stays dynamic)
+
+---
+
+### SEARCH-004
+
+### Title
+Add the search E2E journey
+
+### Goal
+Cover the loop in a browser: create sets, search them, hit the no-matches state, and clear back.
+
+### Dependencies
+SEARCH-003
+
+### Status
+TODO
+
+### Files
+apps/web/e2e/search.spec.ts
+
+### Acceptance Criteria
+- register → create two distinguishable sets → search matches one and not the other → a nonsense query shows the no-matches state → clearing the query restores the full list
+- one journey test, not per-feature tests (SET-014/CARD-014/STUDY-014/PROGRESS-007 precedent)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test:e2e`
+
+---
+
 ## Remaining MVP phases (coarse — not yet decomposed)
 
-```text
-Search
-```
-
-Each phase will be decomposed into detailed atomic tasks when its implementation context is known. With Progress decomposed above, Search is the last MVP phase before the Phase-2 block in `docs/ROADMAP.md`.
+None. With Search decomposed above, every §78 MVP slice (authentication, study sets, cards, study, progress, search, organization) is either shipped or has an atomic task chain — the organization item (folders or tags, §78's "choose one") remains an explicit MVP decision to make and decompose, and everything beyond it is the Phase-2 block in `docs/ROADMAP.md`.
