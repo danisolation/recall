@@ -3880,17 +3880,21 @@ Make the first impression earn the product register: hero, CTAs, feature trio.
 UX-002
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/page.tsx (+ spec check), login/page.tsx, register/page.tsx (+ their form specs check)
+apps/web/src/app/page.tsx, login/page.tsx, register/page.tsx
 
 ### Acceptance Criteria
 - hero: headline, one-liner, feature trio panels (Create/Cards/Study with icons, one line each); CTAs are button-variant TextLinks with unchanged names ("Log in", "Create account", "Dashboard")
 - auth cards: icon + spacing polish; labels, copy, names untouched
 
+### Decision
+The landing page now has a real hero: headline "Study that sticks." (new copy — the task's purpose; sentence-case, no exclamation, per ADR-008's copy rules), the pre-existing one-liner kept byte-identical, and button-variant CTA links. The home spec's link-uniqueness pins shaped the structure: signed-out users get the CTAs **in the hero** and a wordmark-only header (no duplicate "Log in"/"Create account"), signed-in users get a single "Dashboard" hero CTA with UserMenu alone in the header (auth.spec clicks exactly one "Dashboard" link and asserts "Signed in as" + email). The feature trio renders **only for signed-out visitors** — for a signed-in user this page is a doorway, not a pitch (ADR-008's product register); Create/Cards/Study panels with Plus/Layers/GraduationCap icons and one honest line each. Auth pages gained a centered marker-tinted icon chip (LogIn/UserPlus), centered heading and cross-link; all form copy, labels, and names untouched. Hero headline is an `h2` under the wordmark `h1`, trio titles `h3`s.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` — home + auth specs pass unmodified (verify; adjust only if a spec asserts structure beyond names/hrefs)
+- `pnpm --filter @danisolation-recall/web test` — **181 passed (32 files)**, home + auth specs completely unmodified (the uniqueness-driven structure avoided any churn)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---
 
