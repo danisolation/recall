@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
+import { CompletionView } from "./completion-view";
 
 const panel =
   "flex flex-col gap-4 rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6";
@@ -106,15 +107,12 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
 
   if (data.session.status !== "ACTIVE") {
     return (
-      <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Study</h1>
-        <section className={panel}>
-          <p className="text-ink-soft">This session is finished.</p>
-          <Link href={`/sets/${data.session.setId}`} className={textLink}>
-            Back to the set
-          </Link>
-        </section>
-      </div>
+      <CompletionView
+        setId={data.session.setId}
+        status={data.session.status}
+        reviews={data.reviews}
+        totalCards={data.cards.length}
+      />
     );
   }
 
@@ -143,19 +141,12 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
 
   if (!current) {
     return (
-      <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Session complete
-        </h1>
-        <section className={panel}>
-          <p className="text-ink-soft">
-            {`${data.reviews.length} of ${data.cards.length} answered.`}
-          </p>
-          <Link href={`/sets/${data.session.setId}`} className={textLink}>
-            Back to the set
-          </Link>
-        </section>
-      </div>
+      <CompletionView
+        setId={data.session.setId}
+        status={data.session.status}
+        reviews={data.reviews}
+        totalCards={data.cards.length}
+      />
     );
   }
 

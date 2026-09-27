@@ -2935,18 +2935,24 @@ Summarize a finished session and offer the way out.
 STUDY-012
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/(protected)/study/[sessionId]/ (completion rendering + spec)
+apps/web/src/app/(protected)/study/[sessionId]/completion-view.tsx
+apps/web/src/app/(protected)/study/[sessionId]/completion-view.spec.tsx
+apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx
+apps/web/src/app/(protected)/study/[sessionId]/study-client.spec.tsx
 
 ### Acceptance Criteria
 - shows reviewed count and accuracy (§78's progress basics, scoped to the session)
 - offers navigation back to the set (and the dashboard register)
 
+### Decision
+The completion rendering is its own presentational component, `CompletionView`, consumed by `StudyClient` for **both** finished paths — a session loaded in a terminal state and an ACTIVE session whose cards ran out — so a resumed session shows the same summary it would have shown live. The heading reflects the state machine honestly: `ABANDONED` renders "Session abandoned", everything else "Session complete". The summary is computed from the session's reviews (§46's history, not a counter): `${reviewed} of ${totalCards} answered` plus `${correct} of ${reviewed} correct (${accuracy}% accuracy)` with `Math.round`; zero reviews — possible for an abandoned or instantly-finished session — render "No answers were recorded in this session." instead of a fabricated 0%. The ways out are two text links: back to the set and back to the dashboard — the protected header carries only the brand and user menu, so the dashboard exit is explicit. Accuracy is presentation-only here; the Progress phase (§78) computes its own from `user_card_progress`.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (counts render; navigation)
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/web test` (115 tests, incl. 4 new CompletionView tests: counts + "2 of 3 correct (67% accuracy)" under the "Session complete" heading, 1/3 rounding to 33%, an `ABANDONED` zero-review session rendering "Session abandoned" with "No answers were recorded in this session." and no accuracy line, and both exit links (`/sets/42`, `/dashboard`); the two STUDY-012 completion assertions were updated to the extracted view — the last answer lands on the summary with "0 of 1 correct (0% accuracy)", and a resumed `COMPLETED` session renders the full summary with no study controls)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/study/[sessionId]` stays dynamic)
 
 ---
 

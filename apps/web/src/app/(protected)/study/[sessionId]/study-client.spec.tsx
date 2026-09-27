@@ -112,23 +112,31 @@ describe("StudyClient", () => {
     expect(
       await screen.findByRole("heading", { name: "Session complete" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("1 of 1 answered.")).toBeInTheDocument();
+    expect(screen.getByText("1 of 1 answered")).toBeInTheDocument();
+    expect(
+      screen.getByText("0 of 1 correct (0% accuracy)"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Back to the set" }),
     ).toHaveAttribute("href", "/sets/42");
+    expect(
+      screen.getByRole("link", { name: "Back to the dashboard" }),
+    ).toHaveAttribute("href", "/dashboard");
   });
 
-  it("renders the finished state for a session that is not active", async () => {
+  it("renders the summary for a session that is not active", async () => {
     getSessionMock.mockResolvedValue({
       ...sessionData,
       session: { id: 5, setId: 42, status: "COMPLETED" },
+      reviews: [{ id: 9, cardId: 1, correct: true }],
     });
 
     render(<StudyClient sessionId={5} />);
 
     expect(
-      await screen.findByText("This session is finished."),
+      await screen.findByRole("heading", { name: "Session complete" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("1 of 2 answered")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Reveal answer" }),
     ).not.toBeInTheDocument();
