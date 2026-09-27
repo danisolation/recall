@@ -1,24 +1,19 @@
 import Link from "next/link";
+import { Panel, panelClassName } from "@/components/ui/panel";
+import { TextLink } from "@/components/ui/text-link";
 import type { StudySet } from "@/lib/sets";
-
-// Same link register as the dashboard's "New set" link.
-const textLink =
-  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
-
-const card =
-  "rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6";
 
 export function SetList({ sets }: { sets: StudySet[] }) {
   if (sets.length === 0) {
     return (
-      <section className={card}>
+      <Panel>
         <p className="text-ink-soft">
           Create your first study set to start learning.
         </p>
-        <Link href="/sets/new" className={`${textLink} mt-3 inline-block`}>
+        <TextLink href="/sets/new" className="mt-3 inline-block">
           Create a set
-        </Link>
-      </section>
+        </TextLink>
+      </Panel>
     );
   }
 
@@ -28,7 +23,7 @@ export function SetList({ sets }: { sets: StudySet[] }) {
         <li key={set.id}>
           <Link
             href={`/sets/${set.id}`}
-            className={`${card} block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
+            className={`${panelClassName} block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
           >
             <span className="block font-medium">{set.title}</span>
             {set.description && (

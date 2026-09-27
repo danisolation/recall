@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SearchInput } from "@/components/search-input";
 import { SetList } from "@/components/set-list";
+import { Panel } from "@/components/ui/panel";
+import { TextLink } from "@/components/ui/text-link";
 import { getCurrentUser } from "@/lib/session";
 import { listSets } from "@/lib/sets";
 import { listTags } from "@/lib/tags";
@@ -10,14 +12,6 @@ import { listTags } from "@/lib/tags";
 export const metadata: Metadata = {
   title: "Dashboard — DANISOLATION Recall",
 };
-
-// Same link register as the home page navigation.
-const newSetLink =
-  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
-
-// Same panel register as the account section and the list items (ADR-008).
-const panel =
-  "rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6";
 
 // Fixed locale and zone keep the rendered date identical on the server and
 // during hydration, so the markup cannot mismatch.
@@ -73,12 +67,8 @@ export default async function DashboardPage({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         <div className="flex flex-wrap items-center gap-4">
-          <Link href="/progress" className={newSetLink}>
-            View progress
-          </Link>
-          <Link href="/sets/new" className={newSetLink}>
-            New set
-          </Link>
+          <TextLink href="/progress">View progress</TextLink>
+          <TextLink href="/sets/new">New set</TextLink>
         </div>
       </div>
       <section className="flex flex-col gap-3">
@@ -101,26 +91,24 @@ export default async function DashboardPage({
               </Link>
             ))}
             {tagId !== undefined ? (
-              <Link href={clearHref} className={newSetLink}>
-                Clear filter
-              </Link>
+              <TextLink href={clearHref}>Clear filter</TextLink>
             ) : null}
           </div>
         ) : null}
         {(query || tagId !== undefined) && sets.items.length === 0 ? (
-          <section className={panel}>
+          <Panel>
             <p className="text-ink-soft">
               {`No sets match ${filterHint}.`}
               {tagId !== undefined
                 ? " Clear the filter to see all of your sets."
                 : " Try a different search."}
             </p>
-          </section>
+          </Panel>
         ) : (
           <SetList sets={sets.items} />
         )}
       </section>
-      <section className="rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6">
+      <Panel>
         <h2 className="text-lg font-semibold">Your account</h2>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
@@ -136,7 +124,7 @@ export default async function DashboardPage({
             </dd>
           </div>
         </dl>
-      </section>
+      </Panel>
     </div>
   );
 }

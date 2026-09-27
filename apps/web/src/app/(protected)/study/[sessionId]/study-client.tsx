@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import {
   ApiError,
   finishSession,
@@ -12,14 +11,9 @@ import {
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
+import { Panel } from "@/components/ui/panel";
+import { TextLink } from "@/components/ui/text-link";
 import { CompletionView } from "./completion-view";
-
-const panel =
-  "flex flex-col gap-4 rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6";
-
-// Same link register as the set detail page's "Edit set" link.
-const textLink =
-  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 export function StudyClient({ sessionId }: { sessionId: number }) {
   const [data, setData] = useState<StudySessionView | null>(null);
@@ -138,9 +132,9 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
     return (
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold tracking-tight">Study</h1>
-        <section className={panel}>
+        <Panel className="flex flex-col gap-4">
           <FieldError>{loadError}</FieldError>
-        </section>
+        </Panel>
       </div>
     );
   }
@@ -164,12 +158,12 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
     return (
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold tracking-tight">Study</h1>
-        <section className={panel}>
+        <Panel className="flex flex-col gap-4">
           <p className="text-ink-soft">This set has no cards to study yet.</p>
-          <Link href={`/sets/${data.session.setId}`} className={textLink}>
+          <TextLink href={`/sets/${data.session.setId}`}>
             Back to the set
-          </Link>
-        </section>
+          </TextLink>
+        </Panel>
       </div>
     );
   }
@@ -197,7 +191,7 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Study</h1>
-      <section className={panel}>
+      <Panel className="flex flex-col gap-4">
         <p className="text-sm text-ink-soft">
           {`${data.reviews.length} of ${data.cards.length} answered`}
         </p>
@@ -227,7 +221,7 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
           )}
         </div>
         {error ? <FieldError>{error}</FieldError> : null}
-      </section>
+      </Panel>
     </div>
   );
 }

@@ -1,11 +1,5 @@
-import Link from "next/link";
-
-const panel =
-  "flex flex-col gap-4 rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6";
-
-// Same link register as the set detail page's "Edit set" link.
-const textLink =
-  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+import { Panel } from "@/components/ui/panel";
+import { TextLink } from "@/components/ui/text-link";
 
 // The summary the protected header cannot give: the session's §78 basics
 // (reviewed count, accuracy) scoped to this session, plus the ways out.
@@ -31,7 +25,7 @@ export function CompletionView({
       <h1 className="text-2xl font-semibold tracking-tight">
         {status === "ABANDONED" ? "Session abandoned" : "Session complete"}
       </h1>
-      <section className={panel}>
+      <Panel className="flex flex-col gap-4">
         <p className="text-sm text-ink-soft">
           {`${reviewed} of ${totalCards} answered`}
         </p>
@@ -45,14 +39,10 @@ export function CompletionView({
           </p>
         )}
         <div className="flex flex-wrap gap-4">
-          <Link href={`/sets/${setId}`} className={textLink}>
-            Back to the set
-          </Link>
-          <Link href="/dashboard" className={textLink}>
-            Back to the dashboard
-          </Link>
+          <TextLink href={`/sets/${setId}`}>Back to the set</TextLink>
+          <TextLink href="/dashboard">Back to the dashboard</TextLink>
         </div>
-      </section>
+      </Panel>
     </div>
   );
 }

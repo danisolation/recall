@@ -8,10 +8,7 @@ import { ApiError, createCard } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormField } from "@/components/ui/form-field";
-
-// Same panel register as the card list items (ADR-008).
-const panel =
-  "rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6";
+import { Panel } from "@/components/ui/panel";
 
 export function CreateCardForm({ setId }: { setId: number }) {
   const router = useRouter();
@@ -26,7 +23,7 @@ export function CreateCardForm({ setId }: { setId: number }) {
   });
 
   return (
-    <section className={panel}>
+    <Panel>
       <form
         className="flex flex-col gap-4"
         noValidate
@@ -68,6 +65,6 @@ export function CreateCardForm({ setId }: { setId: number }) {
           Add card
         </Button>
       </form>
-    </section>
+    </Panel>
   );
 }

@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation";
 import { ApiError, deleteCard } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
-
-// Same link register as the card item's "Edit" link.
-const textLink =
-  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+import { linkClassName } from "@/components/ui/text-link";
 
 export function DeleteCardButton({
   setId,
@@ -45,7 +42,11 @@ export function DeleteCardButton({
 
   if (!confirming) {
     return (
-      <button type="button" className={textLink} onClick={() => setConfirming(true)}>
+      <button
+        type="button"
+        className={linkClassName}
+        onClick={() => setConfirming(true)}
+      >
         Delete
       </button>
     );

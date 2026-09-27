@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Panel } from "@/components/ui/panel";
+import { TextLink } from "@/components/ui/text-link";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
@@ -14,17 +15,12 @@ export default function LoginPage() {
           Log in to{" "}
           <span className="rounded-sm bg-marker/70 px-1">Recall</span>
         </h1>
-        <div className="rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6">
+        <Panel>
           <LoginForm />
-        </div>
+        </Panel>
         <p className="mt-4 text-sm text-ink-soft">
           New here?{" "}
-          <Link
-            href="/register"
-            className="rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            Create an account
-          </Link>
+          <TextLink href="/register">Create an account</TextLink>
         </p>
       </div>
     </main>

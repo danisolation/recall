@@ -4,10 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, moveCard } from "@/lib/api";
 import { FieldError } from "@/components/ui/field-error";
-
-// Same link register as the card item's other actions.
-const textLink =
-  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-50 disabled:cursor-not-allowed";
+import { linkClassName } from "@/components/ui/text-link";
 
 export function MoveCardButton({
   setId,
@@ -49,7 +46,7 @@ export function MoveCardButton({
     <span className="flex flex-col gap-1">
       <button
         type="button"
-        className={textLink}
+        className={`${linkClassName} disabled:opacity-50 disabled:cursor-not-allowed`}
         disabled={disabled || isMoving}
         onClick={handleClick}
       >

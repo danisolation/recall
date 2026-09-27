@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CardList } from "@/components/card-list";
+import { Panel } from "@/components/ui/panel";
+import { TextLink } from "@/components/ui/text-link";
 import { CreateCardForm } from "./create-card-form";
 import { DeleteSetButton } from "./delete-set-button";
 import { EditCardForm } from "./edit-card-form";
@@ -12,10 +13,6 @@ import { getSet, getSetTags } from "@/lib/sets";
 export const metadata: Metadata = {
   title: "Set — DANISOLATION Recall",
 };
-
-// Same link register as the dashboard's "New set" link.
-const textLink =
-  "rounded-sm font-medium underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 // Fixed locale and zone keep the rendered dates identical on the server and
 // during hydration, so the markup cannot mismatch.
@@ -67,12 +64,10 @@ export default async function SetDetailPage({
         <h1 className="text-2xl font-semibold tracking-tight">{set.title}</h1>
         <div className="flex items-center gap-4">
           <StartStudyButton setId={set.id} />
-          <Link href={`/sets/${set.id}/edit`} className={textLink}>
-            Edit set
-          </Link>
+          <TextLink href={`/sets/${set.id}/edit`}>Edit set</TextLink>
         </div>
       </div>
-      <section className="rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6">
+      <Panel>
         {set.description && <p className="text-ink-soft">{set.description}</p>}
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
@@ -100,7 +95,7 @@ export default async function SetDetailPage({
             </dd>
           </div>
         </dl>
-      </section>
+      </Panel>
       <section className="flex flex-col gap-3">
         <h2 className="text-xl font-semibold tracking-tight">Cards</h2>
         {editingCard ? (

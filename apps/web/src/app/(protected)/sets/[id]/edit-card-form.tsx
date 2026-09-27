@@ -9,10 +9,7 @@ import type { Card } from "@/lib/cards";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormField } from "@/components/ui/form-field";
-
-// Same panel register as the card list items (ADR-008).
-const panel =
-  "rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6";
+import { Panel } from "@/components/ui/panel";
 
 export function EditCardForm({ setId, card }: { setId: number; card: Card }) {
   const router = useRouter();
@@ -32,7 +29,7 @@ export function EditCardForm({ setId, card }: { setId: number; card: Card }) {
   const leaveEditMode = () => router.push(`/sets/${setId}`);
 
   return (
-    <section className={panel}>
+    <Panel>
       <form
         className="flex flex-col gap-4"
         noValidate
@@ -77,6 +74,6 @@ export function EditCardForm({ setId, card }: { setId: number; card: Card }) {
           </Button>
         </div>
       </form>
-    </section>
+    </Panel>
   );
 }

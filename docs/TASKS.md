@@ -3742,20 +3742,29 @@ Replace the ~14 copy-pasted register strings with shared exports so styling chan
 UX-001
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/components/ui/panel.tsx (+ spec)
 apps/web/src/components/ui/text-link.tsx (+ spec)
-dashboard/page.tsx, progress/page.tsx, components/set-list.tsx, components/card-list.tsx, sets/[id]/page.tsx, study/[sessionId]/study-client.tsx + completion-view.tsx, sets/[id]/create-card-form.tsx + edit-card-form.tsx, sets/[id]/delete-set-button.tsx + delete-card-button.tsx + move-card-button.tsx, app/page.tsx, login/register pages
+apps/web/src/components/set-list.tsx, card-list.tsx
+apps/web/src/app/(protected)/dashboard/page.tsx, progress/page.tsx
+apps/web/src/app/(protected)/sets/[id]/page.tsx, edit/page.tsx, create-card-form.tsx, edit-card-form.tsx, delete-card-button.tsx, move-card-button.tsx
+apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx, completion-view.tsx
+apps/web/src/app/page.tsx, login/page.tsx, register/page.tsx
 
 ### Acceptance Criteria
 - `Panel` (section + panel classes + exported `panelClassName`) and `TextLink` (link register) live in components/ui with small specs
 - every register-citing file imports from ui/ instead of re-declaring the string; set-list/card-list link-panels use `panelClassName` on their Link
 - zero visible change: no copy/name/href drift (pure class moves)
 
+### Decision
+Two exports per register, per the ADR-013 shape: a component (`Panel` renders `<section>`; `TextLink` renders next/link) plus the raw class-string constant for non-section elements — divs (auth pages), `li` items (progress due/history, card-list), links (set-list items), and link-styled `<button>`s (MoveCardButton with its disabled suffix appended, DeleteCardButton). The study/completion flex-prefixed panel variant became `<Panel className="flex flex-col gap-4">` (class-string order differs; CSS-equivalent — no test pins classes). The dashboard's two tag-chip variants were deliberately left inline: they are not the plain register and UX-003 restyles chips entirely. The "Same … register" comments retired in favor of the imports; `delete-set-button.tsx` was dropped from the task's file list — it has no register strings (it uses Button). The old const sites became plain component swaps, so `Link` imports disappeared from the six files whose only links were register links (kept where chips/due items/set items remain).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` — existing 170 pass unmodified; new ui specs green
+- `pnpm --filter @danisolation-recall/web test` — **176 passed (32 files)**: the pre-existing 170 unmodified + 6 new (3 Panel, 3 TextLink: register classes, className append, exported constants) — the zero-churn invariant held
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- grep verification: the panel string now exists only in `ui/panel.tsx` (+ its spec); the only remaining `underline-offset-4` copies are the dashboard's two chip variants (UX-003's scope)
 
 ---
 

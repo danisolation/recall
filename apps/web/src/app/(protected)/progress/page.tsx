@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { panelClassName } from "@/components/ui/panel";
 import {
   getProgressSummary,
   listDueCards,
@@ -9,10 +10,6 @@ import {
 export const metadata: Metadata = {
   title: "Progress — DANISOLATION Recall",
 };
-
-// Same panel register as SetList's and CardList's items (ADR-008).
-const item =
-  "rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6";
 
 // Fixed locale and zone keep the rendered dates identical on the server and
 // during hydration, so the markup cannot mismatch.
@@ -46,7 +43,7 @@ export default async function ProgressPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
 
-      <section className={item}>
+      <section className={panelClassName}>
         <h2 className="text-lg font-semibold">Summary</h2>
         <dl className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1">
@@ -69,13 +66,13 @@ export default async function ProgressPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Due now</h2>
         {due.items.length === 0 ? (
-          <section className={item}>
+          <section className={panelClassName}>
             <p className="text-ink-soft">Nothing is due right now.</p>
           </section>
         ) : (
           <ul className="flex flex-col gap-3">
             {due.items.map((card) => (
-              <li key={card.cardId} className={item}>
+              <li key={card.cardId} className={panelClassName}>
                 <Link href={`/sets/${card.setId}`} className="block">
                   <span className="block font-medium">{card.front}</span>
                   <span className="mt-1 block text-sm text-ink-soft">
@@ -91,7 +88,7 @@ export default async function ProgressPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Recent sessions</h2>
         {history.items.length === 0 ? (
-          <section className={item}>
+          <section className={panelClassName}>
             <p className="text-ink-soft">
               You have not studied anything yet.
             </p>
@@ -99,7 +96,7 @@ export default async function ProgressPage() {
         ) : (
           <ul className="flex flex-col gap-3">
             {history.items.map((session) => (
-              <li key={session.id} className={item}>
+              <li key={session.id} className={panelClassName}>
                 <Link href={`/sets/${session.setId}`} className="block">
                   <span className="block font-medium">{session.setTitle}</span>
                   <span className="mt-1 block text-sm text-ink-soft">
