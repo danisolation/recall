@@ -99,6 +99,10 @@ export default async function DashboardPage({
             <TrendingUp aria-hidden className="h-4 w-4 shrink-0" />
             View progress
           </TextLink>
+          <TextLink href="/folders" variant="button">
+            <Folder aria-hidden className="h-4 w-4 shrink-0" />
+            Manage folders
+          </TextLink>
           <TextLink href="/sets/new" variant="button">
             <Plus aria-hidden className="h-4 w-4 shrink-0" />
             New set

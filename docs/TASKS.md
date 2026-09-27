@@ -4193,16 +4193,18 @@ A `/folders` page for create/rename/delete, and a folder dropdown on the set cre
 FOLD-005
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/(protected)/folders/page.tsx (+ spec), folder forms/components (+ specs)
-apps/web/src/lib/folders.ts (mutations, + spec)
-apps/web/src/app/(protected)/sets/new/create-set-form.tsx (+ spec)
-apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec)
-apps/web/src/app/(protected)/sets/[id]/edit/page.tsx (folder prefill)
+apps/web/src/app/(protected)/folders/page.tsx (+ spec), folders-manager.tsx (+ spec)
+apps/web/src/lib/folders.ts (mutations via lib/api — the server file needed no change)
+apps/web/src/app/(protected)/sets/new/create-set-form.tsx (+ spec), page.tsx (folder fetching)
+apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec), page.tsx (+ spec)
 apps/web/src/lib/api.ts (createFolder/renameFolder/deleteFolder, + spec)
-apps/web/src/lib/sets.ts (folderId on create/update, + spec)
+apps/web/src/lib/sets.ts (StudySet.folderId — type only)
+apps/web/src/components/ui/select.tsx (new primitive), form-field.tsx (children escape)
+apps/web/src/app/(protected)/dashboard/page.tsx (Manage folders link)
+apps/web/src/components/set-list.spec.tsx (fixture)
 
 ### Acceptance Criteria
 - `/folders`: create form, per-folder rename/delete with the inline two-step confirm register (§56 states distinct; a deleted folder's sets survive unfiled — say so in the confirm copy)
@@ -4212,8 +4214,12 @@ apps/web/src/lib/sets.ts (folderId on create/update, + spec)
 ### Design (ui-ux-pro-max pass, 2026-09-27)
 The management page is a panel list, one row per folder: name + set count, with Rename and Delete as link-register buttons. **Rename is an inline swap** (row becomes a labeled input + Save/Cancel — the delete-confirm pattern reused for editing), validated on submit through the FOLD-004 contracts schema with the duplicate-name conflict surfacing inline ("A folder with this name already exists.") — the skill's inline-validation rule. **Delete keeps the inline two-step confirm** (high-severity destructive rule) with copy naming the ADR-014 outcome: filed sets stay, unfiled. Success feedback follows the house register rather than the dataset's toast suggestion: the visible list change IS the confirmation, errors are inline FieldErrors (ADR-013 rejected toasts). The set forms' folder field is a **native `<select>` labeled "Folder"** through the FormField register (visible label per the skill's form-labels rule; native control per its semantic-controls rule; "No folder" = empty value), styled to match Input. Icons: FolderPlus (create), Pencil (rename), Trash2 (delete) — house glyphs at h-4 w-4, aria-hidden beside text; the create form's two-phase save keeps the select inside the created-set flow (createSet gains folderId, then replaceTags as today).
 
+### Decision (implementation, 2026-09-27)
+New fifth+sixth ui primitives: **`Select`** (native control with Input's exact classes) and **FormField's `children` escape** — when `children` is provided it replaces the default Input, so the label/error register wraps any control without a polymorphic rewrite. `lib/api.ts` gained `createFolder`/`renameFolder`/`deleteFolder` with the register's error mappings (FOLDER_NAME_TAKEN → "A folder with this name already exists.", FOLDER_NOT_FOUND → "This folder no longer exists."); the delete flow treats an already-deleted 404 as success + refresh (the SET-013/CARD precedent). The manager is one client component holding the create form and the per-row swaps, with `router.refresh()` after every success; the delete confirm copy names the outcome verbatim ("Its sets stay in your library, unfiled."). **The folder placement is always sent on edit** (`folderId: null | number` — the tri-state contract), while create sends null-or-number. `lib/folders.ts` needed no change (mutations live in the client `lib/api.ts`); `lib/sets.ts` only gained the `folderId` type field. The dashboard header gained a "Manage folders" button-link (Folder icon). Caught by the specs: the create-form's always-sent `folderId: null` broke two pinned `createSet` payloads and the edit-form's one `updateSet` payload — updated to the new shape; the edit page spec needed the `@/lib/folders` mock; `parsed.data` on the name schema is the string itself (not `.name`); the StudySet type change rippled into the edit-form and set-list spec fixtures.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (folders page + forms + lib specs)
+- `pnpm --filter @danisolation-recall/web test` — **214 passed (36 files)**: +17 (8 folders-manager: rows with counts, empty hint, create success/conflict/blank-block, inline rename, delete confirm with copy, 404-as-success; 2 folders page; 4 lib/api folder mutations; 1 create-form files-into-folder; 2 edit-form folder select incl. prefill)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (the /folders route present in the build)
 
 ---
 

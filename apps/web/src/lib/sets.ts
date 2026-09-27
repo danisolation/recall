@@ -5,6 +5,7 @@ const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:3001";
 export type StudySet = {
   id: number;
   ownerId: number;
+  folderId: number | null;
   title: string;
   description: string | null;
   createdAt: string;

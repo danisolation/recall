@@ -9,14 +9,20 @@ import { ApiError, createSet, replaceTags } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
 
-export function CreateSetForm() {
+export function CreateSetForm({
+  folders = [],
+}: {
+  folders?: { id: number; name: string }[];
+}) {
   const router = useRouter();
   // Create-then-tag is a two-step save (ADR-012's replace contract needs
   // the new set's id). Remembering the id makes a retry after a tag
   // failure re-run only the tags — the set is never created twice.
   const createdIdRef = useRef<number | null>(null);
   const [tags, setTags] = useState("");
+  const [folderId, setFolderId] = useState("");
   const {
     register,
     handleSubmit,
@@ -49,6 +55,9 @@ export function CreateSetForm() {
             const set = await createSet({
               title: values.title,
               description: values.description,
+              // ADR-014: the folder rides the create call; "No folder"
+              // means the library root.
+              folderId: folderId === "" ? null : Number(folderId),
             });
             createdIdRef.current = set.id;
           }
@@ -93,6 +102,20 @@ export function CreateSetForm() {
         value={tags}
         onChange={(event) => setTags(event.target.value)}
       />
+      <FormField label="Folder" id="folder">
+        <Select
+          id="folder"
+          value={folderId}
+          onChange={(event) => setFolderId(event.target.value)}
+        >
+          <option value="">No folder</option>
+          {folders.map((folder) => (
+            <option key={folder.id} value={folder.id}>
+              {folder.name}
+            </option>
+          ))}
+        </Select>
+      </FormField>
       {errors.root?.message ? (
         <FieldError>{errors.root.message}</FieldError>
       ) : null}

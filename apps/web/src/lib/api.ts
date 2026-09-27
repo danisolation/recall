@@ -1,5 +1,6 @@
 import type {
   CreateCardInput,
+  CreateFolderInput,
   CreateSetInput,
   LoginInput,
   RegisterInput,
@@ -390,4 +391,74 @@ export async function replaceTags(
   }
 
   throw new ApiError("UNKNOWN", "Saving the tags failed. Try again.");
+}
+
+// ADR-014: folder management for the /folders page.
+export async function createFolder(
+  input: CreateFolderInput,
+): Promise<{ id: number; name: string }> {
+  const response = await request("POST", "/folders", input);
+
+  if (response.ok) {
+    return (await response.json()) as { id: number; name: string };
+  }
+
+  if (
+    response.status === 409 &&
+    (await errorCode(response)) === "FOLDER_NAME_TAKEN"
+  ) {
+    throw new ApiError(
+      "FOLDER_NAME_TAKEN",
+      "A folder with this name already exists.",
+    );
+  }
+
+  throw new ApiError("UNKNOWN", "Creating the folder failed. Try again.");
+}
+
+export async function renameFolder(
+  folderId: number,
+  input: CreateFolderInput,
+): Promise<void> {
+  const response = await request("PATCH", `/folders/${folderId}`, input);
+
+  if (response.ok) {
+    return;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "FOLDER_NOT_FOUND"
+  ) {
+    throw new ApiError("FOLDER_NOT_FOUND", "This folder no longer exists.");
+  }
+
+  if (
+    response.status === 409 &&
+    (await errorCode(response)) === "FOLDER_NAME_TAKEN"
+  ) {
+    throw new ApiError(
+      "FOLDER_NAME_TAKEN",
+      "A folder with this name already exists.",
+    );
+  }
+
+  throw new ApiError("UNKNOWN", "Renaming the folder failed. Try again.");
+}
+
+export async function deleteFolder(folderId: number): Promise<void> {
+  const response = await request("DELETE", `/folders/${folderId}`);
+
+  if (response.ok) {
+    return;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "FOLDER_NOT_FOUND"
+  ) {
+    throw new ApiError("FOLDER_NOT_FOUND", "This folder no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Deleting the folder failed. Try again.");
 }

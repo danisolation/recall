@@ -70,6 +70,7 @@ describe("CreateSetForm", () => {
       expect(createSetMock).toHaveBeenCalledWith({
         title: "Biology basics",
         description: "Cells",
+        folderId: null,
       }),
     );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
@@ -108,6 +109,7 @@ describe("CreateSetForm", () => {
       expect(createSetMock).toHaveBeenCalledWith({
         title: "Biology basics",
         description: "",
+        folderId: null,
       }),
     );
     await waitFor(() =>
@@ -162,5 +164,28 @@ describe("CreateSetForm", () => {
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
     expect(createSetMock).toHaveBeenCalledTimes(1);
     expect(replaceTagsMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("files the new set into the selected folder", async () => {
+    createSetMock.mockResolvedValue({ id: 42 });
+    replaceTagsMock.mockResolvedValue(undefined);
+    render(
+      <CreateSetForm folders={[{ id: 9, name: "University" }]} />,
+    );
+
+    await userEvent.type(screen.getByLabelText("Title"), "Biology basics");
+    await userEvent.selectOptions(screen.getByLabelText("Folder"), "9");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create set" }),
+    );
+
+    await waitFor(() =>
+      expect(createSetMock).toHaveBeenCalledWith({
+        title: "Biology basics",
+        description: "",
+        folderId: 9,
+      }),
+    );
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
   });
 });

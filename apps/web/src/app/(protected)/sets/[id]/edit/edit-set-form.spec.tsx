@@ -35,6 +35,7 @@ afterEach(() => {
 const set = {
   id: 42,
   ownerId: 1,
+  folderId: null,
   title: "Spanish verbs",
   description: "Common irregular verbs",
   createdAt: "2026-02-01T00:00:00.000Z",
@@ -67,6 +68,7 @@ describe("EditSetForm", () => {
       expect(updateSetMock).toHaveBeenCalledWith(42, {
         title: "Spanish verbs 2",
         description: "Common irregular verbs",
+        folderId: null,
       }),
     );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
@@ -145,5 +147,41 @@ describe("EditSetForm", () => {
     );
     expect(pushMock).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Tags")).toHaveValue("Biology");
+  });
+
+  it("files the set into the selected folder", async () => {
+    updateSetMock.mockResolvedValue(undefined);
+    replaceTagsMock.mockResolvedValue(undefined);
+    render(
+      <EditSetForm
+        set={{ ...set, folderId: null }}
+        folders={[{ id: 9, name: "University" }]}
+      />,
+    );
+
+    await userEvent.selectOptions(screen.getByLabelText("Folder"), "9");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save changes" }),
+    );
+
+    await waitFor(() =>
+      expect(updateSetMock).toHaveBeenCalledWith(42, {
+        title: "Spanish verbs",
+        description: "Common irregular verbs",
+        folderId: 9,
+      }),
+    );
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
+  });
+
+  it("prefills the folder select with the set's current folder", () => {
+    render(
+      <EditSetForm
+        set={{ ...set, folderId: 9 }}
+        folders={[{ id: 9, name: "University" }]}
+      />,
+    );
+
+    expect(screen.getByLabelText("Folder")).toHaveValue("9");
   });
 });

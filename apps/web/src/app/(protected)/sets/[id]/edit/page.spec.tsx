@@ -1,18 +1,24 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import EditSetPage from "./page";
 
-const { getSetMock, getSetTagsMock, notFoundMock } = vi.hoisted(() => ({
-  getSetMock: vi.fn(),
-  getSetTagsMock: vi.fn(),
-  notFoundMock: vi.fn(() => {
-    throw new Error("NEXT_NOT_FOUND");
-  }),
-}));
+const { getSetMock, getSetTagsMock, listFoldersMock, notFoundMock } =
+  vi.hoisted(() => ({
+    getSetMock: vi.fn(),
+    getSetTagsMock: vi.fn(),
+    listFoldersMock: vi.fn(),
+    notFoundMock: vi.fn(() => {
+      throw new Error("NEXT_NOT_FOUND");
+    }),
+  }));
 
 vi.mock("@/lib/sets", () => ({
   getSet: getSetMock,
   getSetTags: getSetTagsMock,
+}));
+
+vi.mock("@/lib/folders", () => ({
+  listFolders: listFoldersMock,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -23,6 +29,10 @@ vi.mock("next/navigation", () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+beforeEach(() => {
+  listFoldersMock.mockResolvedValue([]);
 });
 
 const set = {

@@ -9,17 +9,21 @@ import { ApiError, replaceTags, updateSet } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
 import type { StudySet } from "@/lib/sets";
 
 export function EditSetForm({
   set,
   initialTags = [],
+  folders = [],
 }: {
   set: StudySet;
   initialTags?: string[];
+  folders?: { id: number; name: string }[];
 }) {
   const router = useRouter();
   const [tags, setTags] = useState(initialTags.join(", "));
+  const [folderId, setFolderId] = useState(set.folderId ?? "");
   const {
     register,
     handleSubmit,
@@ -53,10 +57,13 @@ export function EditSetForm({
           }
 
           // Both calls are idempotent, so a failure leaves the form filled
-          // and a resubmit safely retries the whole save (§55).
+          // and a resubmit safely retries the whole save (§55). The folder
+          // placement is always sent: null unfiles, a number files (§55's
+          // tri-state contract).
           await updateSet(set.id, {
             title: values.title,
             description: values.description,
+            folderId: folderId === "" ? null : Number(folderId),
           });
           await replaceTags(set.id, { tags: parsedTags.data.tags });
           router.push(`/sets/${set.id}`);
@@ -93,6 +100,20 @@ export function EditSetForm({
         value={tags}
         onChange={(event) => setTags(event.target.value)}
       />
+      <FormField label="Folder" id="folder">
+        <Select
+          id="folder"
+          value={folderId}
+          onChange={(event) => setFolderId(event.target.value)}
+        >
+          <option value="">No folder</option>
+          {folders.map((folder) => (
+            <option key={folder.id} value={folder.id}>
+              {folder.name}
+            </option>
+          ))}
+        </Select>
+      </FormField>
       {errors.root?.message ? (
         <FieldError>{errors.root.message}</FieldError>
       ) : null}
