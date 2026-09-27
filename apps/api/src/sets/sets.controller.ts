@@ -49,6 +49,13 @@ const listSetsQuerySchema = z.object({
     .int("Tag must be a whole number")
     .positive("Tag must be a positive number")
     .optional(),
+  // ADR-014: the folder filter takes the folder's id — containment over the
+  // labeling layer; an unknown id yields an empty page (§41).
+  folder: z.coerce
+    .number()
+    .int("Folder must be a whole number")
+    .positive("Folder must be a positive number")
+    .optional(),
 });
 
 export class ListSetsQueryDto extends createZodDto(listSetsQuerySchema) {}
@@ -102,6 +109,7 @@ export class SetsController {
       },
       query.q,
       query.tag,
+      query.folder,
     );
 
     return {

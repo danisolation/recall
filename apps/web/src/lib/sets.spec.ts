@@ -135,6 +135,44 @@ describe("listSets", () => {
       }),
     );
   });
+
+  it("forwards the folder filter to the API", async () => {
+    headersMock.mockResolvedValue(new Headers({ cookie: "session_token=abc" }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => paginatedSets,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(listSets(undefined, undefined, 7)).resolves.toEqual(
+      paginatedSets,
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/sets?folder=7",
+      expect.objectContaining({
+        headers: { cookie: "session_token=abc" },
+        cache: "no-store",
+      }),
+    );
+  });
+
+  it("composes the query, tag, and folder filters", async () => {
+    headersMock.mockResolvedValue(new Headers({ cookie: "session_token=abc" }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => paginatedSets,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(listSets("biology", 7, 9)).resolves.toEqual(paginatedSets);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/sets?q=biology&tag=7&folder=9",
+      expect.objectContaining({
+        headers: { cookie: "session_token=abc" },
+        cache: "no-store",
+      }),
+    );
+  });
 });
 
 describe("getSet", () => {

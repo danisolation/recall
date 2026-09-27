@@ -20,12 +20,14 @@ export type PaginatedSets = {
  * Lists the signed-in user's own sets by asking the API with the browser's
  * own cookie. Same pattern as `lib/session.ts`: the httpOnly cookie only
  * exists server-side, so this must run in a server component. An optional
- * search query filters the collection (ADR-011's `q` on GET /sets) and an
- * optional tag id applies the tag filter (ADR-012's `tag` semijoin).
+ * search query filters the collection (ADR-011's `q` on GET /sets), an
+ * optional tag id applies the tag filter (ADR-012's `tag` semijoin), and an
+ * optional folder id applies the folder filter (ADR-014's containment).
  */
 export async function listSets(
   q?: string,
   tagId?: number,
+  folderId?: number,
 ): Promise<PaginatedSets> {
   const cookie = (await headers()).get("cookie");
 
@@ -36,6 +38,7 @@ export async function listSets(
   const search = [
     q ? `q=${encodeURIComponent(q)}` : null,
     tagId !== undefined ? `tag=${tagId}` : null,
+    folderId !== undefined ? `folder=${folderId}` : null,
   ]
     .filter(Boolean)
     .join("&");

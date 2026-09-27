@@ -4151,12 +4151,14 @@ Dashboard folder filter
 FOLD-004
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/lib/folders.ts (+ spec)
 apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
 apps/web/src/lib/sets.ts (folderId param, + spec)
+apps/web/src/components/search-input.tsx (hidden folder field, + spec)
+apps/api/src/sets/sets.controller.ts, sets.repository.ts (the `folder` query param — needed by the filter, mount-point precedent)
 
 ### Acceptance Criteria
 - `listFolders` follows the cookie-forwarding pattern; the dashboard lists folders (name + count) as filter links composing with `?q=` and `?tag=`
@@ -4168,6 +4170,14 @@ Folder chips join the dashboard as a **separate row above the tag chips** — co
 
 ### Tests
 - `pnpm --filter @danisolation-recall/web test` (lib + dashboard spec extensions, the ORG-007 pattern)
+
+### Decision (implementation, 2026-09-27)
+The design brief implemented as specified. All hrefs flow through **one `buildHref` composer**: every link preserves the other axes and overrides its own (`undefined` = keep, `null` = drop, number = set); the active folder chip toggles itself off; the clear link unwinds the tag first, then the folder, so no URL state is a dead end. `SearchInput` gained a hidden `folder` field (the ORG-007 composition discovery repeating: without it, submitting a search would drop the folder). Two caught in the loop: (1) the API's `GET /sets` had no `folder` query param — FOLD-004 covered only the write contracts — so the list filter joined this task (a plain column match on `study_sets.folder_id`; ownership comes from the existing `ownerId` equality, so a foreign folder id yields an empty page); (2) a tri-state bug in the composer's first draft — `undefined !== null` is true, so "keep current" with no current filter leaked `folder=undefined` into hrefs; the guard now requires a number to survive both overrides. The awkward-but-consistent three-part no-matches hint ("…with the selected tag with the selected folder") was accepted over special-casing the copy.
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` — **197 passed (34 files)**: +13 (3 lib/folders `listFolders`; 2 lib/sets folder URLs incl. the full q+tag+folder composition; 1 search-input hidden folder field; 7 dashboard tests — chips with counts, composition with q+tag, active-folder toggle-off with sibling preservation, folder-only no-matches, all-three hint with the unwind order, malformed fold, unknown-id escape hatch)
+- `pnpm --filter @danisolation-recall/api test` — **260 passed** (the folder list-filter runs through the existing suites)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---
 

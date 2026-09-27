@@ -58,6 +58,7 @@ export class SetsRepository {
     page: { limit: number; offset: number },
     q?: string,
     tagId?: number,
+    folderId?: number,
   ): Promise<StudySet[]> {
     // Escape the LIKE metacharacters so a user's % or _ matches literally,
     // then wrap the whole query in wildcards.
@@ -92,6 +93,12 @@ export class SetsRepository {
                     ),
                   ),
               )
+            : undefined,
+          // ADR-014: the folder filter is a plain column match — containment
+          // needs no semijoin. Ownership comes from the ownerId equality
+          // above, so a foreign folder id simply yields an empty page (§41).
+          folderId !== undefined
+            ? eq(studySets.folderId, folderId)
             : undefined,
         ),
       )
