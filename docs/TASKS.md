@@ -3215,17 +3215,23 @@ Cover the loop end to end in a browser: study a set, then see the progress surfa
 PROGRESS-006
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/e2e/progress.spec.ts
+apps/web/package.json (the database package as a devDependency, for the fixture)
+pnpm-lock.yaml
 
 ### Acceptance Criteria
 - register → create a set → add cards → study them → the progress surface shows the session's counts and accuracy → a due card reappears in the queue
 - one journey test, not per-feature tests (SET-014/CARD-014/STUDY-014 precedent)
 
+### Decision
+The journey runs the whole loop through the real UI — register → dashboard → new set → two cards → the Study control → one correct and one incorrect answer → the completion view → "Back to the dashboard" → "View progress" — and then asserts the summary (Reviews 2, Accuracy 50%, Due cards 0) and the history item ("E2E progress set" + "Completed", the auto-finish from STUDY-014 made visible). The one acceptance the UI alone cannot produce is "a due card reappears in the queue": the ladder never schedules into the past (its shortest step is 10 minutes), so a journey would have to sleep. The fixture instead **backdates the user's `next_review_at` rows through the database package** and reloads the page — the browser then proves the queue picks up both cards and a queue item navigates to the set. That is the same spirit as AUTH-021's original API-arranged registration: behavior through the real stack, preconditions through the cheapest honest seam. The seam required `@danisolation-recall/database` as a web devDependency (workspace link only, no runtime footprint — vitest is scoped to `src/`, so unit tests never see it); this journey also cleans up after itself in `afterAll` since the fixture owns a handle. Two run-environment notes from the failing first attempt: the journey initially skipped the home page's "Dashboard" step (every post-registration journey needs it), and an orphaned `next dev` webServer from an earlier session held Next's directory lock and had to be killed before Playwright could boot its own.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test:e2e`
+- `pnpm --filter @danisolation-recall/web test:e2e` (8 Playwright tests, incl. the new progress journey: study → summary reflects 2 reviews / 50% accuracy / 0 due with the honest empty queue → backdated fixture → reload shows both cards in the queue → a queue item lands on its set; the 4 auth, sets, cards, and study journeys still pass)
+- `pnpm --filter @danisolation-recall/web typecheck` succeeds (no src changes; the earlier build for PROGRESS-006 remains current)
 
 ---
 

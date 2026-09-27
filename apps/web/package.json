@@ -20,6 +20,7 @@
     "zod": "^4.6.1"
   },
   "devDependencies": {
+    "@danisolation-recall/database": "workspace:*",
     "@danisolation-recall/typescript-config": "workspace:*",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",

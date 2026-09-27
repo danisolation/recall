@@ -118,6 +118,9 @@ importers:
         specifier: ^4.6.1
         version: 4.6.1
     devDependencies:
+      '@danisolation-recall/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@danisolation-recall/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
