@@ -72,7 +72,7 @@ describe("TagsRepository", () => {
         "exam prep",
       ]);
     }
-    expect((await tags.listBySet(setId, ownerId)).map((t) => t.name)).toEqual([
+    expect((await tags.listBySet(setId, ownerId))!.map((t) => t.name)).toEqual([
       "Biology",
       "exam prep",
     ]);
@@ -108,7 +108,7 @@ describe("TagsRepository", () => {
       // recreate.
       expect(second.tags.find((tag) => tag.name === "beta")!.id).toBe(betaId);
     }
-    expect((await tags.listBySet(setId, ownerId)).map((t) => t.name)).toEqual([
+    expect((await tags.listBySet(setId, ownerId))!.map((t) => t.name)).toEqual([
       "beta",
       "gamma",
     ]);
@@ -120,7 +120,7 @@ describe("TagsRepository", () => {
 
     expect(result.outcome).toBe("replaced");
     expect(
-      (await tags.listBySet(setId, ownerId)).map((t) => t.name),
+      (await tags.listBySet(setId, ownerId))!.map((t) => t.name),
     ).toEqual(["gamma"]);
     // Tags are user-owned vocabulary — untagging a set does not delete them.
     const userTags = (await tags.listByUser(ownerId)).map((t) => t.name);
@@ -160,7 +160,7 @@ describe("TagsRepository", () => {
     expect(result.outcome === "replaced" && result.tags).toHaveLength(1);
     if (result.outcome === "replaced") {
       const ownerTag = result.tags[0]!;
-      const otherTag = (await tags.listBySet(otherSetId, otherId))[0]!;
+      const otherTag = (await tags.listBySet(otherSetId, otherId))![0]!;
       expect(ownerTag.name).toBe("shared");
       expect(ownerTag.id).not.toBe(otherTag.id);
       expect(ownerTag.userId).toBe(ownerId);

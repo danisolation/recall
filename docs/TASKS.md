@@ -4051,21 +4051,24 @@ Owner-scoped folder CRUD with set counts, and the set-side placement checks.
 FOLD-002
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/folders/folders.repository.ts (+ integration spec)
 apps/api/src/folders/folders.module.ts
 apps/api/src/app.module.ts (registration)
-packages/database/src/index.ts (re-exports as needed; rebuild dist)
 
 ### Acceptance Criteria
 - `listByUser` (with per-folder set counts via one GROUP BY), `create`, `rename` (outcome union: renamed | notFound | conflict for a duplicate name), `remove` (sets survive, unfiled)
 - every query owner-scoped in SQL (§41); counts come from one GROUP BY join
 - `assertOwned`/placement helper for the set contracts' folderId validation
 
+### Decision
+The tags repository's conventions carried over: `@Inject(DATABASE_PROVIDER)` db handle, outcome unions, and SQL-level ownership. `listByUser` is one `leftJoin` + `groupBy(folders.id)` returning `FolderWithCount` (counts ride the list per ADR-014); `create`/`rename` translate the unique violation into the conflict outcome; `remove` returns a boolean and adds nothing — the SET NULL migration owns the content-safety. `isOwnedBy` (the ledger's "assertOwned") is the placement check FOLD-004's set writes will call. **Unique-violation detection walks the cause chain**: drizzle wraps the pg error (`DrizzleQueryError.cause`), so checking `.code` on the wrapper misses it — the first integration run caught that immediately. The task also repaired **latent ORG-006 damage**: `listBySet`'s ORG-006 signature change (`Tag[] | null`) had left four unguarded call sites in the tags spec (vitest never typechecks, so they survived as runtime-passing type errors) — now `!`-asserted per house style — and the two create-set.service.spec mock rows gained the new `folderId: null`. `FoldersModule` exports the repository (the sets module consumes the placement check in FOLD-004); the controller arrives with FOLD-004.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/api test` — folders.repository.integration.spec (list counts, create, rename conflict, delete-unfiles, foreign-set/foreign-folder scoping)
+- `pnpm --filter @danisolation-recall/api test` — **243 passed (43 files)**: +9 folders tests (create, case-insensitive duplicate → conflict, alphabetical list with counts incl. zero-count via LEFT JOIN, other-user scoping, rename + updatedAt, foreign rename → notFound, duplicate rename → conflict, remove-unfiles proof reading the set row back with `folderId` null, foreign remove → false with the folder intact, `isOwnedBy` ×3)
+- `pnpm --filter @danisolation-recall/api typecheck` — clean (including the four repaired ORG-006 stragglers)
 
 ---
 

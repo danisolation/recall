@@ -9,6 +9,7 @@ import { AuthModule } from "./auth/auth.module";
 import { CardsModule } from "./cards/cards.module";
 import { ZodExceptionFilter } from "./common/zod-exception.filter";
 import { DatabaseModule } from "./database/database.module";
+import { FoldersModule } from "./folders/folders.module";
 import { HealthController } from "./health/health.controller";
 import { ProgressModule } from "./progress/progress.module";
 import { SetsModule } from "./sets/sets.module";
@@ -16,7 +17,7 @@ import { SessionsModule } from "./study/sessions.module";
 import { TagsModule } from "./tags/tags.module";
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, SetsModule, CardsModule, SessionsModule, ProgressModule, TagsModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, SetsModule, CardsModule, SessionsModule, ProgressModule, TagsModule, FoldersModule],
   controllers: [AppController, HealthController],
   providers: [
     AppService,

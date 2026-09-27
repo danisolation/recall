@@ -18,6 +18,7 @@ describe("CreateSetService", () => {
     const row = {
       id: 1,
       ownerId: 7,
+      folderId: null,
       title: "Biology basics",
       description: "Cells",
       createdAt: new Date(),
@@ -43,6 +44,7 @@ describe("CreateSetService", () => {
     vi.mocked(setsRepository.create).mockResolvedValue({
       id: 1,
       ownerId: 7,
+      folderId: null,
       title: "No description",
       description: null,
       createdAt: new Date(),
