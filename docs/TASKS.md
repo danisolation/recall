@@ -4282,3 +4282,204 @@ All counts re-verified against fresh runs before writing (§73): web 214 (36 fil
 - `pnpm --filter @danisolation-recall/web test:e2e` — 11/11 (FOLD-007's run, same commit)
 
 ---
+
+# Sharing phase (Phase 2)
+
+Phase 2 continues per `docs/ROADMAP.md` ("Public sets, sharing, favorites"). The slice is **public-by-URL read-only sharing**: an owner can make a set public and hand out its link — no user discovery, no social graph, no write access for visitors. The recorded deferrals (favorites, copies, studying shared sets) are out of scope.
+
+### SHARE-001
+
+### Title
+Write ADR-015: public sets — sharing by URL
+
+### Goal
+Record the sharing design: a visibility flag on the set, a narrow unauthenticated read endpoint, and a public view page that never weakens the private surface.
+
+### Dependencies
+FOLD-008
+
+### Status
+DONE
+
+### Files
+docs/adr/ADR-015-sharing.md
+
+### Acceptance Criteria
+- decides the visibility model (`study_sets.visibility` text token, `private` default | `public`, owned by the repository like the session status), the narrow exception endpoint (`GET /public/sets/:id`, no auth guard, returning title/description/cards/tags only when public — private and missing fold into the same 404, §41 extended to visibility), placement of the public route **outside the (protected) group**, the owner toggle riding `PATCH /sets/:id`'s validated contract, and the public page rendering content without study/progress actions
+- records the deferrals: favorites, save-a-copy, studying shared sets, public listing/discovery, rate limiting on the public endpoint (bounded risk, addressed by the Redis phase)
+- the alternatives (share tokens, save-a-copy, favorites, discovery) documented with rejection reasons
+
+### Decision
+ADR-015 written in the house format. Framings beyond the acceptance list: the guard-less GET is the API's **only** unauthenticated surface and it refuses everything not explicitly public — the exception is an absence, not a weakening; `no-store` everywhere means CDN caching of public content is a recorded later optimization, not a need; studying a shared set is the most requested follow-up but doubles the slice (progress ownership for non-owners), so the public page is a reading view. The phase decomposition (SHARE-001..007) was registered in this task's ledger edit; the E2E journey will use a fresh logged-out browser context to prove the share URL works without a session.
+
+### Tests
+- none (decision task). Artifact check per §73: ROADMAP's Phase-2 first bullet ("Public sets, sharing, favorites") verified by grep in FOLD-001's exploration; the auth perimeter confirmed by the `(protected)` layout's redirect (§56 of the audit) and every sets route carrying `@UseGuards(AuthGuard)`.
+
+---
+
+### SHARE-002
+
+### Title
+Sharing schema and migration
+
+### Goal
+Add `study_sets.visibility` with the `private` default so every existing set stays private.
+
+### Dependencies
+SHARE-001
+
+### Status
+TODO
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/0010_*.sql (+ journal/snapshot)
+docs/database/schema.md (visibility column)
+
+### Acceptance Criteria
+- `visibility` text, not null, default `private` — existing sets keep their privacy
+- migration applied; `@danisolation-recall/database` dist rebuilt
+
+### Tests
+- `pnpm --filter @danisolation-recall/database db:migrate` + `build` + `typecheck`
+
+---
+
+### SHARE-003
+
+### Title
+Sharing API: the public endpoint and the visibility contract
+
+### Goal
+`GET /public/sets/:id` (no auth, public-only, cards + tags included) and `visibility` on `PATCH /sets/:id`.
+
+### Dependencies
+SHARE-002
+
+### Status
+TODO
+
+### Files
+packages/contracts/src/set.schema.ts (visibility enum on update, + spec)
+apps/api/src/sets/sets.controller.ts (PublicSetsController without AuthGuard; PATCH visibility)
+apps/api/src/sets/sets.repository.ts (findPublicById; update handles visibility)
+apps/api/src/sets/sets.integration.spec.ts or new spec (public/private/foreign cases)
+
+### Acceptance Criteria
+- `GET /public/sets/:id` → 200 with the set + cards (study order) + tags when public; 404 `SET_NOT_FOUND` for private, foreign, or missing — indistinguishable (§41 extended)
+- `PATCH /sets/:id` accepts `visibility: "private" | "public"` (validated enum); the set's cards/tags are never exposed for private sets
+- the public controller lives in the sets module without the auth guard; every existing owner-scoped surface unchanged
+
+### Tests
+- `pnpm --filter @danisolation-recall/contracts test` + `pnpm --filter @danisolation-recall/api test` (public endpoint cases: public 200, private 404, foreign 404, malformed 404, cards in study order, tags included; PATCH visibility toggles)
+
+---
+
+### SHARE-004
+
+### Title
+Owner sharing toggle
+
+### Goal
+Let the owner flip a set between Private and Public from the edit form, with the state visible on the detail page.
+
+### Dependencies
+SHARE-003
+
+### Status
+TODO
+
+### Files
+apps/web/src/lib/api.ts (updateSet passes visibility — type-level)
+apps/web/src/lib/sets.ts (StudySet.visibility)
+apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec)
+apps/web/src/app/(protected)/sets/[id]/page.tsx (a "Public"/"Private" dl row, + spec)
+
+### Acceptance Criteria
+- the edit form gains a Sharing select (Private/Public) sent through `visibility` on every save (mirroring the folder placement); prefill from `set.visibility`
+- the detail page's info panel shows the current visibility so the owner can confirm the state
+- copy/name discipline holds; the payload shape changes are pinned by updated tests
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (edit-form select tests; detail-page visibility row)
+
+---
+
+### SHARE-005
+
+### Title
+Public set page
+
+### Goal
+`/share/sets/[id]` — an unauthenticated, read-only view of a public set.
+
+### Dependencies
+SHARE-003
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/share/sets/[id]/page.tsx (+ spec)
+apps/web/src/lib/public.ts (fetcher without credentials, + spec)
+
+### Acceptance Criteria
+- the route lives outside the (protected) group; it fetches the public API endpoint server-side (no cookie) and renders title, description, tags, and the cards' fronts and backs — no study/edit/delete controls, no owner email
+- 404 (`notFound()`) for private/missing — indistinguishable
+- the same panel/typography registers; the page works signed out and signed in alike
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (public page: content rendered, 404 fold, no action controls)
+
+---
+
+### SHARE-006
+
+### Title
+Sharing E2E journey
+
+### Goal
+Cover the loop in a browser: toggle a set public, open its share URL in a clean context (logged out), see the content, and confirm a private set 404s.
+
+### Dependencies
+SHARE-005
+
+### Status
+TODO
+
+### Files
+apps/web/e2e/sharing.spec.ts
+
+### Acceptance Criteria
+- one journey test (house precedent): register → create a set with cards → toggle Public in the edit form → open /share/sets/:id in a fresh logged-out context → content visible without any action controls → toggle back to Private → the share URL now 404s
+- kill any orphaned next dev webServer before the run
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test:e2e`
+
+---
+
+### SHARE-007
+
+### Title
+Sharing docs sweep
+
+### Goal
+Leave the docs honest about the public surface.
+
+### Dependencies
+SHARE-006
+
+### Status
+TODO
+
+### Files
+ARCHITECTURE.md (ADR-015 row), docs/PROGRESS.md (sharing section + counts), README.md (status line)
+
+### Acceptance Criteria
+- counts re-verified against fresh suite runs (§73), the ADR-015 row in the decision table, PROGRESS gains the sharing section
+
+### Tests
+- full suites re-run for the counts cited in PROGRESS.md
+
+---
