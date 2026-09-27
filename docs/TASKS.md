@@ -3673,7 +3673,7 @@ ORG-006
 ORG-007
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/e2e/organization.spec.ts
@@ -3682,11 +3682,243 @@ apps/web/e2e/organization.spec.ts
 - register → create two sets → label them via the forms → filter the dashboard by tag → compose tag + search text → the no-matches state
 - one journey test, not per-feature tests (SET-014/CARD-014/STUDY-014/PROGRESS-007/SEARCH-004 precedent)
 
+### Decision
+One journey covering the full loop against the real stack: register → create "Spanish vocabulary" (tags "language, vocabulary") and "Japanese kanji" (tags "language") through the create form → relabel the second set through the edit form (prefill asserted, "language, jlpt") → detail pages show the name-ordered tag strings ("jlpt, language" pins the repository's `asc(tags.name)` ordering) → dashboard tag chips filter (shared tag keeps both sets, narrow tag keeps one) → search composes with the active tag via the hidden field → the combined no-matches hint names both filters → "Clear filter" keeps the query and lands on the text-only no-matches state. Two selector disciplines: tag chips use `exact: true` ("vocabulary" is a substring of the "Spanish vocabulary" set link — the STUDY-014 gotcha), and the composed-URL assertions check the params **individually** rather than pinning their order, because the GET form serializes the hidden `tag` field before `q` (`?tag=55&q=Spanish`) — the first run failed on that assertion, not on the app: both params were present and applied, so the test was corrected (impl-correct-not-test rule doesn't apply; the assertion was over-specified).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test:e2e`
+- `pnpm --filter @danisolation-recall/web test:e2e` — 10/10 journeys pass (the new organization journey plus the 9 existing ones); the orphaned-`next dev` directory lock (PID 28256) was killed before the run (recurring Windows gotcha)
 
 ---
 
 ## Remaining MVP phases (coarse — not yet decomposed)
 
-None. With the organization phase decomposed above, every §78 MVP slice has shipped or has an atomic task chain; everything beyond it is the Phase-2 block in `docs/ROADMAP.md`.
+None. With the organization phase decomposed above, every §78 MVP slice has shipped or has an atomic task chain; everything beyond it is the post-MVP work below.
+
+---
+
+# UI Polish phase (post-MVP)
+
+Direction per the approved plan (plan: ui-ux-polish-phase): deepen the ADR-008 paper identity — no component library, one icon dep (`lucide-react`), subtle CSS-only motion, whole app, foundation first. Phase-wide invariant: visible copy, accessible names, hrefs, and roles survive unchanged; icons and aria attributes are additive only. Executed after ORG-008 so the E2E journeys are green before any restyle.
+
+### UX-001
+
+### Title
+Write ADR-013: UI polish decisions
+
+### Goal
+Record the decisions that deepen ADR-008's design system without replacing it.
+
+### Dependencies
+ORG-008
+
+### Status
+TODO
+
+### Files
+docs/adr/ADR-013-ui-polish.md
+
+### Acceptance Criteria
+- amends (not supersedes) ADR-008: tokens, product register, a11y floor, marker rationing stand
+- decides: lucide-react as the single new runtime dep (stroke icons, labels always visible — no icon-only controls, §57); registers centralized as real components in components/ui; motion policy (transform/opacity only, 150–250ms, dies under the existing prefers-reduced-motion kill-switch, CSS-only — hydration-safe); no webfont (ADR-008 holds); dark mode and toasts explicitly deferred/rejected; interactions stay architectural (§23 URL state, inline confirms, zero client-JS search, §25 router.refresh)
+- records the phase-wide test invariant: copy, accessible names, hrefs, roles frozen; the 170-test suite pins roles/copy, zero class assertions
+
+### Tests
+- none (decision task; DOC-002-style artifact check)
+
+---
+
+### UX-002
+
+### Title
+Centralize the panel and link registers
+
+### Goal
+Replace the ~14 copy-pasted register strings with shared exports so styling changes stop touching 13 files.
+
+### Dependencies
+UX-001
+
+### Status
+TODO
+
+### Files
+apps/web/src/components/ui/panel.tsx (+ spec)
+apps/web/src/components/ui/text-link.tsx (+ spec)
+dashboard/page.tsx, progress/page.tsx, components/set-list.tsx, components/card-list.tsx, sets/[id]/page.tsx, study/[sessionId]/study-client.tsx + completion-view.tsx, sets/[id]/create-card-form.tsx + edit-card-form.tsx, sets/[id]/delete-set-button.tsx + delete-card-button.tsx + move-card-button.tsx, app/page.tsx, login/register pages
+
+### Acceptance Criteria
+- `Panel` (section + panel classes + exported `panelClassName`) and `TextLink` (link register) live in components/ui with small specs
+- every register-citing file imports from ui/ instead of re-declaring the string; set-list/card-list link-panels use `panelClassName` on their Link
+- zero visible change: no copy/name/href drift (pure class moves)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` — existing 170 pass unmodified; new ui specs green
+
+---
+
+### UX-003
+
+### Title
+Icons and real buttons, app-wide
+
+### Goal
+Give every action visual weight: icons beside text, nav actions as button-styled links, tag chips.
+
+### Dependencies
+UX-002
+
+### Status
+TODO
+
+### Files
+apps/web/package.json (+ lucide-react, pnpm-lock.yaml)
+components/ui/text-link.tsx (variant: "button"), components/search-input.tsx, components/set-list.tsx, components/card-list.tsx, dashboard/page.tsx, sets/[id]/page.tsx + start-study-button.tsx + delete-card-button.tsx + move-card-button.tsx, study/[sessionId]/*, progress/page.tsx, app/page.tsx, layout.tsx (wordmark)
+
+### Acceptance Criteria
+- lucide-react icons are decorative (aria-hidden) beside unchanged text labels: Plus/New set, TrendingUp/View progress, Pencil/Edit set, Play/Study, Search, ArrowUp/ArrowDown/Move, Trash2/Delete, Hash/tag chips, empty-state icons
+- TextLink gains a button variant (bg-card border rounded-md, Button-secondary padding); nav actions use it; tag filter links become rounded-full chips keeping aria-current, hrefs, names
+- inline confirms stay inline; every accessible name and href unchanged
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` — existing specs pass unmodified (names/copy preserved); typecheck + build
+
+---
+
+### UX-004
+
+### Title
+Study screen: flip, progress bar, keyboard shortcuts
+
+### Goal
+Make the daily instrument feel like one: animated reveal, visible progress, hands-on-keyboard.
+
+### Dependencies
+UX-003
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx (+ spec), completion-view.tsx (+ spec), app/globals.css (flip keyframes/utilities)
+
+### Acceptance Criteria
+- reveal flips the card (3D perspective + rotateY, ~200ms, backface-hidden); reduced-motion collapses to the current instant swap; `revealed` state machine unchanged
+- progress bar (`role="progressbar"` + aria-valuenow/min/max) next to the pinned "N of M answered" text
+- keyboard: Space/Enter reveals when hidden, 1 = Incorrect / 2 = Correct when revealed; ignored when the event originates from a button/input/link (no double-fire, no page scroll); preventDefault on handled keys
+- all copy unchanged; CompletionView gets big-numeral stats with byte-identical strings
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` — study-client spec adds: progressbar value, Space reveals, 1/2 answers, shortcut suppressed on a focused button; typecheck + build
+
+---
+
+### UX-005
+
+### Title
+Progress page visual upgrade
+
+### Goal
+Give the stats hierarchy without faking data: stat panels, badge styling, no charts.
+
+### Dependencies
+UX-003
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/progress/page.tsx (+ spec if needed)
+
+### Acceptance Criteria
+- summary dl becomes three stat panels (big numeral, small label, icon) with identical copy ("50%", "No answers yet", counts)
+- session status labels may be badge-styled but each full pinned string ("Completed — February 1, 2026") stays within ONE containing element (getByText constraint)
+- no charts — ADR-010 is counts-only; empty states unchanged
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` — progress spec passes unmodified; typecheck + build
+
+---
+
+### UX-006
+
+### Title
+Landing and auth polish
+
+### Goal
+Make the first impression earn the product register: hero, CTAs, feature trio.
+
+### Dependencies
+UX-002
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/page.tsx (+ spec check), login/page.tsx, register/page.tsx (+ their form specs check)
+
+### Acceptance Criteria
+- hero: headline, one-liner, feature trio panels (Create/Cards/Study with icons, one line each); CTAs are button-variant TextLinks with unchanged names ("Log in", "Create account", "Dashboard")
+- auth cards: icon + spacing polish; labels, copy, names untouched
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` — home + auth specs pass unmodified (verify; adjust only if a spec asserts structure beyond names/hrefs)
+
+---
+
+### UX-007
+
+### Title
+Loading skeletons, favicon, metadata
+
+### Goal
+Design the waiting state (§56) and the browser chrome.
+
+### Dependencies
+UX-002
+
+### Status
+TODO
+
+### Files
+apps/web/src/app/(protected)/dashboard/loading.tsx, sets/[id]/loading.tsx, progress/loading.tsx, study/[sessionId]/study-client.tsx (skeleton), public/favicon.svg, app/layout.tsx (icons/themeColor metadata)
+
+### Acceptance Criteria
+- route-level skeletons built from panelClassName + animate-pulse (opacity-only → reduced-motion-safe)
+- study client's bare "Loading…" becomes a skeleton keeping the text as sr-only + aria-busy (existing getByText("Loading…") keeps passing)
+- favicon (marker-highlighted R) + themeColor/icons metadata in the root layout
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` — study spec passes unchanged via the sr-only trick; typecheck + build
+
+---
+
+### UX-008
+
+### Title
+E2E verification and docs sweep
+
+### Goal
+Prove the restyle kept the journeys green and leave the docs honest.
+
+### Dependencies
+UX-003
+UX-004
+UX-005
+UX-006
+UX-007
+
+### Status
+TODO
+
+### Files
+docs/adr/ADR-013-ui-polish.md (finalization if needed), ARCHITECTURE.md (ADR-013 row), docs/PROGRESS.md, README.md
+
+### Acceptance Criteria
+- kill any orphaned next dev webServer (Windows gotcha), then all 6 Playwright journeys pass unmodified (auth, sets, cards, search, study, progress)
+- ARCHITECTURE decision table gains the ADR-013 row; PROGRESS/README reflect the polish phase; ledger entries all DONE with decisions + test notes
+- full verification: web tests + typecheck + build + E2E; next-env.d.ts restored after builds
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test:e2e` + unit suite + typecheck + build
+
+---
