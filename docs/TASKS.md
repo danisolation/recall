@@ -3526,7 +3526,7 @@ Expose `GET /tags` and the replace-style `PUT /sets/:id/tags`.
 ORG-003
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/tags/tags.module.ts
@@ -3543,8 +3543,13 @@ apps/api/src/app.module.ts
 - `PUT /sets/:id/tags`: replaces the set's tags from a shared schema (`{ tags: string[] }` — trimmed, deduped, each 1–50 chars, at most 10 with 400 beyond, per ADR-012); 200 with the set's tags after replace; 404 `SET_NOT_FOUND` for a foreign/missing set; 401 without a session
 - contracts schema lives in `packages/contracts` with user-facing messages (the register/card precedent) — the web form validates with the same schema
 
+### Decision
+Two controllers in one module, the CARD-004 precedent: `TagsController` at `tags` (the plain unpaginated array — a personal tag vocabulary is small, and ADR-012 deferred counts) and `SetTagsController` at `sets/:id/tags` with the local `parseSetId` fold into 404 `SET_NOT_FOUND`. The body schema is **shared** (`setTagsSchema` in contracts): per-name transform().pipe trimming then 1–50 with the house messages, and `array.max(10)` applying to the submitted list — the ceiling bounds the payload, while the repository's case-insensitive dedupe remains the invariant owner (a 12-name list that dedupes to 5 still fails; the contract bounds what is sent, §53). `PUT` returns 200 with the full tag rows (§82: no duplicated response type), and Nest's PUT default status needed no override.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: list, replace creating and reusing tags, replace removing a dropped tag, 404, 401, 400 for over-cap/over-length)
+- `pnpm --filter @danisolation-recall/contracts test` (51 tests, incl. 6 new: trimming applied, empty list valid (clearing a set is a real action), blank name after trim, 51-char name, 11 tags, missing field)
+- `pnpm --filter @danisolation-recall/contracts build` refreshed the dist the API consumes
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (230 tests, incl. 12 new HTTP-level tests: alphabetical owner-scoped `GET /tags` hiding other users', replace trimming and creating unknown names, case-insensitive reuse of the same tag row, dropped tags removed, empty list clearing, foreign set 404 with its own tags intact, malformed/unknown ids folded into 404, 400 for 11 tags and a 51-char name, 401)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---

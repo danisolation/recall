@@ -13,9 +13,10 @@ import { HealthController } from "./health/health.controller";
 import { ProgressModule } from "./progress/progress.module";
 import { SetsModule } from "./sets/sets.module";
 import { SessionsModule } from "./study/sessions.module";
+import { TagsModule } from "./tags/tags.module";
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, SetsModule, CardsModule, SessionsModule, ProgressModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, SetsModule, CardsModule, SessionsModule, ProgressModule, TagsModule],
   controllers: [AppController, HealthController],
   providers: [
     AppService,
