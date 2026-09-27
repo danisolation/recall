@@ -33,9 +33,14 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <Link href="/sets/new" className={newSetLink}>
-          New set
-        </Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link href="/progress" className={newSetLink}>
+            View progress
+          </Link>
+          <Link href="/sets/new" className={newSetLink}>
+            New set
+          </Link>
+        </div>
       </div>
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Your sets</h2>

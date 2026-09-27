@@ -102,4 +102,20 @@ describe("DashboardPage", () => {
       screen.getByRole("link", { name: "Create a set" }),
     ).toHaveAttribute("href", "/sets/new");
   });
+
+  it("offers the View progress entry point", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 1,
+      email: "user@example.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
+
+    render(await DashboardPage());
+
+    expect(
+      screen.getByRole("link", { name: "View progress" }),
+    ).toHaveAttribute("href", "/progress");
+  });
 });

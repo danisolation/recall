@@ -3178,12 +3178,15 @@ PROGRESS-004
 PROGRESS-005
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/(protected)/progress/page.tsx (+ components and specs as needed)
-apps/web/src/lib/progress.ts (+ spec)
-apps/web/src/app/(protected)/dashboard/page.tsx (+ spec for the entry point)
+apps/web/src/app/(protected)/progress/page.tsx
+apps/web/src/app/(protected)/progress/page.spec.tsx
+apps/web/src/lib/progress.ts
+apps/web/src/lib/progress.spec.ts
+apps/web/src/app/(protected)/dashboard/page.tsx
+apps/web/src/app/(protected)/dashboard/page.spec.tsx
 
 ### Acceptance Criteria
 - the protected screen shows §78's four basics across the ADR-010 surfaces; due items link to their sets
@@ -3191,9 +3194,12 @@ apps/web/src/app/(protected)/dashboard/page.tsx (+ spec for the entry point)
 - empty states per §56: nothing studied yet, nothing due; loading/error per the study screen's client-fetch pattern if used
 - dates render in the fixed-locale/UTC register for hydration safety
 
+### Decision
+The page is a **server component** using the lib server-fetch pattern (`lib/progress.ts`, the `lib/sets.ts`/`lib/cards.ts` convention: cookie-forwarded, `cache: "no-store"`, empty/zeroed result without a cookie since the protected layout already gated the request, API failure through Next's error boundary) — the "if used" clause in the acceptance resolved toward the dashboard's pattern because the file list includes a lib module, and a read-only screen needs no client state. All three fetches run under `Promise.all`; each surfaces its first page only (no pagination controls — the SET-010 precedent). Accuracy is **derived once in the page** from the counts-only summary, exactly the CompletionView computation, with "No answers yet" for zero reviews instead of a fabricated 0%. Due and history items are card-style links to their sets in the SetList/CardList item register; history meta shows the status mapped display-only (`ACTIVE → Active`, etc.) plus the fixed-locale/UTC `longDate` for hydration safety. ADR-010's dashboard link landed as "View progress" beside "New set" in the existing header register. One test-driven naming fix: the summary's stat was "Due now", which collided with the queue section heading — it became "Due cards" so each heading is unique.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (lib fetches forward the cookie or client-fetch states; components render summary, due items, history, and empty states; the dashboard renders the entry point)
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/web test` (132 tests, incl. 14 new: 9 lib tests — each helper forwards the cookie with `no-store`, returns its zeroed/empty value without a cookie and without calling the API, and throws a clear error on failure; 4 page tests — summary with "50%" derived from 2/4, zero-review "No answers yet" with both empty states and no "0%", due cards linking to `/sets/42` with their set title, history items showing "Completed" and "February 1, 2026"; plus the dashboard's "View progress" → `/progress` assertion)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/progress` is dynamic under the protected layout)
 
 ---
 
