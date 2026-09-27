@@ -3251,10 +3251,11 @@ Decide what "basic set search" means — fields, matching rule, API shape, and s
 None (builds on the completed sets phase)
 
 ### Status
-READY
+DONE
 
 ### Files
 docs/adr/ADR-011-search.md
+ARCHITECTURE.md (key-decisions table: registered ADR-011)
 
 ### Acceptance Criteria
 - ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
@@ -3263,6 +3264,9 @@ docs/adr/ADR-011-search.md
 - decides the API shape (expected: an optional `q` parameter on `GET /sets`, the §52 collection-filtering shape, interacting with the existing limit/offset pagination) and where the query schema lives
 - decides the surface (expected: a search input on the dashboard driving `?q=` URL state, distinguishing "no sets yet" from "no matches" per §56) and whether a dedicated search module/page is justified today (§28 vs. §85/§87)
 - states explicitly whether the phase requires schema changes (expected: none)
+
+### Decision
+ADR-011 records: **fields** — the caller's own sets matched on `title` and `description`, with card content and tags deferred (per-set text aggregation and a ranking question nothing asks for yet; tags do not exist); **matching** — case-insensitive substring via `ILIKE '%q%'` on a trimmed query with `%`/`_`/`\` **escaped** in the input (§42 — a user cannot inject wildcard semantics into their own search), no index and no migration at personal scale, upgrade paths recorded (pg_trgm for substring speed, tsvector for relevance, §51's engine ladder); **API** — an optional `q` on the existing `GET /sets` (§52 collection filtering, not a new resource), file-local schema, 200-character cap with 400 beyond (§53), and **empty/whitespace `q` means no filter rather than an error** (clearing a search box is a normal action, not malformed input); **surface** — a plain HTML form (`method="get"`, `action="/dashboard"`) so the query lives in URL state (§23) with zero client JavaScript, and three distinct §56 states (no library / no matches with the query retained / matches); **no search module or page today** — one collection filtered by its own repository is not a domain (§85, §87), and §51's engine-swappability is honored by the matching SQL living in the sets repository; and **no schema changes**. ARCHITECTURE.md's key-decisions table registered the ADR.
 
 ### Tests
 None (documentation only)
