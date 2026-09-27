@@ -113,6 +113,8 @@ Key properties:
 | Zod + shared contracts package + nestjs-zod | ADR-004 |
 | Opaque session token in httpOnly cookie, hashed in PostgreSQL (JWT rejected — logout must revoke) | ADR-007 |
 | Tailwind v4 with CSS-first tokens, product register, accessibility floor | ADR-008 |
+| Study sessions: `ACTIVE → COMPLETED/ABANDONED` state machine, binary reviews, isolated Leitner ladder scheduler | ADR-009 |
+| Progress: dedicated `/progress` page, due = `next_review_at <= now`, counts-only API (accuracy derived client-side) | ADR-010 |
 | Next.js rewrite proxy instead of CORS — first-party session cookie, no API CORS surface | AUTH-020 task rationale + `ENVIRONMENT.md` |
 | Per-IP login rate limiting, in-memory storage (Redis swap deferred) | AUTH-020A task rationale |
 

@@ -3008,10 +3008,11 @@ Decide what the MVP shows for progress — surfaces, aggregates, the "due" rule,
 None (builds on the completed study phase)
 
 ### Status
-READY
+DONE
 
 ### Files
 docs/adr/ADR-010-progress.md
+ARCHITECTURE.md (key-decisions table: registered ADR-009, missing since the study phase, and the new ADR-010)
 
 ### Acceptance Criteria
 - ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
@@ -3020,6 +3021,9 @@ docs/adr/ADR-010-progress.md
 - decides the endpoint list per §52 — expected candidates: `GET /progress` (summary: review count, accuracy, due count), `GET /progress/due` (paginated due cards with their set and card info), `GET /study-sessions` (paginated history, promoting the repository's existing `listByUser`) — and the accuracy representation (integer percent vs. fraction)
 - decides whether the set detail page shows per-card next review (or whether the due list is the only scheduling surface in MVP)
 - states explicitly that the phase requires no schema changes — it reads only what STUDY-002..004 store
+
+### Decision
+ADR-010 records: **one dedicated `/progress` page** carrying all four §78 basics (summary strip, due queue, session history), the dashboard changing only by one "View progress" link; **due = `next_review_at <= now`** on the caller's own progress rows, never-reviewed (null) rows excluded — the queue is bounded because a card enters it only through the ladder, ordered `next_review_at` ascending, house pagination limits; **three endpoints** — `GET /progress` → `{ totalReviews, correctReviews, dueCount }`, `GET /progress/due` → paginated items of `cardId`/`front`/`setId`/`setTitle`/`nextReviewAt` (identity and destination, not the back), `GET /study-sessions` → history newest-first with `setTitle` joined in the query (not stored); **counts-only accuracy** — the API returns facts, the client derives the rounded integer percent exactly as CompletionView already does (§82, one representation); and **no per-card scheduling data on set detail** — the due queue is the only `next_review_at` surface, leaving the CARD-005 contract untouched. The ADR states the phase needs zero migrations. ARCHITECTURE.md's key-decisions table was missing ADR-009; both rows were registered while touching the table. Remaining known docs drift (ARCHITECTURE.md's data-model section predates the study tables) is left for a dedicated docs pass, not silently bundled here (§14).
 
 ### Tests
 None (documentation only)
