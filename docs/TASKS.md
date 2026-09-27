@@ -4084,7 +4084,7 @@ Close the one genuine gap from the 2026-09-27 ui-ux-pro-max audit: a bypass for 
 FOLD-003
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/layout.tsx (+ spec)
@@ -4094,8 +4094,12 @@ apps/web/src/app/(protected)/layout.tsx (+ spec)
 - additive only: no existing copy, name, or role changes; the layout spec's 2 tests stay green
 - the audit's no-defect findings are recorded here as the durable record (auth autocomplete already WCAG-2.2-conformant; no sticky UI so focus-obscured is N/A; error-summary pattern covered by per-field aria-describedby + RHF focus; keyboard shortcuts already guard interactive targets; password-visibility toggle noted as a deferred taste item, not queued)
 
+### Decision
+The standard pattern with the house styling: `sr-only focus:not-sr-only` plus an absolutely-positioned focus appearance (top-4/left-4, card surface, link-register underline and outline) — absolute positioning on focus means the reveal never shifts layout, honoring the stable-interaction rule from the ui-ux-pro-max pass. `#main-content` lands on the existing `<main>` (an id, not a new landmark). The spec test pins the three properties that matter: accessible name, href, and first-in-DOM focusable order (queried across `a[href], button, input, select, textarea`).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` — layout spec extended with one test (the skip link is the first focusable element and targets #main) or the existing tests extended minimally; typecheck + build
+- `pnpm --filter @danisolation-recall/web test` — **184 passed (33 files)**: +1 layout test (skip link first focusable + target id); the two existing layout tests untouched
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---
 

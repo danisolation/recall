@@ -65,4 +65,27 @@ describe("ProtectedLayout", () => {
       screen.getByRole("button", { name: "Log out" }),
     ).toBeInTheDocument();
   });
+
+  it("offers a skip link as the first focusable element", async () => {
+    getCurrentUserMock.mockResolvedValue(user);
+
+    const { container } = render(
+      await ProtectedLayout({ children: <p>Secret</p> }),
+    );
+
+    const skipLink = screen.getByRole("link", { name: "Skip to content" });
+    expect(skipLink).toHaveAttribute("href", "#main-content");
+
+    // The first focusable element in the DOM (WCAG 2.4.1 bypass).
+    const focusable = container.querySelectorAll(
+      "a[href], button, input, select, textarea",
+    );
+    expect(focusable[0]).toBe(skipLink);
+
+    // The target is the main content region.
+    expect(screen.getByText("Secret").closest("main")).toHaveAttribute(
+      "id",
+      "main-content",
+    );
+  });
 });
