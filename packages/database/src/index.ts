@@ -15,9 +15,11 @@ export {
   eq,
   gt,
   gte,
+  ilike,
   isNotNull,
   lt,
   lte,
+  or,
   sql,
 } from "drizzle-orm";
 export * from "./schema";

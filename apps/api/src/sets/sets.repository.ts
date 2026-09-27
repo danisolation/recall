@@ -3,6 +3,8 @@ import {
   and,
   desc,
   eq,
+  ilike,
+  or,
   studySets,
 } from "@danisolation-recall/database";
 import type { CreateSetInput, UpdateSetInput } from "@danisolation-recall/contracts";
@@ -41,14 +43,33 @@ export class SetsRepository {
     return set ?? null;
   }
 
+  // ADR-011: an optional free-text filter over the caller's own sets.
+  // Ownership stays in this WHERE clause (§41) — a foreign set is never
+  // searchable. An empty q (the schema trims) means no filter, and and()
+  // ignores the undefined branch, so the search composes cleanly.
   async listByOwner(
     ownerId: number,
     page: { limit: number; offset: number },
+    q?: string,
   ): Promise<StudySet[]> {
+    // Escape the LIKE metacharacters so a user's % or _ matches literally,
+    // then wrap the whole query in wildcards.
+    const pattern = q ? `%${q.replace(/[\\%_]/g, "\\$&")}%` : undefined;
+
     return this.db
       .select()
       .from(studySets)
-      .where(eq(studySets.ownerId, ownerId))
+      .where(
+        and(
+          eq(studySets.ownerId, ownerId),
+          pattern
+            ? or(
+                ilike(studySets.title, pattern),
+                ilike(studySets.description, pattern),
+              )
+            : undefined,
+        ),
+      )
       .orderBy(desc(studySets.createdAt), desc(studySets.id))
       .limit(page.limit)
       .offset(page.offset);

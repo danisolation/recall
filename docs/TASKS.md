@@ -3285,12 +3285,13 @@ Let `GET /sets` filter the caller's sets by a free-text query.
 SEARCH-001
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/sets/sets.repository.ts
 apps/api/src/sets/sets.controller.ts
 apps/api/src/sets/list-sets.integration.spec.ts
+packages/database/src/index.ts (added the `ilike` and `or` helper re-exports)
 
 ### Acceptance Criteria
 - `listByOwner` accepts an optional query and filters owner-scoped in SQL (`ILIKE` on title and description per ADR-011) — a foreign set is never searchable, §41
@@ -3298,8 +3299,12 @@ apps/api/src/sets/list-sets.integration.spec.ts
 - filtering composes with the existing limit/offset pagination and `nextOffset` rule
 - no filtering behavior changes when `q` is absent
 
+### Decision
+ADR-011's rule lands almost verbatim. `listByOwner` gains an optional third parameter; the pattern is built by escaping `%`/`_`/`\` in the query (`replace(/[\\%_]/g, "\\$&")`) and wrapping in wildcards, then composed as `or(ilike(title), ilike(description))` — **ownership stays the unconditional first condition of the same WHERE clause**, so a foreign set is unsearchable by construction. The optional branch flows through drizzle's `and(undefined)` tolerance instead of a non-null assertion, and the empty-after-trim case is the falsy `q` (schema trims first, so whitespace arrives as `""`). The controller schema adds `q` with the contracts' established `transform().pipe()` trim-then-cap (200 characters, 400 beyond). The `nextOffset` rule is untouched — which the tests had to learn: with limit 1 and 2 matches, the second page is *also* a full page and advertises `nextOffset: 2` (SET-005's no-COUNT(*) rule); the first test run expected `null` there and was corrected to the recorded behavior, with the empty third page pinning the transition. The search fixtures live on a third seeded user so the spec's pre-existing exact-list assertions stay untouched.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: matching title match, description match, case-insensitivity, non-matching sets excluded, foreign sets never returned regardless of query, pagination with a filter, absent-`q` behavior unchanged, 400 bounds)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (210 tests, incl. 8 new HTTP-level tests: case-insensitive title match across two sets, description match, empty page for a non-matching query, a foreign user's sets never returned whatever the query, filter+pagination across three pages (2 → 2 → empty/null), `%` and `_` treated literally (an unescaped `%` would have matched everything), empty and whitespace `q` returning the unfiltered library, and 400 for a 201-character query)
+- `pnpm --filter @danisolation-recall/database build` refreshed the dist (the workspace gotcha) before the suite ran
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---

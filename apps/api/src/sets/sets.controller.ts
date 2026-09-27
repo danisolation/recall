@@ -35,6 +35,13 @@ const listSetsQuerySchema = z.object({
     .int()
     .min(0, "Offset must be at least 0")
     .default(0),
+  // ADR-011: trimmed, then capped — a search longer than 200 characters is
+  // rejected, and an empty value means no filter.
+  q: z
+    .string()
+    .transform((value) => value.trim())
+    .pipe(z.string().max(200, "Search query must be at most 200 characters"))
+    .optional(),
 });
 
 export class ListSetsQueryDto extends createZodDto(listSetsQuerySchema) {}
@@ -79,10 +86,14 @@ export class SetsController {
     @CurrentUser() user: User,
     @Query() query: ListSetsQueryDto,
   ): Promise<PaginatedSets> {
-    const items = await this.setsRepository.listByOwner(user.id, {
-      limit: query.limit,
-      offset: query.offset,
-    });
+    const items = await this.setsRepository.listByOwner(
+      user.id,
+      {
+        limit: query.limit,
+        offset: query.offset,
+      },
+      query.q,
+    );
 
     return {
       items,
