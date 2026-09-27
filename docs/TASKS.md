@@ -3951,17 +3951,23 @@ UX-006
 UX-007
 
 ### Status
-TODO
+DONE
 
 ### Files
-docs/adr/ADR-013-ui-polish.md (finalization if needed), ARCHITECTURE.md (ADR-013 row), docs/PROGRESS.md, README.md
+ARCHITECTURE.md (ADR-013 row), docs/PROGRESS.md (refresh), README.md (status refresh)
 
 ### Acceptance Criteria
-- kill any orphaned next dev webServer (Windows gotcha), then all 6 Playwright journeys pass unmodified (auth, sets, cards, search, study, progress)
+- kill any orphaned next dev webServer (Windows gotcha), then all Playwright journeys pass unmodified (auth, sets, cards, search, study, progress, organization)
 - ARCHITECTURE decision table gains the ADR-013 row; PROGRESS/README reflect the polish phase; ledger entries all DONE with decisions + test notes
 - full verification: web tests + typecheck + build + E2E; next-env.d.ts restored after builds
 
+### Decision
+The orphaned-`next dev` lock (PID 13248) was killed before the E2E run — the third occurrence of this gotcha, always the same signature: Next names the PID in its error. **All 10 journeys (7 spec files) passed unmodified against the fully restyled app**, closing the phase's central bet. The docs sweep was run against artifacts, not memory (§73): the API and contracts suites were re-run for honest counts (API 234 — which surfaced an environment restoration, the Postgres container was up but `DATABASE_URL` wasn't in the shell, so it was loaded from `apps/api/.env` for the run; contracts 51), ADR files globbed (9 files, ADR-013 included), migrations globbed (through 0008). PROGRESS.md was stale from the pre-organization era (9 tests/journeys counts, "organization pending") and was rewritten: organization and UI polish sections added, counts corrected (9 tables, API 234 / web 183 / contracts 51 / E2E 10), plans now lead with Phase 2. README's status block and "Next up" line updated to the same facts. ADR-013 needed no finalization — its consequences section described the executed phase accurately; the per-task deviations (wordmark icon, Hash chip, textContent matcher) live in the task entries where they belong. Web suite re-verified at 183 + typecheck + build during this task's docs work; `next-env.d.ts` restored after builds.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test:e2e` + unit suite + typecheck + build
+- `pnpm --filter @danisolation-recall/web test:e2e` — **10/10 journeys passed** (auth, cards, organization, progress, search, sets, study)
+- `pnpm --filter @danisolation-recall/api test` — 234 passed (42 files, with DATABASE_URL from .env)
+- `pnpm --filter @danisolation-recall/contracts test` — 51 passed
+- `pnpm --filter @danisolation-recall/web test` + typecheck + build — 183 passed
 
 ---

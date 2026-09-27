@@ -5,9 +5,10 @@ A modern flashcard and learning platform inspired by concepts behind tools like 
 ## Status
 
 - **Monorepo** — pnpm workspaces + Turborepo: `apps/web` (Next.js 16), `apps/api` (NestJS 11), `packages/` (database, contracts, eslint-config, typescript-config)
-- **The MVP is shipped end to end** (see [`docs/TASKS.md`](docs/TASKS.md)): authentication, study sets (with dashboard search), cards with reordering, the card-by-card study loop with Leitner-ladder scheduling (ADR-009), a progress page with review counts, accuracy, history, and a due queue (ADR-010) — every slice backed by unit, integration, and browser E2E journeys
-- **PostgreSQL 17** via Docker Compose with Drizzle ORM migrations (seven tables)
-- Next up: the organization phase — tags per ADR-012 (`docs/TASKS.md`, ORG-001..008) — then Phase 2 per [`docs/ROADMAP.md`](docs/ROADMAP.md)
+- **The MVP is shipped end to end** (see [`docs/TASKS.md`](docs/TASKS.md)): authentication, study sets (with dashboard search and tag filtering), cards with reordering, the card-by-card study loop with Leitner-ladder scheduling (ADR-009) — now with a card flip, progress bar, and keyboard shortcuts — a progress page with review counts, accuracy, history, and a due queue (ADR-010), and tags across the set forms and dashboard (ADR-012) — every slice backed by unit, integration, and browser E2E journeys
+- **PostgreSQL 17** via Docker Compose with Drizzle ORM migrations (nine tables)
+- **UI polish landed** (ADR-013): the ADR-008 paper identity deepened — icons, real buttons, motion, skeletons — with every pre-existing test passing unmodified
+- Next up: Phase 2 per [`docs/ROADMAP.md`](docs/ROADMAP.md) — sharing, folders on top of tags (§80), media, streaks, notifications
 
 ## Requirements
 

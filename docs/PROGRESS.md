@@ -37,23 +37,31 @@ This file summarizes what has been achieved and where the project is going. `doc
 
 - `SEARCH-001..004`, designed once in ADR-011: a `q` filter on `GET /sets` (owner-scoped `ILIKE` over title and description, metacharacters escaped), the dashboard search box driving `?q=` URL state with zero client JavaScript, and a distinct no-matches state.
 
+### Organization
+
+- `ORG-001..008`, designed once in ADR-012: tags chosen over folders for MVP — `tags`/`set_tags` tables (case-insensitive per-user names, ≤10 tags per set), `GET /tags`, the replace-style `PUT /sets/:id/tags`, a `GET /sets?tag=` semijoin composing with `q`, tags on both set forms, dashboard tag-filter chips, and an organization E2E journey.
+
+### UI polish
+
+- `UX-001..008`, designed once in ADR-013 (amends ADR-008): the panel/link registers centralized as real `components/ui` exports, `lucide-react` icons beside unchanged labels app-wide, button-variant nav links, tag chips, a true 3D card flip with keyboard shortcuts (Space/1/2) and a progress bar on the study screen, stat panels and status badges on progress, a landing hero with a feature trio, skeleton loading states, and a favicon with theme metadata. All copy, accessible names, and hrefs survived the restyle; the pre-existing tests passed unmodified throughout.
+
 ### Documentation
 
-- DOCS-001 handoff set plus DOCS-002's refresh: README, ARCHITECTURE (module map, route map, data model, key decisions), CONTRIBUTING, environment docs, schema reference, tech-debt ledger, and seven ADRs (ORM, contracts, sessions, design system, study sessions, progress, search).
+- DOCS-001 handoff set plus DOCS-002's refresh: README, ARCHITECTURE (module map, route map, data model, key decisions), CONTRIBUTING, environment docs, schema reference, tech-debt ledger, and the ADR series (ORM, contracts, sessions, design system, study sessions, progress, search, organization, UI polish).
 
 ---
 
 ## Current state
 
-- 6 pnpm workspace packages; 7 tables; migrations applied through `0007_secret_sabra.sql`.
-- Test suites green: API 210 (unit + HTTP/DB integration), web 139 (component), contracts 45 (schema), E2E 9 (Playwright journeys: auth, sets, cards, study, progress, search).
-- **The §78 MVP surface is shipped**: authentication, study sets, cards, study, progress, and search all have atomic task chains marked DONE. The ledger's remaining MVP decision is organization (folders or tags — the §78 choose-one).
+- 6 pnpm workspace packages; 9 tables; migrations applied through `0008_silky_thena.sql`.
+- Test suites green: API 234 (unit + HTTP/DB integration), web 183 (component + lib), contracts 51 (schema), E2E 10 (Playwright journeys: auth, sets, cards, study, progress, search, organization).
+- **The §78 MVP surface is shipped**, including organization (tags, ADR-012), and the post-MVP UI polish phase (ADR-013) has landed on top of it.
 
 ## Plans for the future
 
 ### Now
 
-- The organization decision (folders vs. tags), then Phase 2 per `docs/ROADMAP.md`: sharing, tags/folders, media, streaks, notifications.
+- Phase 2 per `docs/ROADMAP.md`: sharing, folders on top of tags (§80), media, streaks, notifications — each new phase opens with an ADR (the house pattern).
 
 ### Next
 
