@@ -3,6 +3,7 @@ import {
   ConflictException,
   Controller,
   Get,
+  HttpCode,
   NotFoundException,
   Param,
   Post,
@@ -142,5 +143,58 @@ export class SessionsController {
       code: "SESSION_NOT_FOUND",
       message: "Study session not found",
     });
+  }
+
+  // ADR-009: finishing a COMPLETED session again is an idempotent no-op
+  // success; only the other terminal state is a conflict.
+  @Post(":id/finish")
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async finish(
+    @CurrentUser() user: User,
+    @Param("id") sessionId: string,
+  ): Promise<StudySession> {
+    return this.transitionSession(parseSessionId(sessionId), user.id, "finish");
+  }
+
+  @Post(":id/abandon")
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async abandon(
+    @CurrentUser() user: User,
+    @Param("id") sessionId: string,
+  ): Promise<StudySession> {
+    return this.transitionSession(
+      parseSessionId(sessionId),
+      user.id,
+      "abandon",
+    );
+  }
+
+  private async transitionSession(
+    sessionId: number,
+    userId: number,
+    action: "finish" | "abandon",
+  ): Promise<StudySession> {
+    const result =
+      action === "finish"
+        ? await this.sessionsRepository.complete(sessionId, userId)
+        : await this.sessionsRepository.abandon(sessionId, userId);
+
+    if (result.outcome === "conflict") {
+      throw new ConflictException({
+        code: "INVALID_STUDY_SESSION",
+        message: "This session is already finished",
+      });
+    }
+
+    if (result.outcome === "notFound") {
+      throw new NotFoundException({
+        code: "SESSION_NOT_FOUND",
+        message: "Study session not found",
+      });
+    }
+
+    return result.session;
   }
 }

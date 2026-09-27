@@ -2829,7 +2829,7 @@ Let the owner complete or abandon the session per ADR-009's state machine.
 STUDY-008
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/study/sessions.controller.ts
@@ -2840,8 +2840,11 @@ apps/api/src/study/finish-session.integration.spec.ts
 - finishing an already-finished session is decided and recorded (idempotent no-op vs. error)
 - foreign/missing session returns 404
 
+### Decision
+ADR-009 pre-decided the semantics — repeat-finish is an **idempotent no-op success** (safe retries), the other terminal state is 409 `INVALID_STUDY_SESSION`, and missing/foreign sessions are 404 `SESSION_NOT_FOUND` — so this task is pure boundary. The transitions ship as **two action routes**: `POST /study-sessions/:id/finish` (→ `COMPLETED`) and `POST /study-sessions/:id/abandon` (→ `ABANDONED`), one per state-machine transition, each delegating to the repository's `complete`/`abandon` through a single private translator for the shared `TransitionResult` → status mapping. No request body: the action is the URL, so there is nothing to validate and no 400 path (a body-enum DTO would only re-route between two endpoints). Both return **200 with the session row** (`finished_at` included for the completion view, STUDY-013) — `@HttpCode(200)` explicitly, because Nest's `@Post()` default of 201 is resource-creation semantics a transition doesn't have; the integration tests caught exactly this on the first run. Malformed ids fold into the 404 via the shared `parseSessionId`.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: finish, repeat-finish per the recorded decision, foreign 404)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (183 tests, incl. 7 new HTTP-level tests: 200 finish with `status`/`finished_at` set, 200 idempotent repeat-finish with the identical `finished_at` (no second write), 200 abandon with `finished_at` set, 409 `INVALID_STUDY_SESSION` finishing an abandoned session, 409 abandoning a completed session, 404 `SESSION_NOT_FOUND` for a foreign, unknown, and malformed id, 401 `UNAUTHENTICATED`)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
