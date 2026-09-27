@@ -3077,7 +3077,7 @@ Return the caller's §78 basics: review count, accuracy, and due count in one re
 PROGRESS-002
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/progress/progress.module.ts
@@ -3090,8 +3090,11 @@ apps/api/src/app.module.ts
 - 401 `UNAUTHENTICATED` without a session
 - zero-review users get a legible summary (accuracy absent or null, not a fabricated 0% — the CompletionView precedent)
 
+### Decision
+The response is exactly `{ totalReviews, correctReviews, dueCount }` — ADR-010's counts-only contract, so "accuracy in the recorded representation" means **there is no accuracy field at all**: the client derives the rounded percent from the counts, as CompletionView already does. The integration test asserts the body with `toEqual`, which pins the absence of any extra key — a future `accuracy` field would fail the test and force a deliberate contract change. The controller composes the two repository reads with `Promise.all` (the GET-study-session precedent) and supplies `new Date()` once at the boundary so summary and due count share one instant (§49). Zero-review users get the all-zero object — legible without a fabricated percentage, exactly the acceptance's intent. `ProgressModule` imports `AuthModule` like every consuming module so the guard's `SessionService` resolves.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: shape with data, zero-review shape, 401)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (192 tests, incl. 3 new HTTP-level tests: an exact-shape 200 seeded relative to the real clock — 4 reviews / 2 correct / 2 due, with A rescheduled into the future by the ladder — a zero-review user's `{0, 0, 0}`, and 401 `UNAUTHENTICATED`)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---

@@ -10,11 +10,12 @@ import { CardsModule } from "./cards/cards.module";
 import { ZodExceptionFilter } from "./common/zod-exception.filter";
 import { DatabaseModule } from "./database/database.module";
 import { HealthController } from "./health/health.controller";
+import { ProgressModule } from "./progress/progress.module";
 import { SetsModule } from "./sets/sets.module";
 import { SessionsModule } from "./study/sessions.module";
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, SetsModule, CardsModule, SessionsModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, SetsModule, CardsModule, SessionsModule, ProgressModule],
   controllers: [AppController, HealthController],
   providers: [
     AppService,
