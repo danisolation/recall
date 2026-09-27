@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Get,
   NotFoundException,
@@ -7,7 +8,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
-import { startSessionSchema } from "@danisolation-recall/contracts";
+import { reviewSchema, startSessionSchema } from "@danisolation-recall/contracts";
 import { createZodDto } from "nestjs-zod";
 import { AuthGuard, CurrentUser } from "../auth/auth.guard";
 import { type User } from "../auth/users.repository";
@@ -17,9 +18,12 @@ import {
   type StudySession,
   SessionsRepository,
 } from "./sessions.repository";
+import { RecordReviewService } from "./record-review.service";
 import { type StartSessionResult, StartSessionService } from "./start-session.service";
 
 export class StartSessionDto extends createZodDto(startSessionSchema) {}
+
+export class ReviewDto extends createZodDto(reviewSchema) {}
 
 // ADR-009: a resume is one fetch — session, its reviews, and the set's
 // current ordered cards.
@@ -46,6 +50,7 @@ function parseSessionId(sessionId: string): number {
 export class SessionsController {
   constructor(
     private readonly startSessionService: StartSessionService,
+    private readonly recordReviewService: RecordReviewService,
     private readonly sessionsRepository: SessionsRepository,
   ) {}
 
@@ -93,5 +98,49 @@ export class SessionsController {
     // The session is confirmed owned, so the owner-scoped card lookup
     // cannot miss; the fallback only satisfies the type.
     return { session, reviews, cards: cards ?? [] };
+  }
+
+  @Post(":id/reviews")
+  @UseGuards(AuthGuard)
+  async recordReview(
+    @CurrentUser() user: User,
+    @Param("id") sessionId: string,
+    @Body() body: ReviewDto,
+  ): Promise<Review> {
+    const result = await this.recordReviewService.record(
+      user.id,
+      parseSessionId(sessionId),
+      body,
+    );
+
+    if (result.outcome === "recorded") {
+      return result.review;
+    }
+
+    if (result.outcome === "duplicate") {
+      throw new ConflictException({
+        code: "REVIEW_ALREADY_RECORDED",
+        message: "This card was already answered in this session",
+      });
+    }
+
+    if (result.outcome === "sessionNotActive") {
+      throw new ConflictException({
+        code: "INVALID_STUDY_SESSION",
+        message: "This session no longer accepts reviews",
+      });
+    }
+
+    if (result.outcome === "cardNotInSet") {
+      throw new NotFoundException({
+        code: "CARD_NOT_FOUND",
+        message: "Card not found",
+      });
+    }
+
+    throw new NotFoundException({
+      code: "SESSION_NOT_FOUND",
+      message: "Study session not found",
+    });
   }
 }

@@ -2793,13 +2793,14 @@ Record an answered card and update the user's progress in one transaction (§34)
 STUDY-008
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/api/src/study/sessions.controller.ts
 apps/api/src/study/record-review.service.ts
 apps/api/src/study/record-review.service.spec.ts
 apps/api/src/study/record-review.integration.spec.ts
+apps/api/src/study/sessions.module.ts
 
 ### Acceptance Criteria
 - owner-only; the reviewed card must belong to the studied set; the session must accept reviews per ADR-009's state machine
@@ -2807,8 +2808,11 @@ apps/api/src/study/record-review.integration.spec.ts
 - duplicate review of the same card within a session is decided and recorded (§54's `REVIEW_ALREADY_RECORDED` exists for exactly this; §55: design the retry behavior explicitly, never assume retry is safe)
 - foreign/missing session or card returns 404; invalid body returns 400
 
+### Decision
+The route returns **201 with the review row** — the endpoint's product is the historical event (§46); progress is not in the response because the MVP study screen only needs the confirmation to advance, and the progress write is verified against the database (the integration tests read `user_card_progress` directly, proving the transaction rather than trusting a payload). `RecordReviewService` is deliberately thin: it supplies `new Date()` once at the application boundary — the single `now` the review, the progress upsert, and the scheduler share (§49) — and passes ADR-009's outcomes through for the controller to translate: `duplicate` → 409 `REVIEW_ALREADY_RECORDED`, `sessionNotActive` → 409 `INVALID_STUDY_SESSION`, `cardNotInSet` → 404 `CARD_NOT_FOUND` (a card outside the session's set is unaddressable from this route, the same fold CARD-006 made), `notFound` → 404 `SESSION_NOT_FOUND`. Atomicity and the state machine were already owned by the repository's transaction and STUDY-006's `(session_id, card_id)` unique constraint — this task adds no new invariants, only the boundary. Duplicate retries are **not** absorbed silently (ADR-009 §55): the client sees the 409; "study again" means a new session.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (HTTP-level: 201 review shape, progress counts and next_review_at updated, duplicate rejected per the recorded decision, 404s, 400)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` (176 tests, incl. 10 new: 2 service unit tests — the review plus one explicit `now` passed through and the recorded result returned, failure outcomes passed through unchanged; 8 HTTP-level tests — 201 correct review with progress verified in the DB (counts, streak 1, `next_review_at` exactly +1 day, `last_reviewed_at` = `reviewed_at`), 201 incorrect review (streak 0, `next_review_at` exactly +10 minutes), 409 `REVIEW_ALREADY_RECORDED` on a repeat answer, 409 `INVALID_STUDY_SESSION` on a completed session, 404 `CARD_NOT_FOUND` for a card in another of the user's sets and an unknown card, 404 `SESSION_NOT_FOUND` for a foreign and an unknown session, 400 `VALIDATION_ERROR` for a missing `correct`, 401 `UNAUTHENTICATED`)
 - `pnpm --filter @danisolation-recall/api typecheck` and `build` succeed
 
 ---
