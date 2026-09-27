@@ -63,6 +63,42 @@ describe("listSets", () => {
 
     await expect(listSets()).rejects.toThrow("Loading your sets failed.");
   });
+
+  it("forwards the search query to the API", async () => {
+    headersMock.mockResolvedValue(new Headers({ cookie: "session_token=abc" }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => paginatedSets,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(listSets("biology")).resolves.toEqual(paginatedSets);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/sets?q=biology",
+      expect.objectContaining({
+        headers: { cookie: "session_token=abc" },
+        cache: "no-store",
+      }),
+    );
+  });
+
+  it("encodes the search query as a URL parameter", async () => {
+    headersMock.mockResolvedValue(new Headers({ cookie: "session_token=abc" }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => paginatedSets,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(listSets("cells % biology")).resolves.toEqual(paginatedSets);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/sets?q=cells%20%25%20biology",
+      expect.objectContaining({
+        headers: { cookie: "session_token=abc" },
+        cache: "no-store",
+      }),
+    );
+  });
 });
 
 describe("getSet", () => {

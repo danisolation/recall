@@ -31,7 +31,7 @@ describe("DashboardPage", () => {
     getCurrentUserMock.mockResolvedValue(null);
     listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
 
-    await expect(DashboardPage()).rejects.toThrow("NEXT_REDIRECT:/login");
+    await expect(DashboardPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("NEXT_REDIRECT:/login");
   });
 
   it("renders the signed-in user's own account data", async () => {
@@ -43,7 +43,7 @@ describe("DashboardPage", () => {
     });
     listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
 
-    render(await DashboardPage());
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
 
     expect(
       screen.getByRole("heading", { name: "Dashboard" }),
@@ -77,7 +77,7 @@ describe("DashboardPage", () => {
       nextOffset: null,
     });
 
-    render(await DashboardPage());
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
 
     expect(
       screen.getByRole("heading", { name: "Your sets" }),
@@ -96,7 +96,7 @@ describe("DashboardPage", () => {
     });
     listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
 
-    render(await DashboardPage());
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
 
     expect(
       screen.getByRole("link", { name: "Create a set" }),
@@ -112,10 +112,71 @@ describe("DashboardPage", () => {
     });
     listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
 
-    render(await DashboardPage());
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
 
     expect(
       screen.getByRole("link", { name: "View progress" }),
     ).toHaveAttribute("href", "/progress");
+  });
+
+  it("passes the query from the URL to the list request", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 1,
+      email: "user@example.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    listSetsMock.mockResolvedValue({
+      items: [
+        {
+          id: 42,
+          ownerId: 1,
+          title: "Biology basics",
+          description: "Cells and organelles",
+          createdAt: "2026-02-01T00:00:00.000Z",
+          updatedAt: "2026-02-01T00:00:00.000Z",
+        },
+      ],
+      nextOffset: null,
+    });
+
+    render(
+      await DashboardPage({
+        searchParams: Promise.resolve({ q: "biology" }),
+      }),
+    );
+
+    expect(listSetsMock).toHaveBeenCalledWith("biology");
+    expect(screen.getByLabelText("Search sets")).toHaveValue("biology");
+    expect(
+      screen.getByRole("link", { name: /Biology basics/ }),
+    ).toHaveAttribute("href", "/sets/42");
+  });
+
+  it("shows a distinct no-matches state instead of the empty-library offer", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 1,
+      email: "user@example.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
+
+    render(
+      await DashboardPage({
+        searchParams: Promise.resolve({ q: "nothing-matches-this" }),
+      }),
+    );
+
+    expect(
+      screen.getByText(
+        'No sets match "nothing-matches-this". Try a different search.',
+      ),
+    ).toBeInTheDocument();
+    // The searching user refines the query; only a truly empty library
+    // offers creating a set.
+    expect(
+      screen.queryByRole("link", { name: "Create a set" }),
+    ).not.toBeInTheDocument();
   });
 });

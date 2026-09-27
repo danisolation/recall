@@ -19,16 +19,19 @@ export type PaginatedSets = {
 /**
  * Lists the signed-in user's own sets by asking the API with the browser's
  * own cookie. Same pattern as `lib/session.ts`: the httpOnly cookie only
- * exists server-side, so this must run in a server component.
+ * exists server-side, so this must run in a server component. An optional
+ * search query filters the collection (ADR-011's `q` on GET /sets).
  */
-export async function listSets(): Promise<PaginatedSets> {
+export async function listSets(q?: string): Promise<PaginatedSets> {
   const cookie = (await headers()).get("cookie");
 
   if (!cookie) {
     return { items: [], nextOffset: null };
   }
 
-  const response = await fetch(`${API_ORIGIN}/sets`, {
+  const search = q ? `?q=${encodeURIComponent(q)}` : "";
+
+  const response = await fetch(`${API_ORIGIN}/sets${search}`, {
     headers: { cookie },
     // Ownership-scoped per-request data; never cache it.
     cache: "no-store",

@@ -3321,7 +3321,7 @@ Let the user filter their sets from the browser.
 SEARCH-002
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/dashboard/page.tsx
@@ -3337,8 +3337,11 @@ apps/web/src/lib/sets.spec.ts
 - results render through the existing SetList; a query with no matches shows a distinct no-results state (§56) that keeps the search box usable, while an empty library keeps the create-a-set offer
 - the input is keyboard-accessible with a visible focus state (ADR-008 floor)
 
+### Decision
+`SearchInput` is a **server component rendering a plain HTML form** (`method="get"`, `action="/dashboard"`, input `name="q"`) built from the existing Input/Button primitives — submitting is a normal browser navigation, so the query lands in the URL (§23) and the server re-renders the filtered list with zero client JavaScript; keyboard access and the focus floor come free from the primitives. `listSets` gains an optional `q` and URL-encodes it into the request. The dashboard reads `?q=` via the App Router's promised `searchParams`, passes it through verbatim (the API owns trimming), and keeps three §56 states distinct by `query && sets.items.length === 0`: the no-matches panel quotes the query back with a refine hint and suppresses SetList's create-a-set offer, while a truly empty library keeps it — and the input sits above the list either way, always usable. One incidental cleanup: the page's metadata title had a mojibake em dash from an earlier era; the edit restored the real character.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (lib forwards `q`; the page reads `?q=`, passes it through, and renders the no-matches state distinctly from the empty library; the input is labeled and submittable)
+- `pnpm --filter @danisolation-recall/web test` (139 tests, incl. 9 new: 3 SearchInput tests — labeled input with a Search button, the current query prefilled, and the form's GET/`/dashboard`/`q` contract asserted through the input's form reference; 2 lib tests — `q` forwarded as `?q=biology` and URL-encoded with a space/percent query; 4 dashboard tests updated or added — every render passes `searchParams`, the URL query reaches `listSets` with the input prefilled and matching sets rendered, and the no-matches panel quotes the query while the create-a-set offer disappears)
 - `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/dashboard` stays dynamic)
 
 ---
