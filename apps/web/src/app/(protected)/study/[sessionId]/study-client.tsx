@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { Panel } from "@/components/ui/panel";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TextLink } from "@/components/ui/text-link";
 import { CompletionView } from "./completion-view";
 
@@ -197,7 +198,19 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
   }
 
   if (!data) {
-    return <p className="text-ink-soft">Loading…</p>;
+    // §56: a shaped waiting state; the text moves to sr-only for screen
+    // readers while the skeleton carries the visual.
+    return (
+      <div className="flex flex-col gap-6" aria-busy="true">
+        <h1 className="text-2xl font-semibold tracking-tight">Study</h1>
+        <Panel className="flex flex-col gap-4">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-36 w-full" />
+          <Skeleton className="h-11 w-36" />
+        </Panel>
+        <p className="sr-only">Loading…</p>
+      </div>
+    );
   }
 
   if (data.session.status !== "ACTIVE") {

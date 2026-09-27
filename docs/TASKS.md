@@ -3910,18 +3910,28 @@ Design the waiting state (§56) and the browser chrome.
 UX-002
 
 ### Status
-TODO
+DONE
 
 ### Files
-apps/web/src/app/(protected)/dashboard/loading.tsx, sets/[id]/loading.tsx, progress/loading.tsx, study/[sessionId]/study-client.tsx (skeleton), public/favicon.svg, app/layout.tsx (icons/themeColor metadata)
+apps/web/src/components/ui/skeleton.tsx (+ spec)
+apps/web/src/app/(protected)/dashboard/loading.tsx
+apps/web/src/app/(protected)/sets/[id]/loading.tsx
+apps/web/src/app/(protected)/progress/loading.tsx
+apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx (skeleton)
+apps/web/public/favicon.svg
+apps/web/src/app/layout.tsx (icons/themeColor)
 
 ### Acceptance Criteria
 - route-level skeletons built from panelClassName + animate-pulse (opacity-only → reduced-motion-safe)
 - study client's bare "Loading…" becomes a skeleton keeping the text as sr-only + aria-busy (existing getByText("Loading…") keeps passing)
 - favicon (marker-highlighted R) + themeColor/icons metadata in the root layout
 
+### Decision
+A fifth ui primitive: `Skeleton` (ComponentProps<"div"> spread + aria-hidden + animate-pulse — opacity-only, frozen by the existing reduced-motion kill-switch). The three `loading.tsx` files mirror each page's real shape with aria-busy containers and Skeleton blocks inside Panels (title bar, search/toolbar, stat grid, list panels), so navigation shows structure rather than a blank frame. The study client's bare paragraph became a shaped skeleton with the "Loading…" text kept as `sr-only` — the existing test passes untouched, and screen readers still get the announcement. Favicon: a paper rounded-square with the marker chip behind a bold ink "R", matching the wordmark's highlight; hex approximations of the OKLCH tokens (SVG <text> needs hex). Root layout gained `icons` metadata plus a `viewport` export with `themeColor: #FAF7EC` (the paper tone). Two self-caught flaws during the task, both fixed before any review: Skeleton originally dropped extra props (its own spec failed — now spreads like every other primitive), and its spec initially omitted afterEach(cleanup).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` — study spec passes unchanged via the sr-only trick; typecheck + build
+- `pnpm --filter @danisolation-recall/web test` — **183 passed (33 files)**: +2 Skeleton primitive tests; the study spec's "Loading…" assertion passes untouched via the sr-only text
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---
 
