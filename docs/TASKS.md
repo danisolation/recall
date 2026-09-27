@@ -2900,11 +2900,12 @@ STUDY-009
 STUDY-011
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/study/[sessionId]/study-client.tsx
 apps/web/src/app/(protected)/study/[sessionId]/study-client.spec.tsx
+apps/web/src/app/(protected)/study/[sessionId]/page.tsx
 apps/web/src/lib/api.ts
 
 ### Acceptance Criteria
@@ -2913,9 +2914,12 @@ apps/web/src/lib/api.ts
 - a finished session renders the completion state (STUDY-013's view or a direct hand-off)
 - loading, error, and empty states per §56 — never only the happy path
 
+### Decision
+`StudyClient` fetches the session **client-side** (`getSession` via the first-party `/api` proxy) instead of the server-component pattern: the task's file list keeps the page to a mount point, and §56's loading state becomes real — the client renders "Loading…", then API errors as a panel (SET-010's error-boundary precedent needs no fetch to forward). The current card is **the first card in position order without a review**, derived from the GET payload's `reviews` and `cards` — never an index counter — so a resume lands on the right card and mid-session card additions/deletions are absorbed naturally (ADR-009's live-order decision). Answering appends the **server-confirmed** review row from the POST response; the client never advances on an unconfirmed answer. Failure handling is explicit (§55): unknown errors stay on the card for retry, but `CARD_NOT_FOUND` and `REVIEW_ALREADY_RECORDED` mean the card can never be answered in this session — the client skips it (ADR-009's "deleted cards fail with 404 and are skipped"), shows the API's message, and moves on. Reveal → two binary controls ("Correct"/"Incorrect", ADR-009) are plain keyboard-focusable buttons; the answer controls swap in only after reveal. `getSession`/`recordReview` in `lib/api.ts` map the study endpoints' error codes to the established message register. `page.tsx` was touched beyond the file list because the shell it rendered in STUDY-011 is the client's only mount point (SET-009 precedent).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (reveal shows the back; answering records the review and advances; last answer reaches the completion state; API failure shows an error)
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/web test` (111 tests, incl. 9 new: loading state; front shown with the back hidden until "Reveal answer"; "Correct" calls `recordReview(5, { cardId: 1, correct: true })` and advances with "1 of 2 answered"; resume from a pre-existing review lands on the first unanswered card; the last answer reaches the "Session complete" heading with "1 of 1 answered." and the back link; a non-ACTIVE session renders "This session is finished." with no controls; an empty set offers the way back; a recording failure shows the error and stays on the card without a second call; a `CARD_NOT_FOUND` failure skips to the next card with the message shown)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed (`/study/[sessionId]` stays dynamic)
 
 ---
 

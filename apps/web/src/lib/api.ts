@@ -3,6 +3,7 @@ import type {
   CreateSetInput,
   LoginInput,
   RegisterInput,
+  ReviewInput,
   UpdateCardInput,
   UpdateSetInput,
 } from "@danisolation-recall/contracts";
@@ -278,4 +279,80 @@ export async function startSession(input: {
   }
 
   throw new ApiError("UNKNOWN", "Starting the study session failed. Try again.");
+}
+
+// The projection of ADR-009's session payload the study screen consumes.
+export type StudySessionView = {
+  session: {
+    id: number;
+    setId: number;
+    status: string;
+  };
+  reviews: {
+    id: number;
+    cardId: number;
+    correct: boolean;
+  }[];
+  cards: {
+    id: number;
+    front: string;
+    back: string;
+  }[];
+};
+
+export type RecordedReview = {
+  id: number;
+  cardId: number;
+  correct: boolean;
+};
+
+export async function getSession(sessionId: number): Promise<StudySessionView> {
+  const response = await request("GET", `/study-sessions/${sessionId}`);
+
+  if (response.ok) {
+    return (await response.json()) as StudySessionView;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "SESSION_NOT_FOUND"
+  ) {
+    throw new ApiError("SESSION_NOT_FOUND", "This session no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Loading the study session failed. Try again.");
+}
+
+export async function recordReview(
+  sessionId: number,
+  input: ReviewInput,
+): Promise<RecordedReview> {
+  const response = await request(
+    "POST",
+    `/study-sessions/${sessionId}/reviews`,
+    input,
+  );
+
+  if (response.ok) {
+    return (await response.json()) as RecordedReview;
+  }
+
+  const code = await errorCode(response);
+
+  if (response.status === 409 && code === "REVIEW_ALREADY_RECORDED") {
+    throw new ApiError(
+      "REVIEW_ALREADY_RECORDED",
+      "This card was already answered in this session.",
+    );
+  }
+
+  if (response.status === 404 && code === "CARD_NOT_FOUND") {
+    throw new ApiError("CARD_NOT_FOUND", "This card no longer exists.");
+  }
+
+  if (response.status === 404 && code === "SESSION_NOT_FOUND") {
+    throw new ApiError("SESSION_NOT_FOUND", "This session no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Recording your answer failed. Try again.");
 }
