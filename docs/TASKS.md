@@ -3599,20 +3599,28 @@ Let the owner label a set from the create and edit forms.
 ORG-004
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/(protected)/sets/new/create-set-form.tsx (+ spec)
 apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec)
+apps/web/src/app/(protected)/sets/[id]/edit/page.tsx (+ spec)
+apps/web/src/app/(protected)/sets/[id]/page.tsx (+ spec)
 apps/web/src/lib/api.ts (+ spec)
+apps/web/src/lib/sets.ts (+ spec)
+apps/api/src/tags/tags.controller.ts
+apps/api/src/tags/tags.repository.ts (+ spec assertion update)
 
 ### Acceptance Criteria
 - both forms gain a labeled Tags field (comma-separated names) validated with the shared schema
 - submission sends the tag names with the set payload (or the replace call after create) and errors show clear messages (§56)
 - the detail page shows the set's tags
 
+### Decision
+The Tags field is a **controlled `useState` input beside RHF** rather than a registered field: RHF's `values` are typed by the resolver's schema (createSetSchema/updateSetSchema — the POST/PATCH contracts, unchanged), and the tags text validates separately through a `setTagsSchema.safeParse` in the submit handler — the same shared contract the API uses, so a 51-character name is blocked client-side with the identical message. Flows differ per operation's idempotency (§55): the **create form is two-phase** — `createSet` (non-idempotent) remembers the new id in a ref, so a failed tag replace shows the error, keeps the values, and a resubmit retries *only the tags* (a test pins that the set is never created twice); the **edit form runs both idempotent calls in order** (`updateSet` → `replaceTags`) and a resubmit safely retries the whole save. The detail page shows the tags in a dl row ("None yet" when untagged) and the edit page prefills the field — both read via a new `getSetTags` server fetcher (lib/sets, the getSet null-for-404 pattern), which required the missing read endpoint: `GET /sets/:id/tags` on `SetTagsController` with `listBySet` upgraded to null for a foreign/unknown set (the ORG-003 spec assertion updated accordingly). `replaceTags` in lib/api maps 404 to "This set no longer exists." and the rest to a generic save-failure message. Files beyond the original list are the read endpoint, its repository upgrade, and the two pages/lib fetchers — the only mount and read points for the feature (SET-009 precedent).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (forms send the parsed tag list; API errors surface; the detail page renders the tags)
+- `pnpm --filter @danisolation-recall/web test` (155 tests, incl. 16 new: 3 CreateSetForm tests — tags saved via `replaceTags(42, { tags: ["Biology", "exam prep"] })` after create, an invalid tag blocking both calls, and the tag-failure retry proving `createSet` runs once while `replaceTags` runs twice; 4 EditSetForm tests — prefill from `initialTags`, tags saved with the set, tag-failure error keeping the values, plus the existing submit now asserting the empty-list replace; 3 lib/api `replaceTags` tests and 4 lib/sets `getSetTags` tests following the house patterns; 2 detail-page and 2 edit-page tests — tags rendered, "None yet", prefill, empty prefill)
 - `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
 
 ---

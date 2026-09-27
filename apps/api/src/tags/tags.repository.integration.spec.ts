@@ -146,8 +146,10 @@ describe("TagsRepository", () => {
     expect((await tags.replace(99999999, ownerId, ["x"])).outcome).toBe(
       "notFound",
     );
-    // Nothing leaked into the foreign set.
+    // Nothing leaked into the foreign set — its owner still sees no tags.
     expect(await tags.listBySet(otherSetId, otherId)).toEqual([]);
+    expect(await tags.listBySet(otherSetId, ownerId)).toBeNull();
+    expect(await tags.listBySet(99999999, ownerId)).toBeNull();
   });
 
   it("scopes tags per user — the same name is a different tag row", async () => {

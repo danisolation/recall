@@ -2,16 +2,24 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { updateSetSchema } from "@danisolation-recall/contracts";
-import { ApiError, updateSet } from "@/lib/api";
+import { setTagsSchema, updateSetSchema } from "@danisolation-recall/contracts";
+import { ApiError, replaceTags, updateSet } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormField } from "@/components/ui/form-field";
 import type { StudySet } from "@/lib/sets";
 
-export function EditSetForm({ set }: { set: StudySet }) {
+export function EditSetForm({
+  set,
+  initialTags = [],
+}: {
+  set: StudySet;
+  initialTags?: string[];
+}) {
   const router = useRouter();
+  const [tags, setTags] = useState(initialTags.join(", "));
   const {
     register,
     handleSubmit,
@@ -31,7 +39,26 @@ export function EditSetForm({ set }: { set: StudySet }) {
       noValidate
       onSubmit={handleSubmit(async (values) => {
         try {
-          await updateSet(set.id, values);
+          const tagNames = tags
+            .split(",")
+            .map((name) => name.trim())
+            .filter((name) => name.length > 0);
+          const parsedTags = setTagsSchema.safeParse({ tags: tagNames });
+
+          if (!parsedTags.success) {
+            setError("root", {
+              message: parsedTags.error.issues[0]?.message ?? "Enter valid tags",
+            });
+            return;
+          }
+
+          // Both calls are idempotent, so a failure leaves the form filled
+          // and a resubmit safely retries the whole save (§55).
+          await updateSet(set.id, {
+            title: values.title,
+            description: values.description,
+          });
+          await replaceTags(set.id, { tags: parsedTags.data.tags });
           router.push(`/sets/${set.id}`);
         } catch (error) {
           if (error instanceof ApiError) {
@@ -57,6 +84,14 @@ export function EditSetForm({ set }: { set: StudySet }) {
         autoComplete="off"
         error={errors.description?.message}
         {...register("description")}
+      />
+      <FormField
+        label="Tags"
+        id="tags"
+        autoComplete="off"
+        placeholder="biology, exam prep"
+        value={tags}
+        onChange={(event) => setTags(event.target.value)}
       />
       {errors.root?.message ? (
         <FieldError>{errors.root.message}</FieldError>

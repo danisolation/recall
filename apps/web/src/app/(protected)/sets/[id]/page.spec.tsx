@@ -9,16 +9,20 @@ import {
 } from "vitest";
 import SetDetailPage from "./page";
 
-const { getSetMock, listCardsMock, notFoundMock } = vi.hoisted(() => ({
-  getSetMock: vi.fn(),
-  listCardsMock: vi.fn(),
-  notFoundMock: vi.fn(() => {
-    throw new Error("NEXT_NOT_FOUND");
+const { getSetMock, getSetTagsMock, listCardsMock, notFoundMock } = vi.hoisted(
+  () => ({
+    getSetMock: vi.fn(),
+    getSetTagsMock: vi.fn(),
+    listCardsMock: vi.fn(),
+    notFoundMock: vi.fn(() => {
+      throw new Error("NEXT_NOT_FOUND");
+    }),
   }),
-}));
+);
 
 vi.mock("@/lib/sets", () => ({
   getSet: getSetMock,
+  getSetTags: getSetTagsMock,
 }));
 
 vi.mock("@/lib/cards", () => ({
@@ -33,6 +37,10 @@ vi.mock("next/navigation", () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+beforeEach(() => {
+  getSetTagsMock.mockResolvedValue([]);
 });
 
 const set = {
@@ -157,6 +165,33 @@ describe("SetDetailPage", () => {
     expect(
       screen.getByRole("button", { name: "Add card" }),
     ).toBeInTheDocument();
+  });
+
+  it("renders the set's tags", async () => {
+    getSetMock.mockResolvedValue(set);
+    getSetTagsMock.mockResolvedValue([
+      { id: 7, name: "biology" },
+      { id: 8, name: "exam prep" },
+    ]);
+
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(screen.getByText("Tags")).toBeInTheDocument();
+    expect(screen.getByText("biology, exam prep")).toBeInTheDocument();
+  });
+
+  it("renders None yet for a set without tags", async () => {
+    getSetMock.mockResolvedValue(set);
+
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(screen.getByText("None yet")).toBeInTheDocument();
   });
 
   it("offers the primary Study control", async () => {

@@ -29,7 +29,7 @@ export class TagsController {
 
 // ADR-012: replacing the set's tag list is the assignment contract — one
 // idempotent PUT per save, mounted at the set-scoped path like the cards
-// controller (CARD-004).
+// controller (CARD-004). The GET serves the detail page's tag display.
 function parseSetId(setId: string): number {
   const id = Number(setId);
 
@@ -46,6 +46,27 @@ function parseSetId(setId: string): number {
 @Controller("sets/:id/tags")
 export class SetTagsController {
   constructor(private readonly tagsRepository: TagsRepository) {}
+
+  @Get()
+  @UseGuards(AuthGuard)
+  async list(
+    @CurrentUser() user: User,
+    @Param("id") setId: string,
+  ): Promise<Tag[]> {
+    const tags = await this.tagsRepository.listBySet(
+      parseSetId(setId),
+      user.id,
+    );
+
+    if (tags === null) {
+      throw new NotFoundException({
+        code: "SET_NOT_FOUND",
+        message: "Study set not found",
+      });
+    }
+
+    return tags;
+  }
 
   @Put()
   @UseGuards(AuthGuard)

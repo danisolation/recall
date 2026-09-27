@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EditSetForm } from "./edit-set-form";
-import { getSet } from "@/lib/sets";
+import { getSet, getSetTags } from "@/lib/sets";
 
 export const metadata: Metadata = {
   title: "Edit set — DANISOLATION Recall",
@@ -27,11 +27,16 @@ export default async function EditSetPage({
     notFound();
   }
 
+  const tags = await getSetTags(setId);
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Edit set</h1>
       <section className="rounded-card border border-ink/10 bg-card p-4 shadow-[4px_4px_0_0] shadow-ink/15 sm:p-6">
-        <EditSetForm set={set} />
+        <EditSetForm
+          set={set}
+          initialTags={(tags ?? []).map((tag) => tag.name)}
+        />
       </section>
     </div>
   );

@@ -73,3 +73,37 @@ export async function getSet(id: number): Promise<StudySet | null> {
 
   return (await response.json()) as StudySet;
 }
+
+export type SetTag = {
+  id: number;
+  name: string;
+};
+
+/**
+ * Fetches a set's tags with the browser's own cookie, same pattern as
+ * `getSet`: a 404 covers a missing set and a set owned by someone else,
+ * and the page folds `null` into its own handling.
+ */
+export async function getSetTags(setId: number): Promise<SetTag[] | null> {
+  const cookie = (await headers()).get("cookie");
+
+  if (!cookie) {
+    return null;
+  }
+
+  const response = await fetch(`${API_ORIGIN}/sets/${setId}/tags`, {
+    headers: { cookie },
+    // Ownership-scoped per-request data; never cache it.
+    cache: "no-store",
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("Loading the set's tags failed.");
+  }
+
+  return (await response.json()) as SetTag[];
+}

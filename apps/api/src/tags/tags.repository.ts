@@ -30,14 +30,24 @@ export class TagsRepository {
       .orderBy(asc(tags.name));
   }
 
-  // The tags of one set, scoped through the owner — a foreign set's tags
-  // never leak (§41).
-  async listBySet(setId: number, userId: number): Promise<Tag[]> {
+  // The tags of one set; a foreign or unknown set is indistinguishable
+  // from missing (§41) — the endpoint folds null into 404 SET_NOT_FOUND.
+  async listBySet(setId: number, userId: number): Promise<Tag[] | null> {
+    const [set] = await this.db
+      .select({ id: studySets.id })
+      .from(studySets)
+      .where(and(eq(studySets.id, setId), eq(studySets.ownerId, userId)))
+      .limit(1);
+
+    if (!set) {
+      return null;
+    }
+
     const rows = await this.db
       .select({ tag: tags })
       .from(setTags)
       .innerJoin(tags, eq(setTags.tagId, tags.id))
-      .where(and(eq(setTags.setId, setId), eq(tags.userId, userId)))
+      .where(eq(setTags.setId, setId))
       .orderBy(asc(tags.name));
 
     return rows.map((row) => row.tag);

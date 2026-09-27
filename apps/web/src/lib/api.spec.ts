@@ -5,6 +5,7 @@ import {
   deleteSet,
   finishSession,
   moveCard,
+  replaceTags,
   updateSet,
 } from "./api";
 
@@ -248,6 +249,64 @@ describe("finishSession", () => {
 
     await expect(finishSession(5)).rejects.toThrow(
       "Finishing the session failed. Try again.",
+    );
+  });
+});
+
+describe("replaceTags", () => {
+  it("puts the tag names with credentials and resolves on success", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(replaceTags(42, { tags: ["biology"] })).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/sets/42/tags",
+      expect.objectContaining({
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tags: ["biology"] }),
+        credentials: "include",
+      }),
+    );
+  });
+
+  it("maps a missing or foreign set to a clear error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ code: "SET_NOT_FOUND", message: "x" }),
+      }),
+    );
+
+    const error = await replaceTags(42, { tags: ["biology"] }).catch(
+      (e: unknown) => e,
+    );
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe("SET_NOT_FOUND");
+    await expect(replaceTags(42, { tags: ["biology"] })).rejects.toThrow(
+      "This set no longer exists.",
+    );
+  });
+
+  it("maps other failures to a generic error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => null,
+      }),
+    );
+
+    await expect(replaceTags(42, { tags: ["biology"] })).rejects.toThrow(
+      "Saving the tags failed. Try again.",
     );
   });
 });

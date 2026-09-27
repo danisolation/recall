@@ -4,8 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
 import { EditSetForm } from "./edit-set-form";
 
-const { updateSetMock, pushMock } = vi.hoisted(() => ({
+const { updateSetMock, replaceTagsMock, pushMock } = vi.hoisted(() => ({
   updateSetMock: vi.fn(),
+  replaceTagsMock: vi.fn(),
   pushMock: vi.fn(),
 }));
 
@@ -19,6 +20,7 @@ vi.mock("@/lib/api", () => ({
     }
   },
   updateSet: updateSetMock,
+  replaceTags: replaceTagsMock,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -99,5 +101,49 @@ describe("EditSetForm", () => {
       "This set no longer exists.",
     );
     expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("prefills the tags field from the set's current tags", () => {
+    render(<EditSetForm set={set} initialTags={["Biology", "exam prep"]} />);
+
+    expect(screen.getByLabelText("Tags")).toHaveValue("Biology, exam prep");
+  });
+
+  it("saves the entered tags with the set", async () => {
+    updateSetMock.mockResolvedValue(undefined);
+    replaceTagsMock.mockResolvedValue(undefined);
+    render(<EditSetForm set={set} initialTags={["Biology", "exam prep"]} />);
+
+    await userEvent.clear(screen.getByLabelText("Tags"));
+    await userEvent.type(screen.getByLabelText("Tags"), "Biology");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save changes" }),
+    );
+
+    await waitFor(() =>
+      expect(replaceTagsMock).toHaveBeenCalledWith(42, {
+        tags: ["Biology"],
+      }),
+    );
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
+    expect(updateSetMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows an error and keeps the values when saving the tags fails", async () => {
+    updateSetMock.mockResolvedValue(undefined);
+    replaceTagsMock.mockRejectedValue(
+      new ApiError("UNKNOWN", "Saving the tags failed. Try again."),
+    );
+    render(<EditSetForm set={set} initialTags={["Biology"]} />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save changes" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Saving the tags failed. Try again.",
+    );
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Tags")).toHaveValue("Biology");
   });
 });

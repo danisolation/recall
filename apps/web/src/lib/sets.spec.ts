@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getSet, listSets } from "./sets";
+import { getSet, getSetTags, listSets } from "./sets";
 
 const { headersMock } = vi.hoisted(() => ({ headersMock: vi.fn() }));
 
@@ -160,5 +160,65 @@ describe("getSet", () => {
     );
 
     await expect(getSet(42)).rejects.toThrow("Loading the set failed.");
+  });
+});
+
+describe("getSetTags", () => {
+  const setTags = [
+    { id: 7, name: "biology" },
+    { id: 8, name: "exam prep" },
+  ];
+
+  it("returns null without a cookie and never calls the API", async () => {
+    headersMock.mockResolvedValue(new Headers());
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getSetTags(42)).resolves.toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("forwards the cookie to the API and returns the set's tags", async () => {
+    headersMock.mockResolvedValue(new Headers({ cookie: "session_token=abc" }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => setTags,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getSetTags(42)).resolves.toEqual(setTags);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/sets/42/tags",
+      expect.objectContaining({
+        headers: { cookie: "session_token=abc" },
+        cache: "no-store",
+      }),
+    );
+  });
+
+  it("returns null when the set does not exist or is not owned", async () => {
+    headersMock.mockResolvedValue(
+      new Headers({ cookie: "session_token=abc" }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 404 }),
+    );
+
+    await expect(getSetTags(42)).resolves.toBeNull();
+  });
+
+  it("throws when the API fails for another reason", async () => {
+    headersMock.mockResolvedValue(
+      new Headers({ cookie: "session_token=abc" }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+    );
+
+    await expect(getSetTags(42)).rejects.toThrow(
+      "Loading the set's tags failed.",
+    );
   });
 });

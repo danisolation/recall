@@ -2,8 +2,9 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import EditSetPage from "./page";
 
-const { getSetMock, notFoundMock } = vi.hoisted(() => ({
+const { getSetMock, getSetTagsMock, notFoundMock } = vi.hoisted(() => ({
   getSetMock: vi.fn(),
+  getSetTagsMock: vi.fn(),
   notFoundMock: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
@@ -11,6 +12,7 @@ const { getSetMock, notFoundMock } = vi.hoisted(() => ({
 
 vi.mock("@/lib/sets", () => ({
   getSet: getSetMock,
+  getSetTags: getSetTagsMock,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -35,6 +37,10 @@ const set = {
 describe("EditSetPage", () => {
   it("renders the form prefilled with the set's current values", async () => {
     getSetMock.mockResolvedValue(set);
+    getSetTagsMock.mockResolvedValue([
+      { id: 7, name: "biology" },
+      { id: 8, name: "exam prep" },
+    ]);
 
     render(await EditSetPage({ params: Promise.resolve({ id: "42" }) }));
 
@@ -45,6 +51,16 @@ describe("EditSetPage", () => {
     expect(screen.getByLabelText("Description")).toHaveValue(
       "Common irregular verbs",
     );
+    expect(screen.getByLabelText("Tags")).toHaveValue("biology, exam prep");
+  });
+
+  it("renders the form with empty tags for an untagged set", async () => {
+    getSetMock.mockResolvedValue(set);
+    getSetTagsMock.mockResolvedValue([]);
+
+    render(await EditSetPage({ params: Promise.resolve({ id: "42" }) }));
+
+    expect(screen.getByLabelText("Tags")).toHaveValue("");
   });
 
   it("renders a 404 when the set is missing or not owned", async () => {

@@ -4,6 +4,7 @@ import type {
   LoginInput,
   RegisterInput,
   ReviewInput,
+  SetTagsInput,
   UpdateCardInput,
   UpdateSetInput,
 } from "@danisolation-recall/contracts";
@@ -368,4 +369,25 @@ export async function finishSession(sessionId: number): Promise<void> {
   }
 
   throw new ApiError("UNKNOWN", "Finishing the session failed. Try again.");
+}
+
+// ADR-012's replace contract: the given names become exactly the set's tags.
+export async function replaceTags(
+  setId: number,
+  input: SetTagsInput,
+): Promise<void> {
+  const response = await request("PUT", `/sets/${setId}/tags`, input);
+
+  if (response.ok) {
+    return;
+  }
+
+  if (
+    response.status === 404 &&
+    (await errorCode(response)) === "SET_NOT_FOUND"
+  ) {
+    throw new ApiError("SET_NOT_FOUND", "This set no longer exists.");
+  }
+
+  throw new ApiError("UNKNOWN", "Saving the tags failed. Try again.");
 }

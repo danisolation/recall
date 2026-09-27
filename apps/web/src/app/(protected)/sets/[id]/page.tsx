@@ -7,7 +7,7 @@ import { DeleteSetButton } from "./delete-set-button";
 import { EditCardForm } from "./edit-card-form";
 import { StartStudyButton } from "./start-study-button";
 import { listCards } from "@/lib/cards";
-import { getSet } from "@/lib/sets";
+import { getSet, getSetTags } from "@/lib/sets";
 
 export const metadata: Metadata = {
   title: "Set — DANISOLATION Recall",
@@ -46,7 +46,10 @@ export default async function SetDetailPage({
     notFound();
   }
 
-  const cardsPage = await listCards(setId);
+  const [cardsPage, setTags] = await Promise.all([
+    listCards(setId),
+    getSetTags(setId),
+  ]);
 
   // Edit mode is URL state (§23): ?edit=<cardId> swaps the create form for
   // an edit form prefilled with that card. A param matching no card is
@@ -86,6 +89,14 @@ export default async function SetDetailPage({
               <time dateTime={set.updatedAt}>
                 {longDate.format(new Date(set.updatedAt))}
               </time>
+            </dd>
+          </div>
+          <div className="flex flex-col gap-1">
+            <dt className="text-sm text-ink-soft">Tags</dt>
+            <dd className="font-medium">
+              {setTags && setTags.length > 0
+                ? setTags.map((tag) => tag.name).join(", ")
+                : "None yet"}
             </dd>
           </div>
         </dl>

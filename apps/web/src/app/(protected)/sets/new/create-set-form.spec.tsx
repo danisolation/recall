@@ -4,8 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
 import { CreateSetForm } from "./create-set-form";
 
-const { createSetMock, pushMock } = vi.hoisted(() => ({
+const { createSetMock, replaceTagsMock, pushMock } = vi.hoisted(() => ({
   createSetMock: vi.fn(),
+  replaceTagsMock: vi.fn(),
   pushMock: vi.fn(),
 }));
 
@@ -19,6 +20,7 @@ vi.mock("@/lib/api", () => ({
     }
   },
   createSet: createSetMock,
+  replaceTags: replaceTagsMock,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -89,5 +91,76 @@ describe("CreateSetForm", () => {
       "Creating your set failed. Try again.",
     );
     expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("creates the set, saves the entered tags, and navigates", async () => {
+    createSetMock.mockResolvedValue({ id: 42 });
+    replaceTagsMock.mockResolvedValue(undefined);
+    render(<CreateSetForm />);
+
+    await userEvent.type(screen.getByLabelText("Title"), "Biology basics");
+    await userEvent.type(screen.getByLabelText("Tags"), "Biology, exam prep");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create set" }),
+    );
+
+    await waitFor(() =>
+      expect(createSetMock).toHaveBeenCalledWith({
+        title: "Biology basics",
+        description: "",
+      }),
+    );
+    await waitFor(() =>
+      expect(replaceTagsMock).toHaveBeenCalledWith(42, {
+        tags: ["Biology", "exam prep"],
+      }),
+    );
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
+  });
+
+  it("blocks submission when a tag is invalid", async () => {
+    render(<CreateSetForm />);
+
+    await userEvent.type(screen.getByLabelText("Title"), "Biology basics");
+    await userEvent.type(screen.getByLabelText("Tags"), "a".repeat(51));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create set" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Use 50 characters or fewer per tag",
+    );
+    expect(createSetMock).not.toHaveBeenCalled();
+    expect(replaceTagsMock).not.toHaveBeenCalled();
+  });
+
+  it("retries only the tags when saving them fails after creation", async () => {
+    createSetMock.mockResolvedValue({ id: 42 });
+    replaceTagsMock
+      .mockRejectedValueOnce(
+        new ApiError("UNKNOWN", "Saving the tags failed. Try again."),
+      )
+      .mockResolvedValueOnce(undefined);
+    render(<CreateSetForm />);
+
+    await userEvent.type(screen.getByLabelText("Title"), "Biology basics");
+    await userEvent.type(screen.getByLabelText("Tags"), "Biology");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create set" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Saving the tags failed. Try again.",
+    );
+    expect(pushMock).not.toHaveBeenCalled();
+
+    // The set already exists; the retry must not create it again.
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create set" }),
+    );
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
+    expect(createSetMock).toHaveBeenCalledTimes(1);
+    expect(replaceTagsMock).toHaveBeenCalledTimes(2);
   });
 });
