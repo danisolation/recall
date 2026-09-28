@@ -4496,7 +4496,7 @@ Leave the docs honest about the public surface.
 SHARE-006
 
 ### Status
-TODO
+DONE
 
 ### Files
 ARCHITECTURE.md (ADR-015 row), docs/PROGRESS.md (sharing section + counts), README.md (status line)
@@ -4504,7 +4504,11 @@ ARCHITECTURE.md (ADR-015 row), docs/PROGRESS.md (sharing section + counts), READ
 ### Acceptance Criteria
 - counts re-verified against fresh suite runs (§73), the ADR-015 row in the decision table, PROGRESS gains the sharing section
 
+### Decision
+Beyond the task's named edits, the ARCHITECTURE route map also gained the `GET /public/sets/:id` row: the section claims to map *every* route, and omitting the app's only unauthenticated one would be exactly the §73 drift the sweep exists to prevent. PROGRESS's "Current state" moved to the fresh counts — API 264, web 226, contracts 61, E2E 12 — names migration `0010_powerful_hiroim.sql` (verified against `packages/database/drizzle/`), lists sharing in the E2E journey roster, and drops sharing from the "Now" plans. README's status line folds sharing into the shipped surface and narrows "Next up" to media, streaks, notifications. Ten tables unchanged: `0010` added a column, not a table.
+
 ### Tests
-- full suites re-run for the counts cited in PROGRESS.md
+- full suites re-run for the cited counts: contracts **61** (7 files), API **264** (45 files, against the running Postgres), web **226** (38 files), E2E **12** (fresh from SHARE-006's run this phase)
+- no code touched; docs-only sweep
 
 ---
