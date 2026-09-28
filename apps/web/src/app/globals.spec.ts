@@ -11,6 +11,14 @@ const css = readFileSync(
   "utf8",
 );
 
+// The form controls live in `components/ui`, two levels up from `src/app`.
+const inputPath = fileURLToPath(
+  new URL("../components/ui/input.tsx", import.meta.url),
+);
+const selectPath = fileURLToPath(
+  new URL("../components/ui/select.tsx", import.meta.url),
+);
+
 const theme = css.slice(css.indexOf("@theme"), css.indexOf("@layer base"));
 
 describe("design tokens (ADR-018)", () => {
@@ -67,5 +75,55 @@ describe("retained behavior (ADR-013)", () => {
   it("keeps the study card's flip rules", () => {
     expect(css).toContain(".flip-card-inner");
     expect(css).toContain("backface-visibility: hidden");
+  });
+});
+
+/*
+ * The REDESIGN-009 audit. These are the two pairings that were measured
+ * against §57 and found failing, so they are pinned here at the values that
+ * fixed them — a number in a commit message does not stop the next person
+ * from dialing the alpha back down.
+ *
+ * Both were computed with WCAG relative luminance and sRGB alpha
+ * compositing, not estimated:
+ *
+ *   placeholder text — `ink-soft #475569` at /70 over `#FFFFFF` composites
+ *     to `#7E8896`, which is **3.59:1** and fails the 4.5:1 body-text
+ *     requirement. At /80 it composites to `#6C7787` = **4.54:1**, the
+ *     lightest value that clears it. Placeholders are still text and are
+ *     read by anyone typing into a field.
+ *
+ *   form-control border — `border #EFE7FC` on `#FFFFFF` is **1.20:1**. A
+ *     control's boundary is a non-text UI element under WCAG 1.4.11 and
+ *     needs 3:1; this one was effectively invisible. `ink-soft` is
+ *     **7.58:1**, comfortably clear.
+ */
+describe("verified contrast pairings (REDESIGN-009)", () => {
+  it("keeps the placeholder at a lightness that clears 4.5:1", () => {
+    expect(theme).toContain("--color-ink-soft: #475569");
+    // /70 = 3.59:1 (fails). /80 = 4.54:1 (passes).
+    expect(readFileSync(inputPath, "utf8")).toContain(
+      "placeholder:text-ink-soft/80",
+    );
+    expect(readFileSync(inputPath, "utf8")).not.toContain(
+      "placeholder:text-ink-soft/70",
+    );
+  });
+
+  it("gives form controls a boundary that clears 3:1", () => {
+    // `border-border` (#EFE7FC) is 1.20:1 on card and cannot be used for a
+    // control's edge; the register moves to the soft ink for controls only.
+    // Matched against the class string so the explanatory comments — which
+    // legitimately name the retired class — do not trip the assertion.
+    const controlClass = (source: string) =>
+      source.match(/className=\{`([^`]+)`/)?.[1] ?? "";
+    for (const source of [
+      readFileSync(inputPath, "utf8"),
+      readFileSync(selectPath, "utf8"),
+    ]) {
+      const classes = controlClass(source);
+      expect(classes).toContain("border-ink-soft");
+      expect(classes).not.toContain("border-border");
+    }
   });
 });

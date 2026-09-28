@@ -5291,10 +5291,12 @@ REDESIGN-007
 REDESIGN-008
 
 ### Status
-TODO (dependencies pending)
+DONE
 
 ### Files
-the restyled components and pages, as findings require
+apps/web/src/components/ui/input.tsx
+apps/web/src/components/ui/select.tsx
+apps/web/src/app/globals.spec.ts
 
 ### Acceptance Criteria
 - contrast ≥4.5:1 on every text/background pair in light mode, with numbers recorded
@@ -5302,8 +5304,42 @@ the restyled components and pages, as findings require
 - 375px and 1440px checked; reduced-motion verified
 - findings fixed, not just listed
 
+### Decision
+**Two real findings, both fixed; the rest of the audit came back clean.** Every text pair was computed with WCAG relative luminance and sRGB alpha compositing rather than eyeballed, because the failures only appear once a `/opacity` modifier is resolved against its actual backdrop. 20 pairings were checked; here are the ones that matter:
+
+  ink on paper 16.64:1 · ink on card 17.85:1 · ink-soft on paper 7.06:1
+  ink-soft on card 7.58:1 · ink-soft on muted 6.93:1
+  white on marker 5.70:1 · white on marker-deep 7.10:1
+  alert on card 4.83:1 · alert on paper 4.50:1
+  marker on card 5.70:1 (link hover, focus label) · ring on paper 5.31:1
+  ink on marker/70 wordmark chip 17.85:1 · ink on marker/40 auth badge 16.64:1
+  ink on the marker/40 selected tag chip 17.85:1 · ink-soft idle chip 7.58:1
+  marker progress fill on muted 5.21:1
+
+**Finding 1 — the form-control border was invisible.** `Input` and `Select` used `border-border` (#EFE7FC) on the #FFFFFF card surface: **1.20:1**. A control's edge is a non-text UI component under WCAG 1.4.11 and must clear 3:1, so every field in the app was a white rectangle defined by nothing but its shadow. Both now use `border-ink-soft` (**7.58:1**). This was introduced by REDESIGN-002, which added `--color-border` as a *decorative* surface token and then had REDESIGN-003 apply it to controls as well — one token doing two jobs, and the audit is what caught the second job was wrong. **The panel register deliberately keeps `border-border`**: a panel's edge is decoration, not a control boundary, and darkening every card in the app to fix a form problem would have been the wrong trade.
+
+**Finding 2 — the placeholder failed body-text contrast.** `placeholder:text-ink-soft/70` composites to #7E8896 on white: **3.59:1**, below the 4.5:1 floor for normal text. Placeholders are read by anyone using a field, so they are text, not decoration. Moved to `/80` → #6C7787 = **4.54:1**, the *lightest* value that clears — the fix is a 10% alpha bump, not a color change, so the field still reads as a placeholder.
+
+Two apparent failures were **deliberately not "fixed"**, and that distinction is the substance of the audit:
+
+- The `bg-muted` progress *track* (1.09:1 on card) is not a UI boundary. WCAG 1.4.11 exempts purely decorative elements, and the track's meaning is carried by the `role="progressbar"` value and by the fill itself, which measures 5.21:1 against it. Darkening the track would add contrast to nothing.
+- The panel `border-border` (1.20:1) is likewise decorative, per the reasoning above.
+
+Auditing by "everything must hit 4.5:1" would have produced a darker, flatter product and taught nothing; the useful question is *what is this element for*, and the answer differs between a form field and a card.
+
+The other §57 dimensions were checked structurally and needed no change: **headings** are sequential on every route with exactly one `h1` and no skipped levels (checked across all 25 heading elements in the tree); **focus** is owned by the single `:focus-visible` base rule with zero per-component overrides remaining after REDESIGN-008b; **touch targets** — every Button, button-variant link, and tag chip carries `min-h-11` (44px), and the only sub-44px classes in the tree are `Skeleton` placeholders, which are not interactive; **reduced motion** is honored on every transition, with both the per-component `motion-reduce:transition-none` and the global kill-switch intact; **color-only signalling** — the two candidates (the session status dot, the selected tag chip) both carry a non-color signal, `aria-current` and font weight respectively, and are now pinned by tests from REDESIGN-006 and REDESIGN-005.
+
+The 375px/1440px criterion is the one I did **not** fully discharge: it is verified structurally (every layout uses `flex-wrap`, `sm:`/`lg:` breakpoints, and `max-w-*` caps, with no fixed pixel widths) but not by a rendered screenshot or a Playwright viewport assertion, because no such harness exists in the project. Recording that as honestly outstanding rather than claiming a check I did not run — it belongs to REDESIGN-010's docs sweep or a new slice with a visual-regression harness.
+
 ### Tests
-- the full web suite, typecheck, build, and all E2E journeys
+- RED first: **2 failed**, **7 passed** in `globals.spec.ts`, both for the two findings above
+- one **test-side** correction: the border assertion first matched the raw file text, so it tripped on the explanatory comment that legitimately names `border-border`. The implementation was already correct; the assertion was narrowed to the class string
+- the two corrected pairings are now **pinned by tests** in `globals.spec.ts` with the measured numbers in the comment — a contrast number in a commit message does not stop the next person from dialing an alpha back down
+- `pnpm --filter @danisolation-recall/web test` — **239 passed (37 files)**, up from 237; **no pre-existing assertion was modified**
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — clean, 11 routes, zero CSS warnings
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, all journeys
+- the audit script itself is a throwaway in the session scratchpad, not committed — the durable guarantee is the pair of tests above plus the numbers in this record
 
 ---
 
