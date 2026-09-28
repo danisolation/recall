@@ -4512,3 +4512,172 @@ Beyond the task's named edits, the ARCHITECTURE route map also gained the `GET /
 - no code touched; docs-only sweep
 
 ---
+
+## Daily streaks phase
+
+Design recorded once in ADR-016 (`docs/adr/ADR-016-daily-streaks.md`): the streak is *daily* (a day of practice = at least one review), **derived from the immutable `reviews` history rather than persisted**, day boundaries are UTC (§49 tradeoff recorded), and the two facts (`currentStreak` with the today-or-yesterday grace rule, `longestStreak`) ride the existing `GET /progress` summary. Named "daily streak" throughout to stay distinct from `user_card_progress.streak`, the ladder's per-card state.
+
+### STREAK-001
+
+### Title
+Record the daily-streak decision (ADR-016)
+
+### Goal
+Decide and document what counts as practice, how the streak is computed, and where it surfaces before any code depends on the answers.
+
+### Dependencies
+None (Phase 2 opening slice per the roadmap bullet)
+
+### Status
+DONE
+
+### Files
+docs/adr/ADR-016-daily-streaks.md
+docs/TASKS.md (this decomposition)
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+- the decision names the domain distinction from the ladder's per-card `streak` column
+- the day-boundary and grace-rule semantics are pinned before tests exist
+
+### Tests
+None (documentation only)
+
+---
+
+### STREAK-002
+
+### Title
+Add the pure streak computation
+
+### Goal
+Implement `computeDailyStreaks(reviewDays, today)` in the progress module — deterministic, isolated, independently tested (§48's scheduler pattern).
+
+### Dependencies
+STREAK-001
+
+### Status
+READY
+
+### Files
+apps/api/src/progress/streaks.ts (+ spec)
+
+### Acceptance Criteria
+- inputs are distinct UTC review dates and an injected `today` (§49); output is `{ currentStreak, longestStreak }`
+- the grace rule holds: a streak ending yesterday is current
+- unit tests cover: empty history, today only, yesterday-only grace, gaps, month boundaries, longest-behind-current, single long run
+
+### Tests
+- `pnpm --filter @danisolation-recall/api test` gains the streak unit tests
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+
+---
+
+### STREAK-003
+
+### Title
+Add the distinct review-days read
+
+### Goal
+Give the progress repository a query for the user's distinct UTC practice days.
+
+### Dependencies
+STREAK-002
+
+### Status
+READY
+
+### Files
+apps/api/src/progress/progress.repository.ts (+ integration spec)
+
+### Acceptance Criteria
+- `listReviewDays(userId)` returns distinct UTC calendar dates with any reviews, user-scoped through the session join (§41)
+- empty history returns an empty list; other users' reviews are excluded
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` gains the integration tests
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+
+---
+
+### STREAK-004
+
+### Title
+Extend the progress summary with streak facts
+
+### Goal
+`GET /progress` returns `currentStreak` and `longestStreak` alongside the existing counts.
+
+### Dependencies
+STREAK-002
+STREAK-003
+
+### Status
+READY
+
+### Files
+apps/api/src/progress/progress.controller.ts
+apps/api/src/progress/get-progress.integration.spec.ts
+
+### Acceptance Criteria
+- the summary response carries the two derived facts; no new endpoint (ADR-010's one-fetch stance)
+- integration tests pin the semantics end to end: a user with reviews today shows a current streak, a user whose last review was two days ago shows 0, a user with a past run keeps its longest
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` gains the HTTP-level tests
+- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+
+---
+
+### STREAK-005
+
+### Title
+Show the streaks on the progress page
+
+### Goal
+Surface current and longest streak in the progress page's stat panels.
+
+### Dependencies
+STREAK-004
+
+### Status
+READY
+
+### Files
+apps/web/src/lib/progress.ts (+ spec)
+apps/web/src/app/(protected)/progress/page.tsx (+ spec)
+
+### Acceptance Criteria
+- the summary fetcher's type carries the new fields; the page renders both facts in the existing stat-panel register
+- a fresh account (no reviews) renders sensibly — streaks of 0, not an error or a lie (§56)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` gains the fetcher and page tests
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### STREAK-006
+
+### Title
+Daily-streaks docs sweep
+
+### Goal
+Leave the docs honest about the derived facts.
+
+### Dependencies
+STREAK-005
+
+### Status
+READY
+
+### Files
+ARCHITECTURE.md (ADR-016 decision-table row + data-model note), docs/PROGRESS.md (streaks section + fresh counts), README.md (status line)
+
+### Acceptance Criteria
+- counts re-verified against fresh suite runs (§73); the derivation (no new table, no migration) is stated where the data model is described
+
+### Tests
+- full suites re-run for the counts cited in PROGRESS.md
+
+---
