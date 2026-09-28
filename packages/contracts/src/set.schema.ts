@@ -15,10 +15,6 @@ export const createSetSchema = z.object({
     .transform((value) => value.trim())
     .pipe(z.string().max(2000, "Use at most 2000 characters"))
     .optional(),
-  // ADR-014: optional folder placement — absent means the library root for
-  // a new set; null unfiles on update. Ownership of the referenced folder
-  // is checked by the write path (§41).
-  folderId: z.number().int().positive().nullable().optional(),
 });
 
 export const updateSetSchema = createSetSchema
@@ -31,7 +27,6 @@ export const updateSetSchema = createSetSchema
     (data) =>
       data.title !== undefined ||
       data.description !== undefined ||
-      data.folderId !== undefined ||
       data.visibility !== undefined,
     { message: "Nothing to update" },
   );

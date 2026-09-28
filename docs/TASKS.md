@@ -4772,28 +4772,32 @@ Dissolve the folders module and every folder branch in the sets path.
 RMFOLD-002
 
 ### Status
-READY
+DONE
 
 ### Files
 apps/api/src/folders/ (module, controller, repository, specs — deleted)
-apps/api/src/sets/sets.module.ts (folders import removed)
-apps/api/src/sets/sets.controller.ts (FoldersRepository + `?folder=` removed)
-apps/api/src/sets/sets.repository.ts (folder filter and counts removed)
-apps/api/src/sets/create-set.service.ts (+ spec)
-apps/api/src/sets/public-sets.integration.spec.ts
-apps/api/src/app.module.ts
+apps/api/src/sets/sets.module.ts (FoldersModule import removed)
+apps/api/src/sets/sets.controller.ts (FoldersRepository, the `?folder=` query field, and the update-path ownership check removed)
+apps/api/src/sets/sets.repository.ts (folderId off create values, the listByOwner param + filter branch, and the update branch)
+apps/api/src/sets/create-set.service.ts (+ spec, FoldersRepository and the two folder tests removed)
+apps/api/src/sets/public-sets.integration.spec.ts (comment only)
+apps/api/src/app.module.ts (FoldersModule removed)
 packages/contracts/src/folders.schema.ts (+ spec — deleted)
-packages/contracts/src/set.schema.ts (+ spec, folderId removed; refine narrows)
-packages/contracts/src/index.ts
+packages/contracts/src/set.schema.ts (folderId removed from create; the "Nothing to update" refine narrowed)
+packages/contracts/src/index.ts (folders export removed)
 
 ### Acceptance Criteria
 - `GET/POST/PATCH/DELETE /folders` are gone; `GET /sets` accepts `q` and `tag` only
 - `folderId` leaves the create/update contracts and the "Nothing to update" refine
 - the set-update path no longer consults a FoldersRepository
 
+### Decision
+The top-down ordering surfaced its one wrinkle: `StudySet` is `typeof studySets.$inferSelect`, so the create-set service spec's fixtures still need `folderId: null` until RMFOLD-004 drops the column — noted in the spec, not papered over. The dist artifacts were rebuilt (contracts, api) so nothing stale keeps serving the deleted module. `DELETE /sets` and the public controller needed no changes — they never touched folders.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` green with folder specs removed
-- `pnpm --filter @danisolation-recall/contracts test` and api `typecheck` succeed
+- `pnpm --filter @danisolation-recall/contracts test` — **53 passed (6 files)**: −8 (the folders schema spec deleted; no set-schema tests referenced folderId)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` — **238 passed (43 files)**: −26 (the folders module's controller/repository integration specs deleted, create-set's two folder tests removed)
+- `pnpm --filter @danisolation-recall/contracts build`, api `typecheck`, and api `build` — clean
 
 ---
 

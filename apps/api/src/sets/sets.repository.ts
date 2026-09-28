@@ -28,7 +28,6 @@ export class SetsRepository {
         ownerId,
         title: input.title,
         description: input.description ?? null,
-        folderId: input.folderId ?? null,
       })
       .returning();
 
@@ -101,7 +100,6 @@ export class SetsRepository {
     page: { limit: number; offset: number },
     q?: string,
     tagId?: number,
-    folderId?: number,
   ): Promise<StudySet[]> {
     // Escape the LIKE metacharacters so a user's % or _ matches literally,
     // then wrap the whole query in wildcards.
@@ -137,12 +135,6 @@ export class SetsRepository {
                   ),
               )
             : undefined,
-          // ADR-014: the folder filter is a plain column match — containment
-          // needs no semijoin. Ownership comes from the ownerId equality
-          // above, so a foreign folder id simply yields an empty page (§41).
-          folderId !== undefined
-            ? eq(studySets.folderId, folderId)
-            : undefined,
         ),
       )
       .orderBy(desc(studySets.createdAt), desc(studySets.id))
@@ -165,12 +157,6 @@ export class SetsRepository {
 
     if (input.description !== undefined) {
       values.description = input.description;
-    }
-
-    // ADR-014: absent leaves the placement alone; null unfiles; a number
-    // files — ownership was checked by the controller (§41).
-    if (input.folderId !== undefined) {
-      values.folderId = input.folderId;
     }
 
     // ADR-015: the visibility token — validated by the contract's enum, so

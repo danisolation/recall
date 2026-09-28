@@ -98,7 +98,7 @@ describe("GET /public/sets/:id (integration)", () => {
     expect(response.body.title).toBe("Shared biology");
     expect(response.body.description).toBe("Cells and heredity");
     // Cards arrive in study order; the payload whitelists what a visitor
-    // needs (no ownerId, folderId, or visibility token).
+    // needs (no ownerId or visibility token).
     expect(
       response.body.cards.map((card: { front: string }) => card.front),
     ).toEqual(["Second card", "First card"]);

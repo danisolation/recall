@@ -17,7 +17,6 @@ import { z } from "zod";
 import { AuthGuard, CurrentUser } from "../auth/auth.guard";
 import { type User } from "../auth/users.repository";
 import { CreateSetService } from "./create-set.service";
-import { FoldersRepository } from "../folders/folders.repository";
 import { type StudySet, SetsRepository } from "./sets.repository";
 
 export class CreateSetDto extends createZodDto(createSetSchema) {}
@@ -49,13 +48,6 @@ const listSetsQuerySchema = z.object({
     .int("Tag must be a whole number")
     .positive("Tag must be a positive number")
     .optional(),
-  // ADR-014: the folder filter takes the folder's id — containment over the
-  // labeling layer; an unknown id yields an empty page (§41).
-  folder: z.coerce
-    .number()
-    .int("Folder must be a whole number")
-    .positive("Folder must be a positive number")
-    .optional(),
 });
 
 export class ListSetsQueryDto extends createZodDto(listSetsQuerySchema) {}
@@ -80,8 +72,8 @@ function parseSetId(setId: string): number {
 
 // ADR-015: the app's only unauthenticated endpoint — a narrow, read-only
 // view of a set that is explicitly public. The response whitelists what a
-// visitor needs (title, description, cards, tags); the owner's id, the
-// folder placement, and the visibility token stay out of the payload.
+// visitor needs (title, description, cards, tags); the owner's id and the
+// visibility token stay out of the payload.
 // Private, foreign, and missing fold into the same 404 (§41 extended to
 // visibility), and no listing endpoint exists — nothing is discoverable
 // that was not handed to you.
@@ -120,7 +112,6 @@ export class SetsController {
   constructor(
     private readonly createSetService: CreateSetService,
     private readonly setsRepository: SetsRepository,
-    private readonly foldersRepository: FoldersRepository,
   ) {}
 
   @Post()
@@ -146,7 +137,6 @@ export class SetsController {
       },
       query.q,
       query.tag,
-      query.folder,
     );
 
     return {
@@ -184,18 +174,6 @@ export class SetsController {
     @Param("id") setId: string,
     @Body() body: UpdateSetDto,
   ): Promise<StudySet> {
-    // ADR-014: a numbered folderId must be one of the caller's folders —
-    // a foreign folder is indistinguishable from a missing one (§41).
-    if (
-      typeof body.folderId === "number" &&
-      !(await this.foldersRepository.isOwnedBy(body.folderId, user.id))
-    ) {
-      throw new NotFoundException({
-        code: "FOLDER_NOT_FOUND",
-        message: "Folder not found",
-      });
-    }
-
     const set = await this.setsRepository.update(
       parseSetId(setId),
       user.id,

@@ -1,7 +1,5 @@
-import { NotFoundException } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 import { CreateSetService } from "./create-set.service";
-import type { FoldersRepository } from "../folders/folders.repository";
 import type { SetsRepository } from "./sets.repository";
 
 function createSetsRepositoryMock() {
@@ -14,23 +12,14 @@ function createSetsRepositoryMock() {
   } as unknown as SetsRepository;
 }
 
-function createFoldersRepositoryMock() {
-  return {
-    listByUser: vi.fn(),
-    create: vi.fn(),
-    rename: vi.fn(),
-    remove: vi.fn(),
-    isOwnedBy: vi.fn(),
-  } as unknown as FoldersRepository;
-}
-
 describe("CreateSetService", () => {
   it("creates a set owned by the given user", async () => {
     const setsRepository = createSetsRepositoryMock();
-    const foldersRepository = createFoldersRepositoryMock();
     const row = {
       id: 1,
       ownerId: 7,
+      // The column dies with RMFOLD-004's migration; until then the row
+      // shape still carries it.
       folderId: null,
       visibility: "private",
       title: "Biology basics",
@@ -40,7 +29,7 @@ describe("CreateSetService", () => {
     };
     vi.mocked(setsRepository.create).mockResolvedValue(row);
 
-    const service = new CreateSetService(setsRepository, foldersRepository);
+    const service = new CreateSetService(setsRepository);
     const result = await service.create(7, {
       title: "Biology basics",
       description: "Cells",
@@ -55,7 +44,6 @@ describe("CreateSetService", () => {
 
   it("passes an absent description through", async () => {
     const setsRepository = createSetsRepositoryMock();
-    const foldersRepository = createFoldersRepositoryMock();
     vi.mocked(setsRepository.create).mockResolvedValue({
       id: 1,
       ownerId: 7,
@@ -67,51 +55,11 @@ describe("CreateSetService", () => {
       updatedAt: new Date(),
     });
 
-    const service = new CreateSetService(setsRepository, foldersRepository);
+    const service = new CreateSetService(setsRepository);
     await service.create(7, { title: "No description" });
 
     expect(setsRepository.create).toHaveBeenCalledWith(7, {
       title: "No description",
     });
-  });
-
-  it("files a new set into one of the caller's folders", async () => {
-    const setsRepository = createSetsRepositoryMock();
-    const foldersRepository = createFoldersRepositoryMock();
-    vi.mocked(foldersRepository.isOwnedBy).mockResolvedValue(true);
-    vi.mocked(setsRepository.create).mockResolvedValue({
-      id: 1,
-      ownerId: 7,
-      folderId: 9,
-      visibility: "private",
-      title: "Biology basics",
-      description: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    const service = new CreateSetService(setsRepository, foldersRepository);
-    await service.create(7, { title: "Biology basics", folderId: 9 });
-
-    expect(foldersRepository.isOwnedBy).toHaveBeenCalledWith(9, 7);
-    expect(setsRepository.create).toHaveBeenCalledWith(7, {
-      title: "Biology basics",
-      folderId: 9,
-    });
-  });
-
-  it("rejects a foreign folderId before creating anything", async () => {
-    const setsRepository = createSetsRepositoryMock();
-    const foldersRepository = createFoldersRepositoryMock();
-    vi.mocked(foldersRepository.isOwnedBy).mockResolvedValue(false);
-
-    const service = new CreateSetService(setsRepository, foldersRepository);
-
-    await expect(
-      service.create(7, { title: "Biology basics", folderId: 99 }),
-    ).rejects.toMatchObject({
-      response: { code: "FOLDER_NOT_FOUND" },
-    });
-    expect(setsRepository.create).not.toHaveBeenCalled();
   });
 });
