@@ -93,4 +93,34 @@ describe("PublicSetPage", () => {
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(fetchPublicSetMock).not.toHaveBeenCalled();
   });
+
+  it("renders the card list on the clay panel register", async () => {
+    fetchPublicSetMock.mockResolvedValue(set);
+
+    const { container } = render(
+      await PublicSetPage({ params: Promise.resolve({ id: "42" }) }),
+    );
+
+    // The cards are static content on a read-only page, so no press
+    // affordance — but they must still sit on the panel register, which is
+    // what keeps a shared set looking like the same product as a private one.
+    const items = container.querySelectorAll("li");
+    expect(items).toHaveLength(2);
+    for (const item of items) {
+      expect(item).toHaveClass("rounded-card", "shadow-clay");
+    }
+  });
+
+  it("keeps the shared page free of any interactive control", async () => {
+    fetchPublicSetMock.mockResolvedValue(set);
+
+    render(await PublicSetPage({ params: Promise.resolve({ id: "42" }) }));
+
+    // ADR-015: read-only outside the protected group. The restyle must not
+    // introduce a press state, hover cue, or focusable affordance here that
+    // would imply the visitor can act on the set.
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+    expect(screen.queryAllByRole("textbox")).toHaveLength(0);
+  });
 });

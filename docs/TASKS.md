@@ -5200,7 +5200,7 @@ Bring login, register, the set new/edit forms, and the public share page onto th
 REDESIGN-003
 
 ### Status
-TODO (dependencies pending)
+DONE
 
 ### Files
 apps/web/src/app/{login,register,(protected)/sets/new,(protected)/sets/[id]/edit,share/sets/[id]}/** (+ specs)
@@ -5209,8 +5209,56 @@ apps/web/src/app/{login,register,(protected)/sets/new,(protected)/sets/[id]/edit
 - form error, loading, and validation states unchanged in behavior
 - the public share page keeps its read-only, no-controls contract (ADR-015)
 
+### Decision
+**This task changed no production code, and that is the finding, not a shortfall.** Every file in the file list was already fully composed from the restyled register when the task opened: `login/page.tsx` and `register/page.tsx` on `Panel` + `TextLink`, all six forms (`login`, `register`, `create-set`, `edit-set`, `create-card`, `edit-card`) on `FormField` / `Select` / `Button` / `FieldError`, and the share page on `Panel` + `panelClassName`. There was no leftover hairline, no dead token, and no hand-rolled control left to convert — the token-first ordering (ADR-018) plus REDESIGN-003's primitive restyle had already absorbed this whole slice.
+
+Writing tests that fail when the code is already right is a waste of a turn, so instead of manufacturing a failure I verified the guarantee the task actually cares about: **that these pages stay on the register.** Two new tests in the share spec pin it — one asserts the card list still carries the panel register (`rounded-card` + `shadow-clay`), the other asserts the page renders **zero** buttons, links, and textboxes. The second is the more valuable one: ADR-015's read-only contract is exactly the kind of thing a well-meaning future restyle breaks by adding a hover state or a focusable affordance to make a page "feel consistent", and a test that counts interactive roles fails loudly if that happens. The register test would have caught a reversion; the role test catches an over-correction.
+
+The other deliberate omission is the **"Recall" wordmark chip and the header rule**. They are `rounded-sm bg-marker/70` in three files — `login/page.tsx`, `register/page.tsx`, and `(protected)/layout.tsx` — plus `app/page.tsx`. The layout and the home page are in no task's file list, and restyling the chip on the two auth pages alone would have made the wordmark look *different* in the auth header than in the app header, which is worse than leaving all four consistent on the old register. That split is now **REDESIGN-008b**, decided rather than silently dropped.
+
+Everything else is confirmed unchanged: `loginSchema`/`registerSchema` validation, `noValidate` + zodResolver, the `INVALID_CREDENTIALS` branch and its generic fallback, the tags-retry-after-create path, the Sharing select's Private/Public options, and the share page's 404 folding.
+
 ### Tests
-- the relevant page specs, web suite, typecheck, build, and the auth/sharing/sets E2E journeys
+- **No RED phase was possible**: the two new tests passed on their first run against the existing code. Recorded explicitly rather than dressed up — writing a test designed to fail, then editing the code to satisfy it, would have been a fake TDD cycle that produced a pointless diff. These are regression guards, and their value is in the day someone changes these pages.
+- `pnpm --filter @danisolation-recall/web test` — **231 passed (37 files)**, up from 229; **no pre-existing assertion was modified**
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — clean, 11 routes, zero CSS warnings
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, including `auth`, `sets`, and `sharing`, the three journeys that drive every page in this task
+
+---
+
+### REDESIGN-008b
+
+### Title
+Restyle the shared header and the home page
+
+### Goal
+Re-skin the app-wide wordmark chip, the header rule, and the landing page onto the new tokens, in one place, so the wordmark looks identical everywhere.
+
+### Dependencies
+REDESIGN-008
+
+### Status
+TODO (dependencies pending)
+
+### Files
+apps/web/src/app/(protected)/layout.tsx
+apps/web/src/app/page.tsx
+apps/web/src/app/(protected)/layout.spec.tsx
+apps/web/src/app/page.spec.tsx
+
+### Acceptance Criteria
+- the wordmark chip is the same element on the auth pages, the protected header, and the home page
+- the skip link keeps its WCAG 2.4.1 bypass behavior (A11Y-001) and stays visibly focused
+- the header's bottom rule and the wordmark's `rounded-sm` are the last ADR-008 remnants in the tree
+- both dead `focus-visible:outline-ink` utilities in `layout.tsx` are removed, leaving focus to the single base rule in `globals.css`
+
+### Notes
+Split out of REDESIGN-008 during implementation, when the wordmark chip was found to live in four files with no task owning the shared two. Doing it here — rather than partially in 008 — is what keeps the wordmark from rendering two different ways. The `layout.tsx` skip link and header link still carry `focus:outline-2 … outline-ink` and `focus-visible:outline-2 … outline-ink`, whose `outline-ink` token was retired in REDESIGN-003, so those two focus rings are currently dead — the same class of bug found on the set tile in REDESIGN-004 and the tag chips in REDESIGN-005, and the last two instances in the app.
+
+### Tests
+- layout and home page specs, web suite, typecheck, build
+- the auth journeys, which render both the protected header and the signed-out home page
 
 ---
 
