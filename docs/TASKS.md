@@ -4591,18 +4591,24 @@ Give the progress repository a query for the user's distinct UTC practice days.
 STREAK-002
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/progress/progress.repository.ts (+ integration spec)
+apps/api/src/progress/progress.repository.ts (listReviewDays)
+apps/api/src/progress/progress.repository.integration.spec.ts (3 new cases)
 
 ### Acceptance Criteria
 - `listReviewDays(userId)` returns distinct UTC calendar dates with any reviews, user-scoped through the session join (§41)
 - empty history returns an empty list; other users' reviews are excluded
 
+### Decision
+The day boundary is taken in Postgres with `date_trunc('day', reviewed_at AT TIME ZONE 'UTC')::date` rather than in TypeScript, so the query returns one row per calendar day instead of one row per review — a year of daily study is 365 rows, not 36,000, and no in-memory de-duplication is needed. `AT TIME ZONE 'UTC'` is explicit because `reviewed_at` is `timestamptz`: truncating it directly would slice in the server's session zone, silently shifting the day boundary whenever the database's timezone setting differs from UTC. The cast to `::date` (not a timestamp) is what makes it a *calendar day*; the returned string is re-anchored to a UTC-midnight `Date` so the values are the same keys `computeDailyStreaks` normalizes to — the pure function and the query agree on day identity by construction. Ownership rides the existing `studySessions` join (§41), matching `getSummary` rather than adding a second path to a user. No `today` parameter: the function owns the comparison, per ADR-016's split. Per §73 no new fixture file was written — the existing integration spec's owner (5 reviews over 2 distinct days), outsider, and zero-review user already cover all three criteria, and the owner case is the one that would catch a missing `DISTINCT`.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` gains the integration tests
-- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+- RED first: the three cases were added and run before the method existed — 3 failed on `progress.listReviewDays is not a function`, 6 pre-existing passed
+- `vitest run src/progress/progress.repository.integration.spec.ts` — **9 passed** (6 pre-existing + 3 new: distinct ascending days, empty history, caller scoping)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` — **253 passed (44 files)**, up from 250
+- `pnpm --filter @danisolation-recall/api typecheck` — clean
 
 ---
 

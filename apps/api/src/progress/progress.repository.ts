@@ -111,4 +111,20 @@ export class ProgressRepository {
 
     return Number(row?.dueCount ?? 0);
   }
+
+  // ADR-016: the streak's input — the distinct UTC calendar days on which
+  // the user answered anything. Truncated to date_t not timestamp so the
+  // day boundary is decided by Postgres under UTC, matching the pure
+  // function's keys; the database supplies dates, the function decides
+  // what a run is.
+  async listReviewDays(userId: number): Promise<Date[]> {
+    const rows = await this.db
+      .selectDistinct({ day: sql<string>`date_trunc('day', ${reviews.reviewedAt} at time zone 'UTC')::date` })
+      .from(reviews)
+      .innerJoin(studySessions, eq(reviews.sessionId, studySessions.id))
+      .where(eq(studySessions.userId, userId))
+      .orderBy(asc(sql`date_trunc('day', ${reviews.reviewedAt} at time zone 'UTC')::date`));
+
+    return rows.map((row) => new Date(`${row.day}T00:00:00.000Z`));
+  }
 }

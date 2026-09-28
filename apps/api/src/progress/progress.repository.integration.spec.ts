@@ -234,4 +234,26 @@ describe("ProgressRepository", () => {
       ),
     ).toEqual(["Outsider"]);
   });
+
+  // ADR-016: the streak's input. The owner's five reviews fall on two UTC
+  // calendar days — four in session 1, one in session 2 — so a query
+  // missing DISTINCT would return five rows here.
+  it("lists each practice day once, in ascending order", async () => {
+    const days = await progress.listReviewDays(ownerId);
+
+    expect(days.map((day) => day.toISOString())).toEqual([
+      "2026-09-23T00:00:00.000Z",
+      "2026-09-26T00:00:00.000Z",
+    ]);
+  });
+
+  it("returns an empty practice history for a zero-review user", async () => {
+    expect(await progress.listReviewDays(emptyId)).toEqual([]);
+  });
+
+  it("scopes practice days to the caller", async () => {
+    expect((await progress.listReviewDays(otherId)).map((d) => d.toISOString())).toEqual(
+      ["2026-09-26T00:00:00.000Z"],
+    );
+  });
 });
