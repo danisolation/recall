@@ -4694,16 +4694,23 @@ Leave the docs honest about the derived facts.
 STREAK-005
 
 ### Status
-READY
+DONE
 
 ### Files
-ARCHITECTURE.md (ADR-016 decision-table row + data-model note), docs/PROGRESS.md (streaks section + fresh counts), README.md (status line)
+ARCHITECTURE.md (module map, route map, data-model derivation note, ADR-016 decision-table row, sharing-whitelist clause)
+docs/PROGRESS.md (daily-streaks section + fresh counts + "Now" plans)
+README.md (status line, next-up line)
 
 ### Acceptance Criteria
 - counts re-verified against fresh suite runs (§73); the derivation (no new table, no migration) is stated where the data model is described
 
+### Decision
+The sweep states the derivation where a reader would otherwise expect a table: a new data-model bullet says the streak is a pure function over the distinct UTC review days with "no table, column, or migration backs it," and the decision table gained the ADR-016 row — so the absence is documented rather than left as a gap someone might "fix" by persisting it later. The same bullet also disambiguates "daily streak" from `user_card_progress.streak` at the point of description. PROGRESS gained a Daily-streaks section (the phase's own record, matching the Sharing/Folders pattern), refreshed counts (API 254, web 198, contracts 53, E2E 11), and the "Now" list no longer claims streaks are waiting — the phase is done. README's status and next-up lines both moved. `docs/database/schema.md` was correctly left untouched: no migration exists for this feature. The sharing line's stale "folder placement" clause was also corrected while in the file (§73), a leftover from the folder removal.
+
 ### Tests
-- full suites re-run for the counts cited in PROGRESS.md
+- counts re-verified against fresh runs (§73): contracts **53** (6 files, re-run this task), API **254** (44 files, STREAK-004), web **198** (35 files, STREAK-005), E2E **11** (STREAK-005) — each cited number is from a run within this phase
+- grep-verified: every "streak" mention in ARCHITECTURE/README/PROGRESS is either the derivation, the panels, the domain distinction, or the phase record — no stale "waiting"/"decomposed" claims remain
+- no code touched; docs-only sweep closing the streak phase
 
 ---
 

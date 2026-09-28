@@ -51,25 +51,29 @@ This file summarizes what has been achieved and where the project is going. `doc
 
 ### Sharing (Phase 2)
 
-- `SHARE-001..007`, designed once in ADR-015: a `visibility` token on `study_sets` (`private`/`public`, sets start private) that rides the update path only; `PATCH /sets/:id` validating it through the shared contracts enum; `GET /public/sets/:id` — the app's only unauthenticated endpoint — serving a whitelist payload (title, description, tags, study-ordered cards; never the owner's id, folder placement, or the token itself), with private, foreign, and missing sets folding into the same 404; a Sharing select on the edit form and a Sharing row on the detail page; an unauthenticated read-only `/share/sets/[id]` page outside the protected group (no cookie is ever sent, no owner data, no action controls); and an E2E journey covering the whole loop — toggle public, open the share URL in a session-less browser, unshare, watch it 404.
+- `SHARE-001..007`, designed once in ADR-015: a `visibility` token on `study_sets` (`private`/`public`, sets start private) that rides the update path only; `PATCH /sets/:id` validating it through the shared contracts enum; `GET /public/sets/:id` — the app's only unauthenticated endpoint — serving a whitelist payload (title, description, tags, study-ordered cards; never the owner's id or the token itself), with private, foreign, and missing sets folding into the same 404; a Sharing select on the edit form and a Sharing row on the detail page; an unauthenticated read-only `/share/sets/[id]` page outside the protected group (no cookie is ever sent, no owner data, no action controls); and an E2E journey covering the whole loop — toggle public, open the share URL in a session-less browser, unshare, watch it 404.
+
+### Daily streaks (Phase 2)
+
+- `STREAK-001..006`, designed once in ADR-016: a *daily* streak — consecutive days on which at least one review was recorded — named apart from the ladder's per-card `streak` column, and **derived rather than persisted**. The progress repository reads the user's distinct UTC practice days (`date_trunc(..., 'UTC')::date`, so the day boundary is decided under UTC in the database), and the pure `computeDailyStreaks(reviewDays, today)` walks them: `currentStreak` counts a run ending today *or yesterday* (the grace rule — showing 0 on a morning with no activity yet would misdescribe the habit), `longestStreak` keeps the best run ever. Both ride the existing `GET /progress` response; the page shows them in two new stat panels beside Reviews, Accuracy, and Due cards. **No table, column, or migration exists** — the derivation runs on every read over a few hundred rows, and recorded deferrals (per-user timezones, persisted streaks behind a cache, badges) wait for the data to ask. No new E2E journey: a multi-day streak cannot be exercised in a browser without time travel, so the day-boundary logic lives in the tested pure function with `now` injected, and the HTTP boundary is covered by integration tests.
 
 ### Documentation
 
-- DOCS-001 handoff set plus DOCS-002's refresh: README, ARCHITECTURE (module map, route map, data model, key decisions), CONTRIBUTING, environment docs, schema reference, tech-debt ledger, and the ADR series (ORM, contracts, sessions, design system, study sessions, progress, search, organization, UI polish, folders, sharing).
+- DOCS-001 handoff set plus DOCS-002's refresh: README, ARCHITECTURE (module map, route map, data model, key decisions), CONTRIBUTING, environment docs, schema reference, tech-debt ledger, and the ADR series (ORM, contracts, sessions, design system, study sessions, progress, search, organization, UI polish, folders, sharing, daily streaks, folder removal).
 
 ---
 
 ## Current state
 
 - 6 pnpm workspace packages; 9 tables; migrations applied through `0011_flippant_wasp.sql` (the folder-removal drop).
-- Test suites green: API 238 (unit + HTTP/DB integration), web 196 (component + lib), contracts 53 (schema), E2E 11 (Playwright journeys: auth, sets, cards, study, progress, search, organization, sharing).
-- **The §78 MVP surface is shipped** (including organization — tags, ADR-012), the UI polish phase landed (ADR-013), **Phase 2 has opened**: sharing (ADR-015) lets an owner publish a set by URL and take it back with one toggle — and folders (ADR-014) were removed again (ADR-017) after failing to earn their keep.
+- Test suites green: API 254 (unit + HTTP/DB integration), web 198 (component + lib), contracts 53 (schema), E2E 11 (Playwright journeys: auth, sets, cards, study, progress, search, organization, sharing).
+- **The §78 MVP surface is shipped** (including organization — tags, ADR-012), the UI polish phase landed (ADR-013), **Phase 2 has opened**: sharing (ADR-015) lets an owner publish a set by URL and take it back with one toggle, daily streaks (ADR-016) are derived from the review history and shown on the progress page, and folders (ADR-014) were removed again (ADR-017) after failing to earn their keep.
 
 ## Plans for the future
 
 ### Now
 
-- The rest of Phase 2 per `docs/ROADMAP.md`: media, streaks, notifications — each new phase opens with an ADR (the house pattern). The daily-streaks phase is decomposed and waiting (`STREAK-002..006`, ADR-016).
+- The rest of Phase 2 per `docs/ROADMAP.md`: media, notifications — each new phase opens with an ADR (the house pattern).
 
 ### Next
 

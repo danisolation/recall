@@ -30,7 +30,7 @@ The browser only ever talks to the web origin. `/api/*` requests are proxied ser
 | `src/sets/` | Study sets: `GET/POST /sets`, `GET/PATCH/DELETE /sets/:id`, with the `q` search filter (ADR-011) |
 | `src/cards/` | Cards, reached only through their set: list/create, update/delete, position reorder — ownership enforced via the set (§41) |
 | `src/study/` | The study loop (ADR-009): start/get sessions, record reviews (atomic review + progress upsert), finish/abandon transitions, session history, and the pure `schedule()` ladder |
-| `src/progress/` | Progress reads (ADR-010): summary totals and the due queue |
+| `src/progress/` | Progress reads (ADR-010): summary totals and the due queue, plus the derived daily streaks (ADR-016) |
 | `src/database/` | Global `DatabaseModule` — provides the Drizzle client from `DATABASE_URL` |
 | `src/health/` | `GET /health` — runs `SELECT 1` |
 | `src/common/` | Cross-cutting: `ZodExceptionFilter` (reshapes validation failures) |
@@ -50,7 +50,7 @@ Domain modules own their controllers, services, and persistence (§28). Cross-mo
 | `…/(protected)/sets/[id]/` | Set detail: card management (create/edit/move/delete), the primary Study control |
 | `…/(protected)/sets/new`, `…/sets/[id]/edit` | Set creation and editing forms |
 | `…/(protected)/study/[sessionId]/` | The card-by-card study screen and the completion view (ADR-009's study mode) |
-| `…/(protected)/progress/` | Summary, due queue, and session history (ADR-010) |
+| `…/(protected)/progress/` | Summary, due queue, and session history (ADR-010), with the daily streak panels (ADR-016) |
 | `src/components/` | `UserMenu`, `LogoutButton`, `SetList`, `CardList`, `SearchInput`, and `ui/` design-system primitives (Button, Input, FormField, FieldError) per ADR-008 |
 | `src/lib/api.ts` | Browser API client (`ApiError` with stable codes): auth flows, study-session start/record/finish |
 | `src/lib/session.ts`, `lib/sets.ts`, `lib/cards.ts`, `lib/tags.ts`, `lib/progress.ts` | Server-side fetchers: forward the request cookie with `cache: "no-store"`; the protected layout has already gated the request |
@@ -123,7 +123,7 @@ Key properties:
 | `GET /study-sessions/:id` | One session with its reviews and cards (resume is one fetch) |
 | `POST /study-sessions/:id/reviews` | Record an answer — review + progress upsert in one transaction |
 | `POST /study-sessions/:id/finish`, `POST /study-sessions/:id/abandon` | Terminal transitions (finish is idempotent) |
-| `GET /progress` | Summary: review counts and due count (ADR-010) |
+| `GET /progress` | Summary: review counts, due count, and the two derived daily streaks (ADR-010, ADR-016) |
 | `GET /progress/due` | The due queue, most-overdue first |
 | `GET /health` | Liveness (`SELECT 1`) |
 | `GET /public/sets/:id` | Public sharing (ADR-015) — the one unauthenticated route: whitelist payload (title, description, tags, cards), private/foreign/missing all 404 |
@@ -134,6 +134,7 @@ Key properties:
 - Identity and access: `users` ← `sessions` (one user, many live sessions; only the token hash is stored)
 - Content: `study_sets` ← `cards` (position-ordered, reached only through their set)
 - Learning: `study_sessions` (an interaction over one set, `ACTIVE → COMPLETED/ABANDONED` per ADR-009) ← `reviews` (append-only answer history), plus `user_card_progress` (one row per user+card: counts, streak, `next_review_at` — the ladder's scheduling state)
+- Streaks are **derived, not stored** (ADR-016): the daily streak is a pure function over the distinct UTC review days in `reviews`, so no table, column, or migration backs it — the only state it could drift from is the history it is computed from. "Daily streak" (days practiced) is a different fact from `user_card_progress.streak` (one card's consecutive correct answers)
 - Deletes cascade from the user all the way down; deleting a set takes its cards, sessions, reviews, and progress with it (ADR-009's recorded tradeoff)
 
 ## Key decisions
@@ -152,6 +153,7 @@ Key properties:
 | Folders: single-parent containment (`folders` + `study_sets.folder_id`, `ON DELETE SET NULL`), per-user case-insensitive names, counts on `GET /folders`, `?folder=` composing with `q` and `tag` — **removed by ADR-017** | ADR-014 |
 | Sharing: `visibility` token on `study_sets` rides the update path only (sets start private), whitelist public payload (no owner id or token), unauthenticated `GET /public/sets/:id` + read-only `/share/sets/:id` page, private/foreign/missing indistinguishable | ADR-015 |
 | Removing folders entirely — delete, not deprecate; tags + search remain the organization story | ADR-017 |
+| Daily streaks derived from the review history by a pure function, never persisted — no table, no migration, no write on the hot review path; rides `GET /progress` | ADR-016 |
 | Next.js rewrite proxy instead of CORS — first-party session cookie, no API CORS surface | AUTH-020 task rationale + `ENVIRONMENT.md` |
 | Per-IP login rate limiting, in-memory storage (Redis swap deferred) | AUTH-020A task rationale |
 
