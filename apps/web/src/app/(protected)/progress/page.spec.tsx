@@ -163,4 +163,75 @@ describe("ProgressPage", () => {
     expect(link).toHaveTextContent("Completed");
     expect(link).toHaveTextContent("February 1, 2026");
   });
+
+  it("signals session status with text, not the status dot's color", async () => {
+    getProgressSummaryMock.mockResolvedValue(summary);
+    listDueCardsMock.mockResolvedValue({ items: [], nextOffset: null });
+    listSessionHistoryMock.mockResolvedValue({
+      items: [
+        { ...history[0], id: 6, status: "ABANDONED" },
+        { ...history[0], id: 7, status: "ACTIVE" },
+      ],
+      nextOffset: null,
+    });
+
+    render(await ProgressPage());
+
+    // The dot is decorative; what actually distinguishes the states is the
+    // written status. That is why the dot's color is free to vary without
+    // carrying meaning (§57) — the text is the signal, not the hue.
+    expect(screen.getByText(/^Abandoned — /)).toBeInTheDocument();
+    expect(screen.getByText(/^Active — /)).toBeInTheDocument();
+  });
+
+  it("renders the due and history tiles with the same press affordance as the set tiles", async () => {
+    getProgressSummaryMock.mockResolvedValue(summary);
+    listDueCardsMock.mockResolvedValue({ items: dueCards, nextOffset: null });
+    listSessionHistoryMock.mockResolvedValue({
+      items: history,
+      nextOffset: null,
+    });
+
+    render(await ProgressPage());
+
+    // REDESIGN-004 gave the dashboard's set tiles a soft-press so a link
+    // reads as something you can click. These two lists are the same
+    // pattern — a panel-classed list item wrapping a whole-tile link — and
+    // were left without it, so the app contradicted itself between the
+    // dashboard and the progress page. The press lands on the `li`, which
+    // owns the raised surface, matching how SetList does it.
+    const tile = screen.getByRole("link", { name: /What is mitosis\?/ })
+      .parentElement;
+    expect(tile).toHaveClass(
+      "active:translate-y-0.5",
+      "active:shadow-clay-pressed",
+    );
+
+    // The due card's link also contains "Spanish verbs" (its set title), so
+    // the session link is selected by the start of its accessible name.
+    const sessionTile = screen.getByRole("link", { name: /^Spanish verbs/ })
+      .parentElement;
+    expect(sessionTile).toHaveClass(
+      "active:translate-y-0.5",
+      "active:shadow-clay-pressed",
+    );
+  });
+
+  it("keeps the status dot decorative so it never reaches a screen reader", async () => {
+    getProgressSummaryMock.mockResolvedValue(summary);
+    listDueCardsMock.mockResolvedValue({ items: [], nextOffset: null });
+    listSessionHistoryMock.mockResolvedValue({
+      items: history,
+      nextOffset: null,
+    });
+
+    render(await ProgressPage());
+
+    const link = screen.getByRole("link", { name: /Spanish verbs/ });
+    const dot = link.querySelector("span[aria-hidden]");
+    expect(dot).not.toBeNull();
+    // The pinned string must stay the span's direct text so text queries
+    // and the E2E journeys keep matching on it.
+    expect(link).toHaveTextContent("Completed — February 1, 2026");
+  });
 });

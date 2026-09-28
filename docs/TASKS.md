@@ -5119,7 +5119,7 @@ Re-skin the five stat panels, due queue, and session history on the new tokens, 
 REDESIGN-003
 
 ### Status
-TODO (dependencies pending)
+DONE
 
 ### Files
 apps/web/src/app/(protected)/progress/page.tsx (+ spec)
@@ -5128,8 +5128,22 @@ apps/web/src/app/(protected)/progress/page.tsx (+ spec)
 - stat panels keep their icon+label pairing and derived-accuracy logic untouched
 - zero-state copy ("No answers yet", zeroed streaks) unchanged — behavior, not styling
 
+### Decision
+**The page needed no visual work at all, and the honest report is a one-constant diff.** The five stat panels, both empty states, and both list tiles were already rendering through the restyled `Panel`/`panelClassName` with token-driven `text-ink-soft`, and every panel keeps its icon+label pairing and `aria-hidden` decoration. The derived-accuracy logic, the "No answers yet" branch, and the zeroed streaks are all untouched — they are behavior, and the criteria say so.
+
+The one genuine inconsistency was the **soft-press**. REDESIGN-004 gave the dashboard's set tiles `active:translate-y-0.5 active:shadow-clay-pressed` so a link reads as clickable, and this page uses the identical pattern — a `panelClassName` list item wrapping a whole-tile `Link` — in *both* its lists, without it. Two pages implementing the same component shape in two different ways is exactly the drift ADR-018 opened the phase to prevent, so both `li`s now share a `tileClassName`. The press belongs on the `li`, not the inner `a`, because the `li` is what owns the raised surface; the first test asserted it on the link and the DOM dump proved the implementation was right and the assertion was wrong.
+
+**A finding worth recording because it was nearly a false positive:** the session status dot is colored per state (`bg-alert` / `bg-marker-deep` / `bg-ink/60`), which pattern-matches the color-only-signalling failure REDESIGN-003 fixed in `FieldError` — and I was about to write a test asserting a §57 bug that did not exist. The status is *also* rendered as real text ("Abandoned", "Active", "Completed") directly beside the dot, and the dot is `aria-hidden`. So the hue is decoration and the text is the signal, which §57 explicitly allows. Rather than delete a working pattern, the two new tests now *pin* it: one asserts both statuses render as text, the other asserts the dot stays `aria-hidden` and the pinned string survives. If someone later strips the text and leaves only the dot, these fail.
+
+Nothing was invented. The three new tests are 1 change plus 2 regression guards, and two of the three passed on their first run — recorded plainly, because a test that passes immediately is evidence it pins existing correct behavior, not evidence it was unnecessary.
+
 ### Tests
-- page spec, web suite, typecheck, build, and the progress E2E journey
+- RED first: **1 failed**, **8 passed**. The failure was the missing press on the list tiles. The other two new tests passed immediately — correct, since they guard existing §57-correct behavior rather than change it.
+- one **test-side** correction: the press was first asserted on the `a` rather than the `li`, and the session link was queried by a regex that also matched the due card's link (both contain "Spanish verbs"). Both were selector mistakes; the implementation was already correct in each case, and the tests were fixed rather than the code
+- `pnpm --filter @danisolation-recall/web test` — **226 passed (37 files)**, up from 223; **no pre-existing assertion was modified**
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — clean, 11 routes, zero CSS warnings
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, including the `progress` journey, confirming the tile restyle changed no copy, accessible name, or href
 
 ---
 

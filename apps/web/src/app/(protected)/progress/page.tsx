@@ -26,6 +26,12 @@ const statusLabels: Record<string, string> = {
   ABANDONED: "Abandoned",
 };
 
+// ADR-018: the soft-press for a list tile that wraps a whole-card link, so
+// a due card and a session row read as clickable the same way a set tile
+// does on the dashboard. It belongs on the `li` — the element that owns the
+// raised surface — not on the link inside it.
+const tileClassName = `${panelClassName} transition-[transform,box-shadow] active:translate-y-0.5 active:shadow-clay-pressed motion-reduce:transition-none`;
+
 export default async function ProgressPage() {
   const [summary, due, history] = await Promise.all([
     getProgressSummary(),
@@ -104,7 +110,7 @@ export default async function ProgressPage() {
         ) : (
           <ul className="flex flex-col gap-3">
             {due.items.map((card) => (
-              <li key={card.cardId} className={panelClassName}>
+              <li key={card.cardId} className={tileClassName}>
                 <Link href={`/sets/${card.setId}`} className="block">
                   <span className="block font-medium">{card.front}</span>
                   <span className="mt-1 block text-sm text-ink-soft">
@@ -129,7 +135,7 @@ export default async function ProgressPage() {
         ) : (
           <ul className="flex flex-col gap-3">
             {history.items.map((session) => (
-              <li key={session.id} className={panelClassName}>
+              <li key={session.id} className={tileClassName}>
                 <Link href={`/sets/${session.setId}`} className="block">
                   <span className="block font-medium">{session.setTitle}</span>
                   {/* The status dot is decorative; the full pinned string
