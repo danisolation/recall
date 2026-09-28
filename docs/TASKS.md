@@ -4658,19 +4658,27 @@ Surface current and longest streak in the progress page's stat panels.
 STREAK-004
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/web/src/lib/progress.ts (+ spec)
-apps/web/src/app/(protected)/progress/page.tsx (+ spec)
+apps/web/src/lib/progress.ts (ProgressSummary type, cookie-less default)
+apps/web/src/lib/progress.spec.ts (cookie-less default + shared summary fixture)
+apps/web/src/app/(protected)/progress/page.tsx (two stat panels, 5-column grid)
+apps/web/src/app/(protected)/progress/page.spec.tsx (2 new cases)
 
 ### Acceptance Criteria
 - the summary fetcher's type carries the new fields; the page renders both facts in the existing stat-panel register
 - a fresh account (no reviews) renders sensibly — streaks of 0, not an error or a lie (§56)
 
+### Decision
+The two streaks join the existing three panels rather than starting a new section — the grid became `sm:grid-cols-3 lg:grid-cols-5`, which keeps the established three-up at the narrow breakpoint and only fans out on wide screens where five narrow stat tiles still read cleanly. No second fetch: the fields arrive on the summary response STREAK-004 already wired, so this task is a type and a render. Streaks deliberately render a plain `0` where accuracy renders "No answers yet": zero days practiced is a true statement, while zero percent accuracy on zero answers would be a fabricated ratio — the contrast is pinned by the two neighbouring tests. Icons follow the ADR-013 rule (an icon never replaces a label): `Flame` and `Trophy` are `aria-hidden` beside the "Current streak"/"Longest streak" text. The cookie-less early return in `getProgressSummary` — a defensive path the protected layout should already have excluded — was widened to the full shape so a missing field can't surface as `undefined` in the markup.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` gains the fetcher and page tests
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- RED first: both specs were updated and run before the implementation — 3 failed (1 fetcher default, 2 page panels), 12 pre-existing passed
+- `vitest run src/lib/progress.spec.ts "src/app/(protected)/progress/page.spec.tsx"` — **15 passed** (9 fetcher + 6 page, 2 of the page cases new)
+- `pnpm --filter @danisolation-recall/web test` — **198 passed (35 files)**, up from 196
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` — clean (`next build`, 11 routes)
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, the progress journey covering the changed page; the dev server was stopped beforehand and restored afterward (a detached `next dev` PID 21252 survived the task stop and had to be killed by hand before Playwright's own server could bind)
 
 ---
 

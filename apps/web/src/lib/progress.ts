@@ -2,10 +2,14 @@ import { headers } from "next/headers";
 
 const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:3001";
 
+// ADR-016: the two streak facts arrive on the same response as the counts
+// (no second fetch), derived server-side from the review history.
 export type ProgressSummary = {
   totalReviews: number;
   correctReviews: number;
   dueCount: number;
+  currentStreak: number;
+  longestStreak: number;
 };
 
 // ADR-010's projection: identity and destination, not the back.
@@ -48,7 +52,13 @@ export async function getProgressSummary(): Promise<ProgressSummary> {
   const cookie = (await headers()).get("cookie");
 
   if (!cookie) {
-    return { totalReviews: 0, correctReviews: 0, dueCount: 0 };
+    return {
+      totalReviews: 0,
+      correctReviews: 0,
+      dueCount: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+    };
   }
 
   const response = await fetch(`${API_ORIGIN}/progress`, {

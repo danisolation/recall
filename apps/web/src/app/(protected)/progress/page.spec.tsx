@@ -23,7 +23,13 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-const summary = { totalReviews: 4, correctReviews: 2, dueCount: 2 };
+const summary = {
+  totalReviews: 4,
+  correctReviews: 2,
+  dueCount: 2,
+  currentStreak: 3,
+  longestStreak: 9,
+};
 
 const dueCards = [
   {
@@ -72,6 +78,8 @@ describe("ProgressPage", () => {
       totalReviews: 0,
       correctReviews: 0,
       dueCount: 0,
+      currentStreak: 0,
+      longestStreak: 0,
     });
     listDueCardsMock.mockResolvedValue({ items: [], nextOffset: null });
     listSessionHistoryMock.mockResolvedValue({ items: [], nextOffset: null });
@@ -87,6 +95,45 @@ describe("ProgressPage", () => {
     expect(
       screen.getByText("You have not studied anything yet."),
     ).toBeInTheDocument();
+  });
+
+  // A panel's own number, found beside its label: two panels can show the
+  // same digit, so a bare getByText("0") would be ambiguous.
+  const panelValue = (label: string) => {
+    const labelNode = screen.getByText(label);
+
+    return labelNode.parentElement?.querySelector("p")?.textContent;
+  };
+
+  it("renders both streak facts in the summary panels", async () => {
+    getProgressSummaryMock.mockResolvedValue(summary);
+    listDueCardsMock.mockResolvedValue({ items: [], nextOffset: null });
+    listSessionHistoryMock.mockResolvedValue({ items: [], nextOffset: null });
+
+    render(await ProgressPage());
+
+    expect(screen.getByText("Current streak")).toBeInTheDocument();
+    expect(screen.getByText("Longest streak")).toBeInTheDocument();
+    expect(panelValue("Current streak")).toBe("3");
+    expect(panelValue("Longest streak")).toBe("9");
+  });
+
+  it("shows zeroed streaks for a fresh account without inventing a record", async () => {
+    getProgressSummaryMock.mockResolvedValue({
+      totalReviews: 0,
+      correctReviews: 0,
+      dueCount: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+    });
+    listDueCardsMock.mockResolvedValue({ items: [], nextOffset: null });
+    listSessionHistoryMock.mockResolvedValue({ items: [], nextOffset: null });
+
+    render(await ProgressPage());
+
+    // 0 is the honest answer here, unlike accuracy's "No answers yet".
+    expect(panelValue("Current streak")).toBe("0");
+    expect(panelValue("Longest streak")).toBe("0");
   });
 
   it("links due cards to their sets", async () => {

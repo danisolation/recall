@@ -9,7 +9,13 @@ const { headersMock } = vi.hoisted(() => ({ headersMock: vi.fn() }));
 
 vi.mock("next/headers", () => ({ headers: headersMock }));
 
-const summary = { totalReviews: 4, correctReviews: 2, dueCount: 2 };
+const summary = {
+  totalReviews: 4,
+  correctReviews: 2,
+  dueCount: 2,
+  currentStreak: 3,
+  longestStreak: 9,
+};
 
 const paginatedDue = {
   items: [
@@ -56,6 +62,8 @@ describe("getProgressSummary", () => {
       totalReviews: 0,
       correctReviews: 0,
       dueCount: 0,
+      currentStreak: 0,
+      longestStreak: 0,
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlarmClock, CalendarCheck, History, RotateCcw, Target } from "lucide-react";
+import { AlarmClock, CalendarCheck, Flame, History, RotateCcw, Target, Trophy } from "lucide-react";
 import { Panel, panelClassName } from "@/components/ui/panel";
 import {
   getProgressSummary,
@@ -46,7 +46,7 @@ export default async function ProgressPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Summary</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <Panel className="flex flex-col items-center gap-1 py-6 text-center">
             <RotateCcw aria-hidden className="h-5 w-5 text-ink-soft" />
             <p className="text-4xl font-semibold tracking-tight">
@@ -73,6 +73,23 @@ export default async function ProgressPage() {
               {summary.dueCount}
             </p>
             <p className="text-sm text-ink-soft">Due cards</p>
+          </Panel>
+          {/* ADR-016: a streak is a count of days practiced, so 0 is an
+              honest reading here — unlike accuracy, which has no meaning
+              before the first answer. */}
+          <Panel className="flex flex-col items-center gap-1 py-6 text-center">
+            <Flame aria-hidden className="h-5 w-5 text-ink-soft" />
+            <p className="text-4xl font-semibold tracking-tight">
+              {summary.currentStreak}
+            </p>
+            <p className="text-sm text-ink-soft">Current streak</p>
+          </Panel>
+          <Panel className="flex flex-col items-center gap-1 py-6 text-center">
+            <Trophy aria-hidden className="h-5 w-5 text-ink-soft" />
+            <p className="text-4xl font-semibold tracking-tight">
+              {summary.longestStreak}
+            </p>
+            <p className="text-sm text-ink-soft">Longest streak</p>
           </Panel>
         </div>
       </section>
