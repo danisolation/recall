@@ -4681,3 +4681,167 @@ ARCHITECTURE.md (ADR-016 decision-table row + data-model note), docs/PROGRESS.md
 - full suites re-run for the counts cited in PROGRESS.md
 
 ---
+
+## Folder removal phase
+
+Design recorded once in ADR-017 (`docs/adr/ADR-017-removing-folders.md`), superseding ADR-014: folders are removed completely — delete, not deprecate — top-down (web UI → API surface → schema), with the data dropped by the migration and tags + search remaining the organization story.
+
+### RMFOLD-001
+
+### Title
+Record the folder-removal decision (ADR-017)
+
+### Goal
+Decide and document the removal scope, ordering, and data cost before any code changes.
+
+### Dependencies
+None (user-directed feature removal)
+
+### Status
+DONE
+
+### Files
+docs/adr/ADR-017-removing-folders.md
+docs/TASKS.md (this decomposition)
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+- ADR-014 is superseded, not rewritten
+- the top-down ordering (web → API → schema) keeps every intermediate state building
+
+### Tests
+None (documentation only)
+
+---
+
+### RMFOLD-002
+
+### Title
+Remove the folder web surface
+
+### Goal
+Delete the folder UI end to end: the /folders page and manager, the folder select on both set forms, the dashboard `?folder=` filter, the lib fetcher, and the folders E2E journey.
+
+### Dependencies
+RMFOLD-001
+
+### Status
+READY
+
+### Files
+apps/web/src/app/(protected)/folders/ (page, manager, specs — deleted)
+apps/web/src/app/(protected)/sets/new/create-set-form.tsx (+ spec, folder select removed)
+apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec)
+apps/web/src/app/(protected)/sets/[id]/edit/page.tsx (+ spec)
+apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
+apps/web/src/components/search-input.tsx (+ spec)
+apps/web/src/components/set-list.spec.tsx
+apps/web/src/lib/api.ts (+ spec, folder functions removed)
+apps/web/src/lib/folders.ts (+ spec — deleted)
+apps/web/src/lib/sets.ts (+ spec, folderId off StudySet and the filter param)
+apps/web/e2e/folders.spec.ts (deleted)
+
+### Acceptance Criteria
+- no web file references folders; the dashboard filter composes `?q=` and `?tag=` only
+- the set forms stop sending `folderId` in their payloads
+- deletion only — no replacement UI, no deprecation states (§56 does not apply to a removed surface)
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` green with the folder specs removed
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+
+---
+
+### RMFOLD-003
+
+### Title
+Remove the folder API surface
+
+### Goal
+Dissolve the folders module and every folder branch in the sets path.
+
+### Dependencies
+RMFOLD-002
+
+### Status
+READY
+
+### Files
+apps/api/src/folders/ (module, controller, repository, specs — deleted)
+apps/api/src/sets/sets.module.ts (folders import removed)
+apps/api/src/sets/sets.controller.ts (FoldersRepository + `?folder=` removed)
+apps/api/src/sets/sets.repository.ts (folder filter and counts removed)
+apps/api/src/sets/create-set.service.ts (+ spec)
+apps/api/src/sets/public-sets.integration.spec.ts
+apps/api/src/app.module.ts
+packages/contracts/src/folders.schema.ts (+ spec — deleted)
+packages/contracts/src/set.schema.ts (+ spec, folderId removed; refine narrows)
+packages/contracts/src/index.ts
+
+### Acceptance Criteria
+- `GET/POST/PATCH/DELETE /folders` are gone; `GET /sets` accepts `q` and `tag` only
+- `folderId` leaves the create/update contracts and the "Nothing to update" refine
+- the set-update path no longer consults a FoldersRepository
+
+### Tests
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` green with folder specs removed
+- `pnpm --filter @danisolation-recall/contracts test` and api `typecheck` succeed
+
+---
+
+### RMFOLD-004
+
+### Title
+Drop the folder schema
+
+### Goal
+Remove `study_sets.folder_id` (and its index) and the `folders` table via migration.
+
+### Dependencies
+RMFOLD-003
+
+### Status
+READY
+
+### Files
+packages/database/src/schema.ts
+packages/database/drizzle/0011_*.sql (generated)
+docs/database/schema.md
+
+### Acceptance Criteria
+- migration drops the column with its index, then the table (§124: destructive, user-directed — the migration is the record)
+- schema.ts holds no folder references; the database package typechecks and builds
+- migration applies cleanly against the local database
+
+### Tests
+- `pnpm --filter @danisolation-recall/database db:generate`, `db:migrate`, `typecheck`, and `build` succeed
+
+---
+
+### RMFOLD-005
+
+### Title
+Folder-removal docs sweep
+
+### Goal
+Leave the docs honest about the smaller surface.
+
+### Dependencies
+RMFOLD-004
+
+### Status
+READY
+
+### Files
+ARCHITECTURE.md (module map, route map, data model, ADR-014 row marked superseded)
+docs/PROGRESS.md (removal note + fresh counts)
+README.md (status line)
+docs/TECH-DEBT.md (if folder deferrals were recorded there)
+
+### Acceptance Criteria
+- counts re-verified against fresh suite runs (§73); ADR-014 annotated as superseded by ADR-017, not deleted
+
+### Tests
+- full suites re-run for the counts cited in PROGRESS.md
+
+---
