@@ -29,6 +29,9 @@ describe("Panel", () => {
 
   it("exports the register string for non-section elements", () => {
     expect(panelClassName).toContain("rounded-card");
-    expect(panelClassName).toContain("shadow-[4px_4px_0_0]");
+    // ADR-018: the hard 4px offset shadow is retired in favor of the clay
+    // double shadow, which is what makes the surface read as molded.
+    expect(panelClassName).toContain("shadow-clay");
+    expect(panelClassName).not.toContain("shadow-[4px_4px_0_0]");
   });
 });

@@ -4998,19 +4998,27 @@ Re-skin Button, Input, Select, Panel, FormField, FieldError, Skeleton, TextLink 
 REDESIGN-002
 
 ### Status
-TODO (dependencies pending)
+DONE
 
 ### Files
-apps/web/src/components/ui/*.tsx (+ their specs)
+apps/web/src/components/ui/{panel,button,input,select,form-field,field-error,skeleton,text-link}.tsx
+apps/web/src/components/ui/button.spec.tsx (new)
+apps/web/src/components/ui/{panel,text-link,skeleton,field-error}.spec.tsx (4 assertions updated)
 
 ### Acceptance Criteria
 - every primitive reads the new tokens only; no hardcoded hex
 - visible focus ring, ≥44px touch targets, `disabled` states clearly non-interactive
 - primitive specs pass unmodified where behavior is unchanged; each changed assertion justified individually
 
+### Decision
+The restyle is uniform rather than per-component invention: 1.25rem radius and a 3px `--color-border` edge on every raised surface, `--shadow-clay` for lift, and `rounded-xl` (0.75rem) for controls that sit *on* those surfaces — a two-tier radius, so a button inside a panel reads as inset rather than merging with it. The **focus fix flagged in REDESIGN-002 was carried out here**: `text-white` is now pinned on the Button's primary variant, because the soft-press/hover state can expose `marker-deep` (#6D28D9) and white on that is only 3.77:1. Putting the color on the *variant* rather than the base is deliberate — the secondary variant sits on a light surface and must keep dark ink, so a base-level color would have broken it; the spec asserts both halves so neither can regress. Per-component `focus-visible:outline-2 … outline-ink` utilities were removed from six places in favour of the single base rule, so focus is now guaranteed on every surface including ones no component styled. **FieldError gained a `CircleAlert` icon** — that is the one place the old design signalled an error by red text alone, which fails anyone who cannot separate the hue (§57 and the skill's "color only" rule); the icon is `aria-hidden` and decorative, the `role="alert"` and the message carry the meaning, so the `getByRole("alert")` and text assertions were untouched. `FormField`'s label dropped the highlighter wash (the field's own clay tile is the affordance now) and highlights with color on focus-within. Only four pre-existing assertions changed, each individually: two radius values in `text-link.spec.tsx` (`rounded-sm`→`rounded-md` on the link, `rounded-md`→`rounded-xl` on the button), the retired hard shadow in `panel.spec.tsx`, and the skeleton's `bg-ink/10`→`bg-muted`. No copy or accessible name changed anywhere.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (component specs)
-- `pnpm --filter @danisolation-recall/web typecheck` and `build`
+- RED first: **6 failed** across the primitive specs (panel register, skeleton surface, error icon, and all three Button cases), **12 passed** — the passing ones were the behavioral guarantees (`role="alert"`, `type="button"`, aria-hidden, class-merge ordering) that the restyle had no business touching
+- `vitest run src/components/ui` — **18 passed** (5 files)
+- `pnpm --filter @danisolation-recall/web test` — **211 passed (37 files)**, up from 205; the new `button.spec.tsx` is 5 of those, and **no consumer spec needed modifying**
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` — clean (11 routes, no CSS warnings)
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, all journeys, confirming the restyle changed no copy, accessible name, or href the browser-level tests depend on
 
 ---
 

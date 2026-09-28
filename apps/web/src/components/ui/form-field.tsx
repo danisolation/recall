@@ -10,6 +10,9 @@ type FormFieldProps = {
   children?: ReactNode;
 } & ComponentProps<"input">;
 
+// ADR-018: the label no longer paints a highlighter wash behind itself; the
+// field's own clay tile is the affordance, and the label highlights with
+// color alone when the group holds focus.
 export function FormField({
   label,
   id,
@@ -18,10 +21,10 @@ export function FormField({
   ...inputProps
 }: FormFieldProps) {
   return (
-    <div className="group flex flex-col gap-1.5">
+    <div className="group flex flex-col gap-2">
       <label
         htmlFor={id}
-        className="-mx-1 w-fit rounded-sm px-1 text-sm font-medium transition-colors group-focus-within:bg-marker/80 motion-reduce:transition-none"
+        className="w-fit rounded-md px-1 text-sm font-semibold text-ink transition-colors group-focus-within:text-marker motion-reduce:transition-none"
       >
         {label}
       </label>

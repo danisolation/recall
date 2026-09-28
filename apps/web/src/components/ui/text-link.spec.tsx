@@ -12,7 +12,13 @@ describe("TextLink", () => {
 
     const link = screen.getByRole("link", { name: "New set" });
     expect(link).toHaveAttribute("href", "/sets/new");
-    expect(link).toHaveClass("rounded-sm", "underline", "hover:text-ink");
+    // ADR-018: the link register moved to the clay radius and a colored
+    // underline that reveals the primary on hover.
+    expect(link).toHaveClass(
+      "rounded-md",
+      "underline",
+      "hover:text-marker",
+    );
   });
 
   it("appends extra classes after the register", () => {
@@ -29,8 +35,10 @@ describe("TextLink", () => {
   });
 
   it("exports the register string for link-styled buttons", () => {
-    expect(linkClassName).toContain("rounded-sm");
-    expect(linkClassName).toContain("focus-visible:outline-2");
+    expect(linkClassName).toContain("rounded-md");
+    // ADR-018: focus styling moved to the single `:focus-visible` base rule
+    // in globals.css, so the register no longer repeats it per component.
+    expect(linkClassName).not.toContain("focus-visible:outline-2");
   });
 
   it("renders the button variant with button weight but link semantics", () => {
@@ -42,7 +50,7 @@ describe("TextLink", () => {
 
     const link = screen.getByRole("link", { name: "New set" });
     expect(link).toHaveAttribute("href", "/sets/new");
-    expect(link).toHaveClass("min-h-11", "rounded-md", "bg-card");
+    expect(link).toHaveClass("min-h-11", "rounded-xl", "bg-card", "shadow-clay");
     expect(link).not.toHaveClass("underline");
   });
 

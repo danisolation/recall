@@ -11,7 +11,8 @@ describe("Skeleton", () => {
     render(<Skeleton data-testid="skeleton" />);
 
     const skeleton = screen.getByTestId("skeleton");
-    expect(skeleton).toHaveClass("animate-pulse", "bg-ink/10");
+    // ADR-018: the muted lavender surface, not the old ink wash.
+    expect(skeleton).toHaveClass("animate-pulse", "bg-muted", "rounded-xl");
     expect(skeleton).toHaveAttribute("aria-hidden", "true");
   });
 
