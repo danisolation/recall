@@ -47,7 +47,7 @@ This file summarizes what has been achieved and where the project is going. `doc
 
 ### Folders (Phase 2)
 
-- `FOLD-001..008`, designed once in ADR-014 (Phase 2's opening slice, per §80's deferral): single-parent containment — `folders` plus `study_sets.folder_id` with `ON DELETE SET NULL`, so deleting a folder unfiles its sets instead of deleting them; per-user case-insensitive names on the tags discipline; `GET/POST/PATCH/DELETE /folders` with per-folder set counts; `folderId` on the set contracts (absent leaves placement, null unfiles, a number files); a `?folder=` dashboard filter composing with `?q=` and `?tag=`; a `/folders` management page with inline rename and two-step delete; the folder select on both set forms; and an E2E journey covering composition and the safe delete. An accessibility audit (A11Y-001) landed a skip link along the way.
+- `FOLD-001..008`, designed once in ADR-014 (Phase 2's opening slice, per §80's deferral): single-parent containment — `folders` plus `study_sets.folder_id` with `ON DELETE SET NULL`, so deleting a folder unfiles its sets instead of deleting them; per-user case-insensitive names on the tags discipline; `GET/POST/PATCH/DELETE /folders` with per-folder set counts; `folderId` on the set contracts (absent leaves placement, null unfiles, a number files); a `?folder=` dashboard filter composing with `?q=` and `?tag=`; a `/folders` management page with inline rename and two-step delete; the folder select on both set forms; and an E2E journey covering composition and the safe delete. An accessibility audit (A11Y-001) landed a skip link along the way. **The feature was subsequently removed entirely** (ADR-017, `RMFOLD-001..005`): the tags-plus-search organization carried the workflow, and the shelf never earned its surface — schema dropped in migration `0011_flippant_wasp.sql`, ADR-014 superseded but preserved.
 
 ### Sharing (Phase 2)
 
@@ -61,15 +61,15 @@ This file summarizes what has been achieved and where the project is going. `doc
 
 ## Current state
 
-- 6 pnpm workspace packages; 10 tables; migrations applied through `0010_powerful_hiroim.sql` (the `visibility` column).
-- Test suites green: API 264 (unit + HTTP/DB integration), web 226 (component + lib), contracts 61 (schema), E2E 12 (Playwright journeys: auth, sets, cards, study, progress, search, organization, folders, sharing).
-- **The §78 MVP surface is shipped** (including organization — tags, ADR-012), the UI polish phase landed (ADR-013), and **Phase 2 has opened**: folders (ADR-014) file and filter sets, and sharing (ADR-015) lets an owner publish a set by URL and take it back with one toggle.
+- 6 pnpm workspace packages; 9 tables; migrations applied through `0011_flippant_wasp.sql` (the folder-removal drop).
+- Test suites green: API 238 (unit + HTTP/DB integration), web 196 (component + lib), contracts 53 (schema), E2E 11 (Playwright journeys: auth, sets, cards, study, progress, search, organization, sharing).
+- **The §78 MVP surface is shipped** (including organization — tags, ADR-012), the UI polish phase landed (ADR-013), **Phase 2 has opened**: sharing (ADR-015) lets an owner publish a set by URL and take it back with one toggle — and folders (ADR-014) were removed again (ADR-017) after failing to earn their keep.
 
 ## Plans for the future
 
 ### Now
 
-- The rest of Phase 2 per `docs/ROADMAP.md`: media, streaks, notifications — each new phase opens with an ADR (the house pattern). Recorded folder deferrals ride along: nested folders, bulk move, an "Unfiled" view, folder-level sharing.
+- The rest of Phase 2 per `docs/ROADMAP.md`: media, streaks, notifications — each new phase opens with an ADR (the house pattern). The daily-streaks phase is decomposed and waiting (`STREAK-002..006`, ADR-016).
 
 ### Next
 

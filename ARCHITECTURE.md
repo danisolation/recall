@@ -53,13 +53,14 @@ Domain modules own their controllers, services, and persistence (§28). Cross-mo
 | `…/(protected)/progress/` | Summary, due queue, and session history (ADR-010) |
 | `src/components/` | `UserMenu`, `LogoutButton`, `SetList`, `CardList`, `SearchInput`, and `ui/` design-system primitives (Button, Input, FormField, FieldError) per ADR-008 |
 | `src/lib/api.ts` | Browser API client (`ApiError` with stable codes): auth flows, study-session start/record/finish |
-| `src/lib/session.ts`, `lib/sets.ts`, `lib/cards.ts`, `lib/progress.ts` | Server-side fetchers: forward the request cookie with `cache: "no-store"`; the protected layout has already gated the request |
+| `src/lib/session.ts`, `lib/sets.ts`, `lib/cards.ts`, `lib/tags.ts`, `lib/progress.ts` | Server-side fetchers: forward the request cookie with `cache: "no-store"`; the protected layout has already gated the request |
+| `src/lib/public.ts` | Server-side fetcher for the public sharing page — sends no credentials at all (ADR-015) |
 
 ### `packages/`
 
 | Package | Responsibility |
 | --- | --- |
-| `database` | Drizzle schema (seven tables), `createDb()`, migrations |
+| `database` | Drizzle schema (nine tables), `createDb()`, migrations |
 | `contracts` | Zod schemas + inferred types shared by API and web (ADR-004) — single validation language |
 | `eslint-config`, `typescript-config` | Shared tooling configs |
 
@@ -112,7 +113,7 @@ Key properties:
 | Route | Purpose |
 | --- | --- |
 | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/logout` | Account and session lifecycle (login rate-limited) |
-| `GET /sets`, `POST /sets` | List (`?q=` search filter, ADR-011) and create sets |
+| `GET /sets`, `POST /sets` | List (`?q=` search filter, ADR-011; `?tag=` filter, ADR-012) and create sets |
 | `GET/PATCH/DELETE /sets/:id` | Read, edit, delete a set (owner-only) |
 | `GET/POST /sets/:id/cards` | List and create cards in study order |
 | `PATCH/DELETE /sets/:id/cards/:cardId` | Edit and delete a card |
@@ -148,8 +149,9 @@ Key properties:
 | Search: `q` filter on `GET /sets` (collection filtering), `ILIKE` substring on title/description, no index at MVP scale | ADR-011 |
 | Organization: tags (many-to-many, case-insensitive per-user names), replace-style `PUT /sets/:id/tags`, `?tag=` filter composing with `q` | ADR-012 |
 | UI polish: ADR-008 deepened — `lucide-react` icons (always beside labels), centralized panel/link registers, CSS-only transform/opacity motion, copy/roles frozen for the test suite | ADR-013 |
-| Folders: single-parent containment (`folders` + `study_sets.folder_id`, `ON DELETE SET NULL`), per-user case-insensitive names, counts on `GET /folders`, `?folder=` composing with `q` and `tag` | ADR-014 |
-| Sharing: `visibility` token on `study_sets` rides the update path only (sets start private), whitelist public payload (no owner id, folder, or token), unauthenticated `GET /public/sets/:id` + read-only `/share/sets/:id` page, private/foreign/missing indistinguishable | ADR-015 |
+| Folders: single-parent containment (`folders` + `study_sets.folder_id`, `ON DELETE SET NULL`), per-user case-insensitive names, counts on `GET /folders`, `?folder=` composing with `q` and `tag` — **removed by ADR-017** | ADR-014 |
+| Sharing: `visibility` token on `study_sets` rides the update path only (sets start private), whitelist public payload (no owner id or token), unauthenticated `GET /public/sets/:id` + read-only `/share/sets/:id` page, private/foreign/missing indistinguishable | ADR-015 |
+| Removing folders entirely — delete, not deprecate; tags + search remain the organization story | ADR-017 |
 | Next.js rewrite proxy instead of CORS — first-party session cookie, no API CORS surface | AUTH-020 task rationale + `ENVIRONMENT.md` |
 | Per-IP login rate limiting, in-memory storage (Redis swap deferred) | AUTH-020A task rationale |
 

@@ -4849,18 +4849,22 @@ Leave the docs honest about the smaller surface.
 RMFOLD-004
 
 ### Status
-READY
+DONE
 
 ### Files
 ARCHITECTURE.md (module map, route map, data model, ADR-014 row marked superseded)
 docs/PROGRESS.md (removal note + fresh counts)
 README.md (status line)
-docs/TECH-DEBT.md (if folder deferrals were recorded there)
+docs/TECH-DEBT.md (checked — no folder entries recorded there, nothing to change)
 
 ### Acceptance Criteria
 - counts re-verified against fresh suite runs (§73); ADR-014 annotated as superseded by ADR-017, not deleted
 
+### Decision
+The sweep doubled as drift correction: the module map never listed `src/folders/` or the `/folders` page even when they existed, and the database row still claimed "seven tables" from the DOCS-002 era — so the post-removal state was written directly rather than adding then deleting folder rows. The web fetchers row now lists `lib/tags.ts` and `lib/public.ts` (both shipped but never mapped), the route map's `GET /sets` row names the `?tag=` axis, the decision table gained the ADR-017 row and annotated ADR-014's with "**removed by ADR-017**", and ADR-015's "no owner id, folder, or token" whitelist clause dropped its folder mention. PROGRESS keeps the FOLD-001..008 section as history with a removal sentence, and the now-moot folder deferrals left the "Now" plans (replaced by a pointer to the waiting STREAK-002..006 decomposition).
+
 ### Tests
-- full suites re-run for the counts cited in PROGRESS.md
+- full suites re-run for the cited counts (§73): contracts **53** (6 files, RMFOLD-003), API **238** (43 files, RMFOLD-004), web **196** (35 files, re-run this task), E2E **11** (re-run this task — all journeys green against the migrated database)
+- no code touched; docs-only sweep
 
 ---
