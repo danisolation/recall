@@ -19,21 +19,25 @@ export default async function ProtectedLayout({
     <div className="flex min-h-dvh flex-col">
       {/* WCAG 2.4.1 bypass (A11Y-001): the first focusable element jumps
           straight to the content. Visually hidden until focused, and
-          absolutely positioned when shown so no layout shifts. */}
+          absolutely positioned when shown so no layout shifts.
+          ADR-018: the focus outline utilities are gone — `outline-ink`
+          stopped existing in REDESIGN-003, so they had been resolving to
+          nothing and this link had no visible ring. The single
+          `:focus-visible` base rule in globals.css owns focus now. */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-sm focus:bg-card focus:px-4 focus:py-3 focus:font-medium focus:underline focus:outline-2 focus:outline-offset-2 focus:outline-ink"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-card focus:px-4 focus:py-3 focus:font-medium focus:underline"
       >
         Skip to content
       </a>
-      <header className="border-b border-ink/10 bg-card">
+      <header className="border-b border-border bg-card">
         <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Link
             href="/"
-            className="rounded-sm text-lg font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            className="rounded-md text-lg font-semibold tracking-tight"
           >
             DANISOLATION{" "}
-            <span className="rounded-sm bg-marker/70 px-1">Recall</span>
+            <span className="rounded-md bg-marker/70 px-1">Recall</span>
           </Link>
           <UserMenu email={user.email} />
         </div>

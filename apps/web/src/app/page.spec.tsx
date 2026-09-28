@@ -71,4 +71,31 @@ describe("Home", () => {
       screen.queryByRole("button", { name: "Log out" }),
     ).not.toBeInTheDocument();
   });
+
+  it("renders the wordmark chip on the same radius as the header's", async () => {
+    getCurrentUserMock.mockResolvedValue(null);
+
+    render(await Home());
+
+    // ADR-018: the wordmark appears in four places — this landing page, the
+    // protected header, and the two auth pages. Restyling it in one file
+    // while the others keep `rounded-sm` would make the product's own name
+    // look like two different marks, so all four are held to this one test's
+    // radius (and login/register are verified in REDESIGN-008b).
+    const chip = screen.getByText("Recall");
+    expect(chip).toHaveClass("rounded-md");
+    expect(chip).not.toHaveClass("rounded-sm");
+  });
+
+  it("keeps the signed-out feature trio on the clay panel register", async () => {
+    getCurrentUserMock.mockResolvedValue(null);
+
+    const { container } = render(await Home());
+
+    // The three feature panels are the only repeated surfaces on this page.
+    const panels = container.querySelectorAll("section");
+    for (const panel of panels) {
+      expect(panel).toHaveClass("rounded-card", "shadow-clay");
+    }
+  });
 });

@@ -19,7 +19,7 @@ export default function RegisterPage() {
         </div>
         <h1 className="mb-4 text-center text-2xl font-semibold tracking-tight">
           Create your{" "}
-          <span className="rounded-sm bg-marker/70 px-1">Recall</span> account
+          <span className="rounded-md bg-marker/70 px-1">Recall</span> account
         </h1>
         <Panel>
           <RegisterForm />

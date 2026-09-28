@@ -19,7 +19,7 @@ export default function LoginPage() {
         </div>
         <h1 className="mb-4 text-center text-2xl font-semibold tracking-tight">
           Log in to{" "}
-          <span className="rounded-sm bg-marker/70 px-1">Recall</span>
+          <span className="rounded-md bg-marker/70 px-1">Recall</span>
         </h1>
         <Panel>
           <LoginForm />

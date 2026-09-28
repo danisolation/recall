@@ -32,7 +32,7 @@ export default async function Home() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">
           DANISOLATION{" "}
-          <span className="rounded-sm bg-marker/70 px-1">Recall</span>
+          <span className="rounded-md bg-marker/70 px-1">Recall</span>
         </h1>
         {user ? <UserMenu email={user.email} /> : null}
       </header>

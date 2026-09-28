@@ -88,4 +88,56 @@ describe("ProtectedLayout", () => {
       "main-content",
     );
   });
+
+  it("leaves the skip link's focus ring to the single base rule", async () => {
+    getCurrentUserMock.mockResolvedValue(user);
+
+    render(await ProtectedLayout({ children: <p>Secret</p> }));
+
+    // The skip link is a WCAG 2.4.1 bypass — the one element a keyboard user
+    // reaches first — and it carried `focus:outline-2 … outline-ink`, whose
+    // token was retired in REDESIGN-003. Those classes resolved to nothing,
+    // so the bypass link had no visible focus ring at all. The single
+    // `:focus-visible` base rule in globals.css now owns it.
+    const skipLink = screen.getByRole("link", { name: "Skip to content" });
+    expect(skipLink.className).not.toContain("focus:outline");
+    expect(skipLink.className).not.toContain("outline-ink");
+  });
+
+  it("leaves the wordmark's focus ring to the single base rule", async () => {
+    getCurrentUserMock.mockResolvedValue(user);
+
+    render(await ProtectedLayout({ children: <p>Secret</p> }));
+
+    // Same dead `outline-ink` utilities, same missing ring. This is the last
+    // pair of them in the app.
+    const wordmark = screen.getByRole("link", { name: /DANISOLATION/ });
+    expect(wordmark.className).not.toContain("focus-visible:outline");
+  });
+
+  it("still shows the skip link when focused, keeping the A11Y-001 bypass", async () => {
+    getCurrentUserMock.mockResolvedValue(user);
+
+    render(await ProtectedLayout({ children: <p>Secret</p> }));
+
+    // Removing the outline utilities must not remove the reveal: the link is
+    // still `sr-only` until focused, then absolutely positioned so it does
+    // not shift the layout.
+    const skipLink = screen.getByRole("link", { name: "Skip to content" });
+    expect(skipLink).toHaveClass("sr-only");
+    expect(skipLink).toHaveClass("focus:not-sr-only");
+    expect(skipLink).toHaveClass("focus:absolute");
+  });
+
+  it("renders the wordmark chip on the clay radius", async () => {
+    getCurrentUserMock.mockResolvedValue(user);
+
+    render(await ProtectedLayout({ children: <p>Secret</p> }));
+
+    // ADR-018: the chip was still `rounded-sm` (0.25rem) — the last ADR-008
+    // radius in the tree. The control register is 0.75rem+ from here on.
+    const chip = screen.getByText("Recall");
+    expect(chip).toHaveClass("rounded-md");
+    expect(chip).not.toHaveClass("rounded-sm");
+  });
 });

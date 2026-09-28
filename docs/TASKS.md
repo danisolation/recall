@@ -5239,11 +5239,13 @@ Re-skin the app-wide wordmark chip, the header rule, and the landing page onto t
 REDESIGN-008
 
 ### Status
-TODO (dependencies pending)
+DONE
 
 ### Files
 apps/web/src/app/(protected)/layout.tsx
 apps/web/src/app/page.tsx
+apps/web/src/app/login/page.tsx
+apps/web/src/app/register/page.tsx
 apps/web/src/app/(protected)/layout.spec.tsx
 apps/web/src/app/page.spec.tsx
 
@@ -5253,12 +5255,24 @@ apps/web/src/app/page.spec.tsx
 - the header's bottom rule and the wordmark's `rounded-sm` are the last ADR-008 remnants in the tree
 - both dead `focus-visible:outline-ink` utilities in `layout.tsx` are removed, leaving focus to the single base rule in `globals.css`
 
-### Notes
-Split out of REDESIGN-008 during implementation, when the wordmark chip was found to live in four files with no task owning the shared two. Doing it here — rather than partially in 008 — is what keeps the wordmark from rendering two different ways. The `layout.tsx` skip link and header link still carry `focus:outline-2 … outline-ink` and `focus-visible:outline-2 … outline-ink`, whose `outline-ink` token was retired in REDESIGN-003, so those two focus rings are currently dead — the same class of bug found on the set tile in REDESIGN-004 and the tag chips in REDESIGN-005, and the last two instances in the app.
+### Decision
+**This task closed the last accessibility bug in the phase, and the bug was in the app's most important control.** The skip link — the WCAG 2.4.1 bypass, the first element every keyboard user reaches on every protected page — carried `focus:outline-2 … outline-ink`, and `outline-ink` stopped existing in REDESIGN-003. Those classes had been resolving to nothing, so the bypass link had **no visible focus ring at all** while the stylesheet read as though it did. The wordmark link had the identical defect. These were the third and fourth instances of the same mistake (after the set tile in REDESIGN-004 and the tag chips in REDESIGN-005) and the last two in the tree; a grep for the retired token now returns **only comments and negative test assertions** — zero live uses.
+
+The focus fix is a deletion, which is the point: the single `:focus-visible` base rule in `globals.css` already covers both elements, so removing the per-component utilities *adds* the visible ring rather than removing one. The skip link keeps `sr-only` / `focus:not-sr-only` / `focus:absolute` untouched, and a new test pins those three specifically — the risk when stripping outline utilities is that "focus" and "reveal" get conflated and the bypass silently stops appearing, which would be a worse regression than the missing ring was.
+
+**The wordmark was changed in four files, not two.** The task was scoped to the layout and home page, but the same `rounded-sm bg-marker/70` chip sits in `login/page.tsx` and `register/page.tsx`. Restyling it in only two of the four would have made the product's own name render at two different radii depending on the route — the exact drift the phase exists to prevent, and worse than the uniform old value it replaced. So all four moved together, and the chip's radius is now asserted in two specs, which is what keeps the set from fragmenting again.
+
+The header's `border-ink/10` rule moved to `border-border` for the same reason REDESIGN-007 moved the flip card off `border-ink/10`: the *ink* token still exists, so a name-preserving token swap cannot catch a class that is technically valid and visually wrong. The `bg-marker/70` chip tint is deliberately **unchanged** — it is a brand wordmark, not a control, and its pairing with the ink text was already contrast-verified in REDESIGN-002.
+
+Nothing else moved: the hero, the feature trio, the auth copy, the `UserMenu` slot, and the `text-2xl`/`text-lg` type scale are all as they were.
 
 ### Tests
-- layout and home page specs, web suite, typecheck, build
-- the auth journeys, which render both the protected header and the signed-out home page
+- RED first: **4 failed**, **7 passed**. The failures were the skip link's dead utilities, the wordmark's dead utilities, and the `rounded-sm` chip in each of the two files. The skip-link-reveal test and the feature-trio test passed immediately — correct, since they are guards on behavior this task must not change.
+- `pnpm --filter @danisolation-recall/web test` — **237 passed (37 files)**, up from 231; **no pre-existing assertion was modified**
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — clean, 11 routes, zero CSS warnings
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, including `auth`, which renders the protected header, the signed-out home page, and both auth pages
+- post-task grep for `outline-ink` / `rounded-sm` / `border-ink/10` / `bg-ink/10` across `apps/web/src` — **no live production uses remain**; every hit is a code comment or a negative assertion
 
 ---
 
