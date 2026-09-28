@@ -5034,19 +5034,34 @@ Bring the non-primitive shared components onto the new visual register, includin
 REDESIGN-003
 
 ### Status
-TODO (dependencies pending)
+DONE
 
 ### Files
 apps/web/src/components/{user-menu,logout-button,set-list,card-list,search-input}.tsx (+ specs)
 
 ### Acceptance Criteria
 - no page-local visual invention remains; components use the primitives and tokens only
-- tag chips, empty states, and icon+label pairs follow the retained ADR-013 rules
+- tag chips, empty states, and icon+label pairs follow the retained ADR-013 rules — **the chips are deferred to REDESIGN-005** (they live inline in `dashboard/page.tsx`); the empty states and the icon+label pair are covered here
 - E2E-affecting accessible names are unchanged, or each change is recorded
 
+### Decision
+The honest finding is that **most of this task's work was already done by the token swap.** All five components resolve the new palette through class names that REDESIGN-002 left untouched, so the visual delta here was small and the real work was structural, not cosmetic. What was actually left, in order of size:
+
+**`SearchInput` was the only component still hand-rolling a form control.** It had its own bare `text-ink-soft` label instead of using the restyled `FormField` — meaning it was also the only form on the app *without* the focus-within highlight that replaced the highlighter wash. Fixed by deleting the local label/Input pair and using `FormField` directly: the register now owns the label, the file gets smaller, and the search box finally highlights its label on focus like every other field. The obvious alternative — extracting a `fieldLabelClassName` constant — was rejected: `FormField` already renders exactly this field, so a new export would have been an abstraction with one caller.
+
+**`SetList` carried dead focus utilities.** Its tile had `focus-visible:outline-2 … outline-ink`, but `outline-ink` stopped existing when the old palette was retired in REDESIGN-003 — the classes were resolving to nothing, so the tile had *no* focus ring at all despite appearing to have one. Removing them in favor of the single base rule fixed a real accessibility bug rather than just tidying. The tile also gained ADR-018's soft-press (`active:translate-y-0.5 active:shadow-clay-pressed`); it is a link, and until now it looked exactly like a static panel, so the press is what makes it read as clickable.
+
+**`UserMenu` gained a clay chip and an icon.** The account line was bare text floating between the wordmark and the logout control, with no visual weight of its own; it is now a pill-shaped chip with a `UserRound` icon beside it. This is the one icon added in this task, and it follows the retained ADR-013 rule exactly: `aria-hidden`, decorative, label unchanged. **No copy changed anywhere** — the `Signed in as` string is asserted by five E2E journeys, so a dedicated test now pins it alongside the chip classes, making the "restyle changed no accessible name" guarantee executable rather than a claim.
+
+`LogoutButton` and `CardList` needed **no changes** — both already sit entirely on the restyled primitives (`Button`/`FieldError`, `panelClassName`/`TextLink`). Their specs passed untouched, which is the outcome, not an omission. Tag chips are *not* in this task despite the criteria mentioning them: they are inline in `dashboard/page.tsx`, which belongs to REDESIGN-005, and the phase is one-page-per-task — restyling a page's chips from a shared-component task would have put the same file in two diffs. Recorded here so the omission reads as a decision rather than a miss.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` and `typecheck`
-- `pnpm --filter @danisolation-recall/web test:e2e` for the org/search journeys that touch these components
+- RED first: **6 failed**, **10 passed** across the three specs. Every failure was the expected one — the bare `text-ink-soft` label, the absent `div.group`, the missing press affordance, the surviving `focus-visible:outline` utilities, the unchipped account line, the absent icon. The 10 passing were the behavioral guarantees (hrefs, form action/method, hidden tag field, query value, disabled move boundaries, error/pending states) that a restyle has no business touching.
+- one **test-side** correction: the group-focus-within case initially asserted `focus-within:text-marker` on the wrapper, but that class belongs on the label as `group-focus-within:` (the wrapper only carries `group`). The implementation was already right; the assertion was wrong, so the test was fixed rather than the code
+- `pnpm --filter @danisolation-recall/web test` — **219 passed (37 files)**, up from 211; **no pre-existing assertion was modified** — every change was additive
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — clean, 11 routes, zero CSS warnings
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, all journeys, confirming the chip and the `FormField` swap changed no copy, accessible name, or href (a pre-existing dev server on port 3000 had to be stopped first; it was blocking Playwright's own web server, and the run was confirmed clean after)
 
 ---
 

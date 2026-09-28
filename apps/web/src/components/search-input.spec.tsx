@@ -55,4 +55,30 @@ describe("SearchInput", () => {
       form?.querySelector('input[type="hidden"][name="tag"]'),
     ).not.toBeInTheDocument();
   });
+
+  it("labels the field with the shared field-label register", () => {
+    render(<SearchInput />);
+
+    // ADR-018: the search field is a FormField like every other form on the
+    // app, so it borrows the register instead of hand-rolling a bare
+    // `text-ink-soft` label — that is what keeps the label in the register
+    // when the tokens move again.
+    const label = screen.getByText("Search sets");
+    expect(label.tagName).toBe("LABEL");
+    expect(label).toHaveClass("font-semibold", "text-ink");
+    expect(label).not.toHaveClass("text-ink-soft");
+  });
+
+  it("highlights the label when the field group holds focus", () => {
+    render(<SearchInput />);
+
+    // The group-focus-within highlight is what replaces the old highlighter
+    // wash, so the wrapper has to carry `group` and the label has to answer
+    // to it — the affordance is a two-part contract, not just a color.
+    const input = screen.getByLabelText("Search sets");
+    expect(input.closest("div.group")).not.toBeNull();
+    expect(screen.getByText("Search sets")).toHaveClass(
+      "group-focus-within:text-marker",
+    );
+  });
 });

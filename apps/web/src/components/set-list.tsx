@@ -25,7 +25,13 @@ export function SetList({ sets }: { sets: StudySet[] }) {
         <li key={set.id}>
           <Link
             href={`/sets/${set.id}`}
-            className={`${panelClassName} block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
+            // ADR-018: the panel register gives the tile the clay surface, and
+            // the soft-press is what makes it read as something you can click
+            // rather than a static card. Focus is not repeated here — the
+            // single `:focus-visible` rule in globals.css owns it, and the
+            // old `outline-ink` utilities here had been dead since the token
+            // was retired.
+            className={`${panelClassName} block transition-[transform,box-shadow] active:translate-y-0.5 active:shadow-clay-pressed motion-reduce:transition-none`}
           >
             <span className="block font-medium">{set.title}</span>
             {set.description && (
