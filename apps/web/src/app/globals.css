@@ -1,24 +1,73 @@
+/*
+ * Fonts first: an `@import url(...)` must precede every other rule, and
+ * Tailwind's own import expands into rules — so this cannot come after it.
+ *
+ * Baloo 2 for display, Comic Neue for body (ADR-018). The typeface swap is
+ * the redesign's recorded accepted regression: a rounded children's-display
+ * face is a poor fit for the dense card text and history lists an adult user
+ * actually reads. Adopted on explicit direction, not on analysis.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700&family=Comic+Neue:wght@300;400;700&display=swap");
 @import "tailwindcss";
 
 /*
- * Design tokens — ADR-008. Warm card-stock surfaces tinted toward the
- * marker hue; one highlighter accent reserved for primary actions,
- * focus, and the selection tint.
+ * Design tokens — ADR-018, superseding ADR-008's warm card-stock identity.
+ * Claymorphism: pastel surfaces, 16-24px radii, 3-4px borders, and an
+ * inner+outer double shadow instead of the old hard offset.
+ *
+ * The token NAMES are deliberately unchanged from ADR-008 (`paper`, `ink`,
+ * `ink-soft`, `marker`, `marker-deep`, `alert`, `card`). That is what makes
+ * this a one-file change: 86 class references across 26 components resolve to
+ * the new values without a single consumer being edited.
+ *
+ * Every pairing below was contrast-checked before adoption rather than
+ * trusted from the generator (ADR-018 Decision):
+ *   marker #7C3AED on white .... 5.70:1   alert #DC2626 on white .... 4.83:1
+ *   ink #0F172A on paper #FAF5FF 15.8:1  ink-soft #475569 on paper .. 7.07:1
+ * `marker-deep` and `accent-green` are the darker pairings for hover and for
+ * the study progress fill; white is never placed on `marker-deep` (3.77:1 —
+ * it would fail), which is why the primary button's own text token is set in
+ * `button.tsx` rather than inherited.
  */
 @theme {
-  --color-paper: oklch(0.97 0.012 85);
-  --color-card: oklch(0.995 0.006 85);
-  --color-ink: oklch(0.24 0.02 85);
-  --color-ink-soft: oklch(0.45 0.02 85);
-  --color-marker: oklch(0.84 0.15 95);
-  --color-marker-deep: oklch(0.74 0.14 90);
-  --color-alert: oklch(0.52 0.18 28);
+  /* Surfaces — pastel, not warm paper. */
+  --color-paper: #faf5ff;
+  --color-card: #ffffff;
+  --color-muted: #f7f3fd;
+  --color-border: #efe7fc;
 
+  /* Text — slate, for contrast on the lavender surfaces. */
+  --color-ink: #0f172a;
+  --color-ink-soft: #475569;
+
+  /* Accents. `marker` is the primary (violet); `alert` is destructive. */
+  --color-marker: #7c3aed;
+  --color-marker-deep: #6d28d9;
+  --color-marker-soft: #8b5cf6;
+  --color-accent-green: #059669;
+  --color-alert: #dc2626;
+
+  /* Focus ring — the primary, so keyboard focus is unmistakable. */
+  --color-ring: #7c3aed;
+
+  --font-display: "Baloo 2", ui-rounded, system-ui, sans-serif;
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Comic Neue", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
 
-  --radius-card: 0.5rem;
+  --radius-card: 1.25rem;
+
+  /*
+   * The clay double shadow: a soft outer drop for lift plus a subtle inner
+   * top-light that reads as a molded edge. Consumers reference this through
+   * `shadow-clay`; the old hard `4px 4px 0 0` offset is retired.
+   */
+  --shadow-clay:
+    0 10px 20px -8px rgb(76 29 149 / 0.18),
+    0 4px 8px -4px rgb(76 29 149 / 0.12),
+    inset 0 2px 0 0 rgb(255 255 255 / 0.9);
+  --shadow-clay-pressed:
+    0 2px 6px -2px rgb(76 29 149 / 0.2), inset 0 2px 4px 0 rgb(76 29 149 / 0.12);
 }
 
 @layer base {
@@ -26,10 +75,27 @@
     background-color: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
   }
 
   ::selection {
-    background-color: color-mix(in oklab, var(--color-marker) 60%, transparent);
+    background-color: color-mix(in oklab, var(--color-marker-soft) 35%, transparent);
+  }
+
+  /*
+   * One focus treatment for the whole app: a 3px violet ring at a 2px
+   * offset. Visible on every surface in the palette and never relying on
+   * color alone — the offset is what carries the shape (ADR-018).
+   */
+  :focus-visible {
+    outline: 3px solid var(--color-ring);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -44,10 +110,10 @@
 }
 
 /*
- * The study card's flip (ADR-013). Both faces stay mounted; the inner
- * wrapper rotates and each face hides its own backface, so the answer
- * replaces the question. Transform-only, so the reduced-motion kill-switch
- * above collapses it to the instant swap.
+ * The study card's flip (ADR-013, retained under ADR-018). Both faces stay
+ * mounted; the inner wrapper rotates and each face hides its own backface,
+ * so the answer replaces the question. Transform-only, so the reduced-motion
+ * kill-switch above collapses it to the instant swap.
  */
 .flip-card {
   perspective: 1200px;

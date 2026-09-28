@@ -4959,11 +4959,11 @@ Swap `globals.css`'s `@theme` block from the warm card-stock tokens to the claym
 REDESIGN-001
 
 ### Status
-READY
+DONE
 
 ### Files
 apps/web/src/app/globals.css
-apps/web/src/app/globals.css (spec if a token-level test is warranted)
+apps/web/src/app/globals.spec.ts (new)
 
 ### Acceptance Criteria
 - `@theme` carries the ADR-018 palette, 16–24px radii, the inner+outer double-shadow tokens, and Baloo 2 / Comic Neue
@@ -4972,10 +4972,17 @@ apps/web/src/app/globals.css (spec if a token-level test is warranted)
 - contrast of every new text/background pair is ≥4.5:1, with the numbers recorded
 - no page renders unstyled; web typecheck + build pass
 
+### Decision
+**The token names were kept identical to ADR-008's** (`paper`, `card`, `ink`, `ink-soft`, `marker`, `marker-deep`, `alert`, `rounded-card`), and only their values changed. That single decision collapsed the whole task: the 86 class references across 26 files resolve to the new palette with **zero consumer edits**, and all 198 pre-existing component specs passed unmodified — the "token-first" ordering in ADR-018 paying for itself immediately. `alert` was kept as a *name* while changing meaning from "marker red" to "destructive #DC2626", because `field-error` and the abandoned-session dot both reference it and renaming would have meant touching specs for no gain. Added `--color-ring`, `--color-muted`, `--color-border`, `--color-marker-soft`, `--color-accent-green`, `--font-display`, and the two `--shadow-clay*` tokens, none of which existed before. Focus handling was lifted from per-component `focus-visible:outline-2 ... outline-ink` utilities (repeated 6 times across the register) into one `:focus-visible` base rule at 3px/2px-offset — a single source of truth that is also what makes focus visible on surfaces the primitives don't cover. The type pair is wired as `--font-display` for h1–h3 and `--font-sans` for body, and the ADR-018 typography regression is recorded in a file comment rather than only in the ADR, so the next person to touch the font sees the cost. **The build caught a real bug the tests could not:** the Google Fonts `@import` must precede *all* rules, and Tailwind's own `@import "tailwindcss"` expands into rules, so the font import was silently misordered and dropped — `next build` warned, and moving it above the Tailwind import fixed it. The contrast numbers in the header comment are the verified ones from ADR-018, with the `marker-deep`/white warning (3.77:1) written down so a later task does not "fix" the primary button into a failure — that is REDESIGN-003's work, and it is flagged there.
+
 ### Tests
-- a focused check that the new tokens resolve and no removed token is still referenced
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
-- visual verification of every route after the swap (the first render of each page is expected to be unstyled-then-fixed; that breakage is this task's diff, not a regression)
+- RED first: `globals.spec.ts` written and run against the old CSS — **4 failed** (palette, radii/shadow, fonts, old-palette-retired), **3 passed** (the retained ADR-013 rules). The two intermediate failures were environmental, not logical, and were diagnosed rather than worked around: jsdom rejects `node:` builtins, and the spec's CSS path was resolved relative to `src/` rather than `src/app/`.
+- `vitest run src/app/globals.spec.ts` — **7 passed** (3 identity, 1 old-palette-retired, 3 retained-behavior)
+- `pnpm --filter @danisolation-recall/web test` — **205 passed (36 files)**, up from 198; **no pre-existing spec was modified**
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — clean, 11 routes, zero CSS warnings
+- verified in the built bundle (`.next/static/chunks/35eqiukpafjbg.css`) that all nine values actually resolved: every palette token, `--radius-card:1.25rem`, `--shadow-clay`, both font families, and the reduced-motion block
+- contrast recorded: marker #7C3AED on white 5.70:1, alert #DC2626 on white 4.83:1, ink #0F172A on paper 15.8:1, ink-soft #475569 on paper 7.07:1 — all ≥4.5:1
 
 ---
 
