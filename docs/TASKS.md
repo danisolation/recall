@@ -4557,19 +4557,25 @@ Implement `computeDailyStreaks(reviewDays, today)` in the progress module — de
 STREAK-001
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/progress/streaks.ts (+ spec)
+apps/api/src/progress/streaks.ts (new)
+apps/api/src/progress/streaks.spec.ts (new)
 
 ### Acceptance Criteria
 - inputs are distinct UTC review dates and an injected `today` (§49); output is `{ currentStreak, longestStreak }`
 - the grace rule holds: a streak ending yesterday is current
 - unit tests cover: empty history, today only, yesterday-only grace, gaps, month boundaries, longest-behind-current, single long run
 
+### Decision
+Followed ADR-009's `schedule()` pattern exactly (§48): a module-local pure function, no service, no repository, no Nest wiring — nothing imports it yet, by design. Inputs are normalized defensively rather than trusting the caller: days are flattened to a UTC-midnight millisecond key, de-duplicated through a `Set`, sorted ascending, and future days dropped, so STREAK-003's `SELECT DISTINCT` can pass rows straight through without pre-cleaning and a clock skew cannot invent a streak. Day arithmetic is done on those integer keys (a difference of exactly `DAY_MS` continues a run) instead of `Date` mutation, which sidesteps DST entirely under UTC boundaries. The grace rule reads the final run's length only when its last day is today or yesterday, so `currentStreak` can never disagree with `longestStreak` — both derive from the same single pass. `readonly Date[]` in, and no sort of the caller's array in place (the spec pins the input's order after the call).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/api test` gains the streak unit tests
-- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+- RED first: the spec was written and run before `streaks.ts` existed — 1 failed file, 0 tests collected (module resolution, not a wrong assertion)
+- `vitest run src/progress/streaks.spec.ts` — **12 passed** (the seven required cases plus unsorted input, future-day rejection, and non-mutation)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` — **250 passed (44 files)**, up from 238
+- `pnpm --filter @danisolation-recall/api typecheck` — clean
 
 ---
 
