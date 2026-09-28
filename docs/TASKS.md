@@ -4467,7 +4467,7 @@ Cover the loop in a browser: toggle a set public, open its share URL in a clean 
 SHARE-005
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/e2e/sharing.spec.ts
@@ -4476,8 +4476,11 @@ apps/web/e2e/sharing.spec.ts
 - one journey test (house precedent): register → create a set with cards → toggle Public in the edit form → open /share/sets/:id in a fresh logged-out context → content visible without any action controls → toggle back to Private → the share URL now 404s
 - kill any orphaned next dev webServer before the run
 
+### Decision
+The whole loop runs through the real UI (no API-arranged legs): set creation navigates to `/sets/:id`, so the id is captured from the URL; the visitor checks run in a `browser.newContext()` (no session at all — stricter than logging out); the revoked share URL is asserted by HTTP status (`goto` resolving 404) rather than page copy, which stays truthful regardless of Next's 404 rendering. Two strict-mode collisions surfaced on the first run — the detail page's "Sharing"/"Public" rows also substring-matched the set's title and description — resolved with `{ exact: true }`. The killed dev server was restarted after the run to leave the environment as found.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test:e2e`
+- `pnpm --filter @danisolation-recall/web test:e2e` — **12 passed (43s)**: +1 sharing journey (register → set + 2 cards → Public toggle → logged-out visitor sees content, zero action controls → Private toggle → share URL returns 404); all 11 pre-existing journeys still green
 
 ---
 
