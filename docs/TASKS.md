@@ -5355,7 +5355,7 @@ Record the new identity in the docs and mark ADR-008/ADR-013 superseded.
 REDESIGN-009
 
 ### Status
-TODO (dependencies pending)
+DONE
 
 ### Files
 ARCHITECTURE.md, README.md, docs/PROGRESS.md, docs/adr/ADR-008-frontend-design-system.md, docs/adr/ADR-013-ui-polish.md
@@ -5365,7 +5365,21 @@ ARCHITECTURE.md, README.md, docs/PROGRESS.md, docs/adr/ADR-008-frontend-design-s
 - counts re-verified against fresh runs (§73)
 - the typography tradeoff and the out-of-scope dark mode are recorded where the data model/design is described
 
+### Decision
+**The supersession is scoped, not blanket.** Both ADRs keep their full original text and gain a status block at the top; neither is edited below the fold and neither is deleted, because an ADR is a record of a decision *at a time* and rewriting history would destroy the one thing the format exists to preserve (§1, §74). Each block names the same three things — what is superseded, what is **retained and still binding**, and why the distinction exists. For ADR-008 that is the a11y interaction floor, the token-first discipline, and app-local primitives; for ADR-013 it is the icon-never-replaces-labels rule, the centralized registers, the reduced-motion kill-switch, and the frozen-copy invariant, each written as a *checkable* commitment rather than a sentiment. ADR-013's block cites the redesign's own history as evidence the invariant held: not one pre-existing assertion was modified across eight tasks.
+
+`ARCHITECTURE.md`'s decision table gained an ADR-018 row and its ADR-008/013 rows now carry "visuals superseded, X retained" — the table is a summary, so leaving it claiming the paper identity was the current one would have been exactly the documentation drift §73 forbids. `README.md`'s status bullet was replaced, not appended to: it described the *old* identity as current, which after the redesign was simply false.
+
+**Counts were re-verified by running the suites, not by editing the old number** (§73). The web figure moved 198 → 239 (37 files); API 254, contracts 53, and E2E 11 are unchanged. Doing this honestly surfaced a documentation gap worth recording: the API integration tests **fail at import without `DATABASE_URL`**, and the failure looks like a broken suite rather than a missing variable. `PROGRESS.md` now states the requirement and the `docker compose -f infra/docker/docker-compose.yml up -d` command next to the count, because a number that only reproduces under an unstated condition is not a verified number.
+
+**The typography tradeoff and the dark-mode exclusion are recorded in three places** where the design is described — `PROGRESS.md`'s phase summary, `PROGRESS.md`'s "Now" (dark mode promoted to the top of the roadmap, since it is the one deliberate gap in a phase that otherwise claims completion), and the `ARCHITECTURE.md` decision row. A tradeoff recorded only in the ADR is a tradeoff the next person reads after they have already made the mistake.
+
 ### Tests
-- full suites re-run for the counts cited in PROGRESS.md
+- `pnpm --filter @danisolation-recall/api test` with `DATABASE_URL` set — **254 passed (44 files)**
+- `pnpm --filter @danisolation-recall/contracts test` — **53 passed (6 files)**
+- `pnpm --filter @danisolation-recall/web test` — **239 passed (37 files)**
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, all journeys
+- all four figures are the ones now cited in `PROGRESS.md`; no doc-only task in this project has been closed on a number that was not freshly observed
+- a documentation-only task has no RED phase; the deliverable is the diff itself, reviewed for the five ADR sections' integrity
 
 ---

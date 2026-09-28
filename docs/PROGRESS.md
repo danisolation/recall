@@ -61,18 +61,29 @@ This file summarizes what has been achieved and where the project is going. `doc
 
 - DOCS-001 handoff set plus DOCS-002's refresh: README, ARCHITECTURE (module map, route map, data model, key decisions), CONTRIBUTING, environment docs, schema reference, tech-debt ledger, and the ADR series (ORM, contracts, sessions, design system, study sessions, progress, search, organization, UI polish, folders, sharing, daily streaks, folder removal).
 
+### Visual redesign (Phase 2 UI)
+
+- `REDESIGN-001..009 + 008b`, designed once in ADR-018 and **shipped**: a whole-app rebrand to the claymorphism identity — soft 3D surfaces, 16–24px radii, 3–4px borders, inner+outer double shadows, pastel violet/green surfaces, and Baloo 2 / Comic Neue typography. ADR-008 and ADR-013 are **annotated superseded for visual concerns**, with their accessibility outcomes explicitly retained; neither file was deleted (§1, §74).
+- The ordering was **token-first, page-later** and it paid for itself: REDESIGN-002 swapped `globals.css`'s `@theme` values while keeping the *token names* identical, so 86 class references across 26 files resolved to the new palette with zero consumer edits and all 198 pre-existing specs passed unmodified. The primitives (003), the shared components (004), the five pages (005–008), and the cross-route audit (009) followed.
+- **Four real defects were found and fixed along the way**, none of which a token swap could catch: three dead `focus-visible:outline-ink` utilities whose token had been retired, leaving the set tile, the tag chips, and the **skip link** (a WCAG 2.4.1 bypass) with no visible focus ring at all while the stylesheet read as though they had one; and two contrast failures the audit measured — the form-control border at 1.20:1 and the placeholder at 3.59:1, both now 7.58:1 and 4.54:1.
+- **The phase-wide test invariant held.** Across REDESIGN-002..009, **not one pre-existing assertion was modified** — every restyle was purely additive, and the E2E journeys confirmed that no copy, accessible name, or href the browser depends on changed.
+- **Two things are recorded rather than hidden.** Typography is an *accepted regression*: a rounded children's-display face is a poor fit for the dense card text an adult user reads, adopted on explicit direction, not on analysis. And **dark mode is explicitly out of scope** — the generated system rates dark support "conditional", so shipping light-only while claiming a full redesign would be the same honesty failure this project avoids elsewhere. It is its own future slice.
+- One criterion was **not** fully discharged: the audit verified 375px/1440px structurally (responsive breakpoints, `flex-wrap`, no fixed widths) but not by rendering, because the project has no visual-regression harness. Recorded as outstanding rather than claimed.
+
 ---
 
 ## Current state
 
 - 6 pnpm workspace packages; 9 tables; migrations applied through `0011_flippant_wasp.sql` (the folder-removal drop).
-- Test suites green: API 254 (unit + HTTP/DB integration), web 198 (component + lib), contracts 53 (schema), E2E 11 (Playwright journeys: auth, sets, cards, study, progress, search, organization, sharing).
-- **The §78 MVP surface is shipped** (including organization — tags, ADR-012), the UI polish phase landed (ADR-013), **Phase 2 has opened**: sharing (ADR-015) lets an owner publish a set by URL and take it back with one toggle, daily streaks (ADR-016) are derived from the review history and shown on the progress page, and folders (ADR-014) were removed again (ADR-017) after failing to earn their keep.
+- Test suites green, **counts re-verified against fresh runs on 2026-09-28** (§73): API 254 (44 files, unit + HTTP/DB integration), web 239 (37 files, component + lib), contracts 53 (6 files, schema), E2E 11 (Playwright journeys: auth, sets, cards, study, progress, search, organization, sharing). Web is up from 198 at the start of the redesign phase; API and contracts are unchanged.
+  - The API integration tests need `DATABASE_URL` set (`$env:DATABASE_URL="postgresql://recall:recall@localhost:5432/recall"`) and a running `recall-postgres` container (`docker compose -f infra/docker/docker-compose.yml up -d`). Without it, the 7 integration files fail at import rather than reporting a real failure.
+- **The §78 MVP surface is shipped** (including organization — tags, ADR-012), the UI polish phase landed (ADR-013), **the whole-app visual redesign has shipped** (ADR-018: claymorphism tokens, primitives, every route, and a measured accessibility audit), and **Phase 2 has opened**: sharing (ADR-015) lets an owner publish a set by URL and take it back with one toggle, daily streaks (ADR-016) are derived from the review history and shown on the progress page, and folders (ADR-014) were removed again (ADR-017) after failing to earn their keep.
 
 ## Plans for the future
 
 ### Now
 
+- **Dark mode** — the one deliberate gap in the shipped redesign. ADR-018 rates the generated system's dark support "conditional" and scoped it out rather than shipping light-only while claiming a full redesign. It is a token-layer change, not a rewrite.
 - The rest of Phase 2 per `docs/ROADMAP.md`: media, notifications — each new phase opens with an ADR (the house pattern).
 
 ### Next

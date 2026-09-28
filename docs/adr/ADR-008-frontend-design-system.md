@@ -1,5 +1,17 @@
 # ADR-008: Frontend design system
 
+> **Status: superseded for visual concerns by [ADR-018](ADR-018-visual-redesign.md)**
+> (recorded 2026-09-28). The claymorphism identity replaces this ADR's OKLCH
+> paper/marker palette, the whisper color strategy, and the system font stack.
+> **Retained and still binding:** Tailwind v4 with CSS-first `@theme` tokens;
+> the interaction floor in *Decision* below (visible `:focus-visible` rings,
+> 44px touch targets, every interactive state designed, labels always visible,
+> `prefers-reduced-motion`, `transform`/`opacity`-only animation); and
+> primitives staying app-local in `components/ui` until a second consumer
+> exists (§21, §59). ADR-013's accessibility outcomes are likewise retained.
+> Only the visual decisions are replaced — the product register, the token-first
+> discipline, and the a11y floor are unchanged and still describe the app.
+
 ## Context
 
 Two screens exist (`/`, `/login`) and both are unstyled semantic HTML. The frontend arc (AUTH-018..021) is starting, so the styling approach must be decided before form validation (AUTH-019) and API integration (AUTH-020) harden the markup. The constitution lists Tailwind in the preferred stack (§22) and sets the quality bars the UI must meet: state coverage (§56), accessibility minimums (§57), responsive behavior with a mobile-critical study flow (§58), and a deliberately small shared primitive set (§59). Design review establishes the register: DANISOLATION Recall is a product — an instrument used daily to study — not a marketing surface, so consistency and speed earn trust here, and generic visual identity (the default SaaS look) is a real risk to refuse.

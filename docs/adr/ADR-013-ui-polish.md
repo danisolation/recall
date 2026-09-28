@@ -1,5 +1,25 @@
 # ADR-013: UI polish — deepening the design system
 
+> **Status: superseded for visual concerns by [ADR-018](ADR-018-visual-redesign.md)**
+> (recorded 2026-09-28). The warm paper identity this ADR deepened has been
+> replaced wholesale by the claymorphism system. **Retained and still binding —
+> these are the guardrails the restyle was held to, and remain in force:**
+>
+> - **Icons never replace labels.** `lucide-react` stays the single icon
+>   dependency, icons stay `aria-hidden`, and no icon-only controls exist (§57).
+>   Applied in the redesign: `FieldError` gained a `CircleAlert`, `UserMenu` a
+>   `UserRound` — both beside unchanged text.
+> - **Registers stay centralized** in `components/ui` (`panelClassName`,
+>   `linkClassName`), so a styling change remains a one-file edit.
+> - **The reduced-motion kill-switch** in `globals.css` still governs all motion.
+> - **Frozen accessible names and copy** — the phase-wide invariant stated
+>   below held: across REDESIGN-002..009, **no pre-existing assertion was
+>   modified**; every restyle was additive.
+>
+> Superseded visually: the OKLCH paper/marker palette, the system font stack
+> (now Baloo 2 / Comic Neue), and the motion timings' aesthetic intent. The
+> CSS-only, `transform`/`opacity`-only, no-library motion *policy* is retained.
+
 ## Context
 
 The MVP ledger is complete (ORG-008 landed the last E2E journey), so this is the first decision taken with the full product in view rather than screen-by-screen. A UI review against the shipped surface finds it faithful to ADR-008 but thin in execution: text links do button jobs across the nav and every card action row, there is not a single icon, animation is absent (the study reveal is an instant show/hide), loading is bare text, the landing page is one sentence, and there is no favicon. The "panel register" and "link register" — the recurring class strings ADR-008's code cites by comment — are copy-pasted constants: 13 register comments across 11 files, the identical panel string re-declared with local aliases. The §59 rule ("don't grow the design system early") has been honored to the point of duplication: the shared foundation exists de facto, just not in code.

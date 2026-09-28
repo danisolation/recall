@@ -7,8 +7,8 @@ A modern flashcard and learning platform inspired by concepts behind tools like 
 - **Monorepo** — pnpm workspaces + Turborepo: `apps/web` (Next.js 16), `apps/api` (NestJS 11), `packages/` (database, contracts, eslint-config, typescript-config)
 - **The MVP is shipped end to end** (see [`docs/TASKS.md`](docs/TASKS.md)): authentication, study sets (with dashboard search and tag filtering), cards with reordering, the card-by-card study loop with Leitner-ladder scheduling (ADR-009) — now with a card flip, progress bar, and keyboard shortcuts — a progress page with review counts, accuracy, history, a due queue (ADR-010), and daily streaks derived from the review history (ADR-016), tags across the set forms and dashboard (ADR-012), and public set sharing — one toggle publishes a read-only `/share/sets/:id` page, unsharing revokes the URL (ADR-015) — every slice backed by unit, integration, and browser E2E journeys
 - **PostgreSQL 17** via Docker Compose with Drizzle ORM migrations (nine tables)
-- **UI polish landed** (ADR-013): the ADR-008 paper identity deepened — icons, real buttons, motion, skeletons — with every pre-existing test passing unmodified
-- Next up: the rest of Phase 2 per [`docs/ROADMAP.md`](docs/ROADMAP.md) — media, notifications
+- **Whole-app visual redesign shipped** (ADR-018): a claymorphism identity — soft 3D surfaces, 16–24px radii, inner+outer double shadows, pastel violet/green surfaces, and Baloo 2 / Comic Neue. Contrast was measured rather than trusted, and the audit found and fixed four real defects (three focus rings that had silently stopped rendering, plus a form-control border at 1.20:1). It supersedes ADR-008/ADR-013 *visually* while retaining their accessibility rules. Dark mode is a separate, explicitly deferred slice
+- Next up: **dark mode**, then the rest of Phase 2 per [`docs/ROADMAP.md`](docs/ROADMAP.md) — media, notifications
 
 ## Requirements
 

@@ -144,16 +144,17 @@ Key properties:
 | Drizzle ORM over Prisma | ADR-003 |
 | Zod + shared contracts package + nestjs-zod | ADR-004 |
 | Opaque session token in httpOnly cookie, hashed in PostgreSQL (JWT rejected — logout must revoke) | ADR-007 |
-| Tailwind v4 with CSS-first tokens, product register, accessibility floor | ADR-008 |
+| Tailwind v4 with CSS-first tokens, product register, accessibility floor — **visuals superseded by ADR-018; the a11y floor and token-first discipline stand** | ADR-008 |
 | Study sessions: `ACTIVE → COMPLETED/ABANDONED` state machine, binary reviews, isolated Leitner ladder scheduler | ADR-009 |
 | Progress: dedicated `/progress` page, due = `next_review_at <= now`, counts-only API (accuracy derived client-side) | ADR-010 |
 | Search: `q` filter on `GET /sets` (collection filtering), `ILIKE` substring on title/description, no index at MVP scale | ADR-011 |
 | Organization: tags (many-to-many, case-insensitive per-user names), replace-style `PUT /sets/:id/tags`, `?tag=` filter composing with `q` | ADR-012 |
-| UI polish: ADR-008 deepened — `lucide-react` icons (always beside labels), centralized panel/link registers, CSS-only transform/opacity motion, copy/roles frozen for the test suite | ADR-013 |
+| UI polish: ADR-008 deepened — `lucide-react` icons (always beside labels), centralized panel/link registers, CSS-only transform/opacity motion, copy/roles frozen for the test suite — **visuals superseded by ADR-018; the icon rule, centralization, motion policy, and frozen-copy invariant are retained** | ADR-013 |
 | Folders: single-parent containment (`folders` + `study_sets.folder_id`, `ON DELETE SET NULL`), per-user case-insensitive names, counts on `GET /folders`, `?folder=` composing with `q` and `tag` — **removed by ADR-017** | ADR-014 |
-| Sharing: `visibility` token on `study_sets` rides the update path only (sets start private), whitelist public payload (no owner id or token), unauthenticated `GET /public/sets/:id` + read-only `/share/sets/:id` page, private/foreign/missing indistinguishable | ADR-015 |
+| Sharing: `visibility` token on `study_sets` rides the update path only (sets start private), whitelist public payload (no owner id or token), unauthenticated `GET /public/sets/:id` + read-only `/share/sets/[id]` page, private/foreign/missing indistinguishable | ADR-015 |
 | Removing folders entirely — delete, not deprecate; tags + search remain the organization story | ADR-017 |
 | Daily streaks derived from the review history by a pure function, never persisted — no table, no migration, no write on the hot review path; rides `GET /progress` | ADR-016 |
+| Whole-app rebrand to the claymorphism identity (ADR-018): pastel violet/green surfaces, 16–24px radii, 3–4px borders, inner+outer double shadows, Baloo 2 / Comic Neue. Token-first, page-later, and contrast-verified rather than trusted. **Supersedes ADR-008/ADR-013 visually; accessibility outcomes retained.** Dark mode is explicitly out of scope; typography is a recorded accepted regression | ADR-018 |
 | Next.js rewrite proxy instead of CORS — first-party session cookie, no API CORS surface | AUTH-020 task rationale + `ENVIRONMENT.md` |
 | Per-IP login rate limiting, in-memory storage (Redis swap deferred) | AUTH-020A task rationale |
 
