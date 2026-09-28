@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Panel } from "@/components/ui/panel";
-import { listFolders } from "@/lib/folders";
 import { EditSetForm } from "./edit-set-form";
 import { getSet, getSetTags } from "@/lib/sets";
 
@@ -29,7 +28,7 @@ export default async function EditSetPage({
     notFound();
   }
 
-  const [tags, folders] = await Promise.all([getSetTags(setId), listFolders()]);
+  const tags = await getSetTags(setId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -38,7 +37,6 @@ export default async function EditSetPage({
         <EditSetForm
           set={set}
           initialTags={(tags ?? []).map((tag) => tag.name)}
-          folders={folders}
         />
       </Panel>
     </div>

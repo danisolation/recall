@@ -2,8 +2,8 @@ import type { ComponentProps } from "react";
 
 type SelectProps = ComponentProps<"select">;
 
-// ADR-014: the folder select — a native control styled like the Input
-// primitive (§24: semantic HTML over widgets).
+// A native control styled like the Input primitive (§24: semantic HTML
+// over widgets).
 export function Select({ className = "", ...props }: SelectProps) {
   return (
     <select

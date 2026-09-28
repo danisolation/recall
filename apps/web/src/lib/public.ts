@@ -1,8 +1,8 @@
 const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:3001";
 
 // ADR-015's public payload: a whitelist of what a visitor needs. The
-// owner's id, the folder placement, and the visibility token never leave
-// the API, so the browser cannot over-fetch them either.
+// owner's id and the visibility token never leave the API, so the browser
+// cannot over-fetch them either.
 export type PublicSet = {
   title: string;
   description: string | null;

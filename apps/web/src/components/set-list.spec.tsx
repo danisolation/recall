@@ -7,7 +7,6 @@ const sets: StudySet[] = [
   {
     id: 42,
     ownerId: 1,
-    folderId: null,
     title: "Spanish verbs",
     description: "Common irregular verbs",
     visibility: "private",
@@ -17,7 +16,6 @@ const sets: StudySet[] = [
   {
     id: 7,
     ownerId: 1,
-    folderId: null,
     title: "World capitals",
     description: null,
     visibility: "private",

@@ -36,7 +36,6 @@ afterEach(() => {
 const set = {
   id: 42,
   ownerId: 1,
-  folderId: null,
   title: "Spanish verbs",
   description: "Common irregular verbs",
   visibility: "private",
@@ -70,7 +69,6 @@ describe("EditSetForm", () => {
       expect(updateSetMock).toHaveBeenCalledWith(42, {
         title: "Spanish verbs 2",
         description: "Common irregular verbs",
-        folderId: null,
         visibility: "private",
       }),
     );
@@ -152,32 +150,6 @@ describe("EditSetForm", () => {
     expect(screen.getByLabelText("Tags")).toHaveValue("Biology");
   });
 
-  it("files the set into the selected folder", async () => {
-    updateSetMock.mockResolvedValue(undefined);
-    replaceTagsMock.mockResolvedValue(undefined);
-    render(
-      <EditSetForm
-        set={{ ...set, folderId: null }}
-        folders={[{ id: 9, name: "University" }]}
-      />,
-    );
-
-    await userEvent.selectOptions(screen.getByLabelText("Folder"), "9");
-    await userEvent.click(
-      screen.getByRole("button", { name: "Save changes" }),
-    );
-
-    await waitFor(() =>
-      expect(updateSetMock).toHaveBeenCalledWith(42, {
-        title: "Spanish verbs",
-        description: "Common irregular verbs",
-        folderId: 9,
-        visibility: "private",
-      }),
-    );
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
-  });
-
   it("prefills the Sharing select with the set's current visibility", () => {
     render(<EditSetForm set={set} />);
 
@@ -198,21 +170,9 @@ describe("EditSetForm", () => {
       expect(updateSetMock).toHaveBeenCalledWith(42, {
         title: "Spanish verbs",
         description: "Common irregular verbs",
-        folderId: null,
         visibility: "public",
       }),
     );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
-  });
-
-  it("prefills the folder select with the set's current folder", () => {
-    render(
-      <EditSetForm
-        set={{ ...set, folderId: 9 }}
-        folders={[{ id: 9, name: "University" }]}
-      />,
-    );
-
-    expect(screen.getByLabelText("Folder")).toHaveValue("9");
   });
 });

@@ -46,7 +46,6 @@ beforeEach(() => {
 const set = {
   id: 42,
   ownerId: 1,
-  folderId: null,
   title: "Spanish verbs",
   description: "Common irregular verbs",
   visibility: "private",

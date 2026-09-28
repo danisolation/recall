@@ -15,15 +15,12 @@ import type { StudySet } from "@/lib/sets";
 export function EditSetForm({
   set,
   initialTags = [],
-  folders = [],
 }: {
   set: StudySet;
   initialTags?: string[];
-  folders?: { id: number; name: string }[];
 }) {
   const router = useRouter();
   const [tags, setTags] = useState(initialTags.join(", "));
-  const [folderId, setFolderId] = useState(set.folderId ?? "");
   const [visibility, setVisibility] = useState(set.visibility);
   const {
     register,
@@ -58,14 +55,11 @@ export function EditSetForm({
           }
 
           // Both calls are idempotent, so a failure leaves the form filled
-          // and a resubmit safely retries the whole save (Â§55). The folder
-          // placement is always sent: null unfiles, a number files (Â§55's
-          // tri-state contract). Visibility rides every save too, mirroring
-          // the folder placement (ADR-015: sharing rides the update path).
+          // and a resubmit safely retries the whole save (Â§55). Visibility
+          // rides every save (ADR-015: sharing rides the update path).
           await updateSet(set.id, {
             title: values.title,
             description: values.description,
-            folderId: folderId === "" ? null : Number(folderId),
             visibility,
           });
           await replaceTags(set.id, { tags: parsedTags.data.tags });
@@ -103,20 +97,6 @@ export function EditSetForm({
         value={tags}
         onChange={(event) => setTags(event.target.value)}
       />
-      <FormField label="Folder" id="folder">
-        <Select
-          id="folder"
-          value={folderId}
-          onChange={(event) => setFolderId(event.target.value)}
-        >
-          <option value="">No folder</option>
-          {folders.map((folder) => (
-            <option key={folder.id} value={folder.id}>
-              {folder.name}
-            </option>
-          ))}
-        </Select>
-      </FormField>
       <FormField label="Sharing" id="visibility">
         <Select
           id="visibility"

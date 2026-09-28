@@ -2,13 +2,11 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardPage from "./page";
 
-const { getCurrentUserMock, listSetsMock, listTagsMock, listFoldersMock } =
-  vi.hoisted(() => ({
-    getCurrentUserMock: vi.fn(),
-    listSetsMock: vi.fn(),
-    listTagsMock: vi.fn(),
-    listFoldersMock: vi.fn(),
-  }));
+const { getCurrentUserMock, listSetsMock, listTagsMock } = vi.hoisted(() => ({
+  getCurrentUserMock: vi.fn(),
+  listSetsMock: vi.fn(),
+  listTagsMock: vi.fn(),
+}));
 
 vi.mock("@/lib/session", () => ({
   getCurrentUser: getCurrentUserMock,
@@ -20,10 +18,6 @@ vi.mock("@/lib/sets", () => ({
 
 vi.mock("@/lib/tags", () => ({
   listTags: listTagsMock,
-}));
-
-vi.mock("@/lib/folders", () => ({
-  listFolders: listFoldersMock,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -39,7 +33,6 @@ afterEach(() => {
 
 beforeEach(() => {
   listTagsMock.mockResolvedValue([]);
-  listFoldersMock.mockResolvedValue([]);
 });
 
 describe("DashboardPage", () => {
@@ -162,7 +155,7 @@ describe("DashboardPage", () => {
       }),
     );
 
-    expect(listSetsMock).toHaveBeenCalledWith("biology", undefined, undefined);
+    expect(listSetsMock).toHaveBeenCalledWith("biology", undefined);
     expect(screen.getByLabelText("Search sets")).toHaveValue("biology");
     expect(
       screen.getByRole("link", { name: /Biology basics/ }),
@@ -241,7 +234,7 @@ describe("DashboardPage", () => {
     expect(
       screen.getByRole("link", { name: "biology" }),
     ).toHaveAttribute("href", "/dashboard?q=cells&tag=7");
-    expect(listSetsMock).toHaveBeenCalledWith("cells", undefined, undefined);
+    expect(listSetsMock).toHaveBeenCalledWith("cells", undefined);
   });
 
   it("marks the active tag and offers clearing it", async () => {
@@ -268,7 +261,7 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("link", { name: "exam prep" })).not.toHaveAttribute(
       "aria-current",
     );
-    expect(listSetsMock).toHaveBeenCalledWith(undefined, 7, undefined);
+    expect(listSetsMock).toHaveBeenCalledWith(undefined, 7);
     expect(
       screen.getByRole("link", { name: "Clear filter" }),
     ).toHaveAttribute("href", "/dashboard");
@@ -357,7 +350,7 @@ describe("DashboardPage", () => {
       }),
     );
 
-    expect(listSetsMock).toHaveBeenCalledWith(undefined, undefined, undefined);
+    expect(listSetsMock).toHaveBeenCalledWith(undefined, undefined);
     expect(
       screen.queryByRole("link", { name: "Clear filter" }),
     ).not.toBeInTheDocument();
@@ -386,195 +379,6 @@ describe("DashboardPage", () => {
     expect(
       screen.getByText(
         "No sets match the selected tag. Clear the filter to see all of your sets.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Clear filter" }),
-    ).toHaveAttribute("href", "/dashboard");
-  });
-
-  it("renders the user's folders as filter links with counts", async () => {
-    getCurrentUserMock.mockResolvedValue({
-      id: 1,
-      email: "user@example.com",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    });
-    listFoldersMock.mockResolvedValue([
-      { id: 7, name: "University", setCount: 4 },
-      { id: 8, name: "Exams", setCount: 0 },
-    ]);
-    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
-
-    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
-
-    expect(
-      screen.getByRole("link", { name: "University · 4" }),
-    ).toHaveAttribute("href", "/dashboard?folder=7");
-    expect(
-      screen.getByRole("link", { name: "Exams · 0" }),
-    ).toHaveAttribute("href", "/dashboard?folder=8");
-  });
-
-  it("composes the folder links with the query and the tag", async () => {
-    getCurrentUserMock.mockResolvedValue({
-      id: 1,
-      email: "user@example.com",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    });
-    listFoldersMock.mockResolvedValue([{ id: 8, name: "University", setCount: 2 }]);
-    listTagsMock.mockResolvedValue([{ id: 7, name: "biology" }]);
-    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
-
-    render(
-      await DashboardPage({
-        searchParams: Promise.resolve({ q: "cells", tag: "7", folder: "8" }),
-      }),
-    );
-
-    // Every link preserves the other axes and overrides its own (§23): the
-    // active folder chip toggles itself off, the tag chip keeps the folder.
-    expect(
-      screen.getByRole("link", { name: "University · 2" }),
-    ).toHaveAttribute("aria-current", "true");
-    expect(
-      screen.getByRole("link", { name: "University · 2" }),
-    ).toHaveAttribute("href", "/dashboard?q=cells&tag=7");
-    expect(
-      screen.getByRole("link", { name: "biology" }),
-    ).toHaveAttribute("href", "/dashboard?q=cells&tag=7&folder=8");
-    expect(listSetsMock).toHaveBeenCalledWith("cells", 7, 8);
-  });
-
-  it("marks the active folder and toggles it off", async () => {
-    getCurrentUserMock.mockResolvedValue({
-      id: 1,
-      email: "user@example.com",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    });
-    listFoldersMock.mockResolvedValue([
-      { id: 7, name: "University", setCount: 4 },
-      { id: 8, name: "Exams", setCount: 2 },
-    ]);
-    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
-
-    render(
-      await DashboardPage({ searchParams: Promise.resolve({ folder: "7" }) }),
-    );
-
-    expect(
-      screen.getByRole("link", { name: "University · 4" }),
-    ).toHaveAttribute("aria-current", "true");
-    // The active chip toggles itself off; the sibling keeps its filter.
-    expect(
-      screen.getByRole("link", { name: "University · 4" }),
-    ).toHaveAttribute("href", "/dashboard");
-    expect(
-      screen.getByRole("link", { name: "Exams · 2" }),
-    ).toHaveAttribute("href", "/dashboard?folder=8");
-    expect(listSetsMock).toHaveBeenCalledWith(undefined, undefined, 7);
-  });
-
-  it("shows a distinct no-matches state for the folder filter", async () => {
-    getCurrentUserMock.mockResolvedValue({
-      id: 1,
-      email: "user@example.com",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    });
-    listFoldersMock.mockResolvedValue([{ id: 7, name: "University", setCount: 2 }]);
-    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
-
-    render(
-      await DashboardPage({ searchParams: Promise.resolve({ folder: "7" }) }),
-    );
-
-    expect(
-      screen.getByText(
-        "No sets match the selected folder. Clear the filter to see all of your sets.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: "Create a set" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Clear filter" }),
-    ).toHaveAttribute("href", "/dashboard");
-  });
-
-  it("names all three filters in the no-matches hint", async () => {
-    getCurrentUserMock.mockResolvedValue({
-      id: 1,
-      email: "user@example.com",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    });
-    listFoldersMock.mockResolvedValue([{ id: 7, name: "University", setCount: 2 }]);
-    listTagsMock.mockResolvedValue([{ id: 7, name: "biology" }]);
-    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
-
-    render(
-      await DashboardPage({
-        searchParams: Promise.resolve({ q: "cells", tag: "7", folder: "7" }),
-      }),
-    );
-
-    expect(
-      screen.getByText(
-        'No sets match "cells" with the selected tag with the selected folder. Clear the filter to see all of your sets.',
-      ),
-    ).toBeInTheDocument();
-    // The clear link unwinds the tag first, then the folder.
-    expect(
-      screen.getByRole("link", { name: "Clear filter" }),
-    ).toHaveAttribute("href", "/dashboard?q=cells&folder=7");
-  });
-
-  it("folds a malformed folder param into no filter", async () => {
-    getCurrentUserMock.mockResolvedValue({
-      id: 1,
-      email: "user@example.com",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    });
-    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
-
-    render(
-      await DashboardPage({
-        searchParams: Promise.resolve({ folder: "not-a-number" }),
-      }),
-    );
-
-    expect(listSetsMock).toHaveBeenCalledWith(undefined, undefined, undefined);
-    expect(
-      screen.queryByRole("link", { name: "Clear filter" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Create a set" }),
-    ).toBeInTheDocument();
-  });
-
-  it("still offers clearing an unknown folder id", async () => {
-    getCurrentUserMock.mockResolvedValue({
-      id: 1,
-      email: "user@example.com",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    });
-    listFoldersMock.mockResolvedValue([{ id: 7, name: "University", setCount: 2 }]);
-    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
-
-    render(
-      await DashboardPage({ searchParams: Promise.resolve({ folder: "999" }) }),
-    );
-
-    // A foreign or stale folder id matches nothing (§41); the escape hatch
-    // must survive so the URL state is never a dead end.
-    expect(
-      screen.getByText(
-        "No sets match the selected folder. Clear the filter to see all of your sets.",
       ),
     ).toBeInTheDocument();
     expect(

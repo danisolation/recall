@@ -55,14 +55,4 @@ describe("SearchInput", () => {
       form?.querySelector('input[type="hidden"][name="tag"]'),
     ).not.toBeInTheDocument();
   });
-
-  it("carries the active folder filter as a hidden field", () => {
-    render(<SearchInput folderId={9} />);
-
-    const form = (screen.getByLabelText("Search sets") as HTMLInputElement)
-      .form;
-    expect(
-      form?.querySelector('input[type="hidden"][name="folder"]'),
-    ).toHaveValue("9");
-  });
 });

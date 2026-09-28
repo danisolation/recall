@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Folder, Plus, SearchX, TrendingUp } from "lucide-react";
+import { Plus, SearchX, TrendingUp } from "lucide-react";
 import { SearchInput } from "@/components/search-input";
 import { SetList } from "@/components/set-list";
 import { Panel } from "@/components/ui/panel";
 import { TextLink } from "@/components/ui/text-link";
 import { getCurrentUser } from "@/lib/session";
-import { listFolders } from "@/lib/folders";
 import { listSets } from "@/lib/sets";
 import { listTags } from "@/lib/tags";
 
@@ -25,7 +24,7 @@ const memberSince = new Intl.DateTimeFormat("en-US", {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; tag?: string; folder?: string }>;
+  searchParams: Promise<{ q?: string; tag?: string }>;
 }) {
   const user = await getCurrentUser();
 
@@ -33,34 +32,21 @@ export default async function DashboardPage({
     redirect("/login");
   }
 
-  const { q, tag, folder } = await searchParams;
+  const { q, tag } = await searchParams;
   const query = q || undefined;
-  // A malformed or foreign tag/folder param is filter state, not a resource
-  // id — it folds into "the filter matches nothing" exactly like an empty
-  // `q` folds into "no filter" (§23, §41). The clear link is still rendered
-  // so the user can always escape the URL state.
+  // A malformed or foreign tag param is filter state, not a resource id —
+  // it folds into "the filter matches nothing" exactly like an empty `q`
+  // folds into "no filter" (§23, §41). The clear link is still rendered so
+  // the user can always escape the URL state.
   const parsedTag = Number(tag);
   const tagId =
     tag !== undefined && Number.isInteger(parsedTag) ? parsedTag : undefined;
-  const parsedFolder = Number(folder);
-  const folderId =
-    folder !== undefined && Number.isInteger(parsedFolder)
-      ? parsedFolder
-      : undefined;
-  const [folders, tags, sets] = await Promise.all([
-    listFolders(),
-    listTags(),
-    listSets(query, tagId, folderId),
-  ]);
+  const [tags, sets] = await Promise.all([listTags(), listSets(query, tagId)]);
 
   // §23: every filter link preserves the other axes and overrides its own —
-  // q, tag, and folder compose (all AND), so one question can have three
-  // parts. An active folder chip toggles itself off; the clear link unwinds
-  // the tag first, then the folder, so no URL state is a dead end.
-  const buildHref = (overrides: {
-    tag?: number | null;
-    folder?: number | null;
-  }) => {
+  // q and tag compose (AND), so one question can have two parts. The clear
+  // link unwinds the tag, so no URL state is a dead end.
+  const buildHref = (overrides: { tag?: number | null }) => {
     const parts: string[] = [];
     if (query) {
       parts.push(`q=${encodeURIComponent(query)}`);
@@ -71,21 +57,15 @@ export default async function DashboardPage({
     if (tag !== undefined && tag !== null) {
       parts.push(`tag=${tag}`);
     }
-    const folder = overrides.folder !== undefined ? overrides.folder : folderId;
-    if (folder !== undefined && folder !== null) {
-      parts.push(`folder=${folder}`);
-    }
     return `/dashboard${parts.length > 0 ? `?${parts.join("&")}` : ""}`;
   };
-  const clearHref =
-    tagId !== undefined ? buildHref({ tag: null }) : buildHref({ folder: null });
+  const clearHref = buildHref({ tag: null });
 
   // §56: the no-matches hint names the active filters; a truly empty
   // library (no filters) keeps the create offer inside SetList.
   const filterHint = [
     query ? `"${query}"` : null,
     tagId !== undefined ? "the selected tag" : null,
-    folderId !== undefined ? "the selected folder" : null,
   ]
     .filter(Boolean)
     .join(" with ");
@@ -99,10 +79,6 @@ export default async function DashboardPage({
             <TrendingUp aria-hidden className="h-4 w-4 shrink-0" />
             View progress
           </TextLink>
-          <TextLink href="/folders" variant="button">
-            <Folder aria-hidden className="h-4 w-4 shrink-0" />
-            Manage folders
-          </TextLink>
           <TextLink href="/sets/new" variant="button">
             <Plus aria-hidden className="h-4 w-4 shrink-0" />
             New set
@@ -111,26 +87,7 @@ export default async function DashboardPage({
       </div>
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Your sets</h2>
-        <SearchInput initialQuery={query} tagId={tagId} folderId={folderId} />
-        {folders.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {folders.map((f) => (
-              <Link
-                key={f.id}
-                href={buildHref({ folder: f.id === folderId ? null : f.id })}
-                aria-current={f.id === folderId ? "true" : undefined}
-                className={
-                  f.id === folderId
-                    ? "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink/25 bg-marker/40 px-3 py-1.5 text-sm font-semibold text-ink"
-                    : "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink/25 bg-card px-3 py-1.5 text-sm text-ink-soft transition-colors hover:border-ink/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none"
-                }
-              >
-                <Folder aria-hidden className="h-4 w-4 shrink-0" />
-                {`${f.name} · ${f.setCount}`}
-              </Link>
-            ))}
-          </div>
-        ) : null}
+        <SearchInput initialQuery={query} tagId={tagId} />
         {tags.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
             {tags.map((t) => (
@@ -147,22 +104,21 @@ export default async function DashboardPage({
                 {t.name}
               </Link>
             ))}
-            {tagId !== undefined || folderId !== undefined ? (
+            {tagId !== undefined ? (
               <TextLink href={clearHref}>Clear filter</TextLink>
             ) : null}
           </div>
-        ) : tagId !== undefined || folderId !== undefined ? (
+        ) : tagId !== undefined ? (
           <div className="flex flex-wrap items-center gap-2">
             <TextLink href={clearHref}>Clear filter</TextLink>
           </div>
         ) : null}
-        {(query || tagId !== undefined || folderId !== undefined) &&
-        sets.items.length === 0 ? (
+        {(query || tagId !== undefined) && sets.items.length === 0 ? (
           <Panel className="flex flex-col items-center gap-2 py-8 text-center">
             <SearchX aria-hidden className="h-6 w-6 text-ink-soft" />
             <p className="text-ink-soft">
               {`No sets match ${filterHint}.`}
-              {tagId !== undefined || folderId !== undefined
+              {tagId !== undefined
                 ? " Clear the filter to see all of your sets."
                 : " Try a different search."}
             </p>

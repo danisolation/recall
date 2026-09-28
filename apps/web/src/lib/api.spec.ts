@@ -1,13 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApiError,
-  createFolder,
   deleteCard,
-  deleteFolder,
   deleteSet,
   finishSession,
   moveCard,
-  renameFolder,
   replaceTags,
   updateSet,
 } from "./api";
@@ -310,87 +307,6 @@ describe("replaceTags", () => {
 
     await expect(replaceTags(42, { tags: ["biology"] })).rejects.toThrow(
       "Saving the tags failed. Try again.",
-    );
-  });
-});
-
-describe("folder management", () => {
-  it("creates a folder and returns it", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 201,
-      json: async () => ({ id: 7, name: "University" }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(createFolder({ name: "University" })).resolves.toEqual({
-      id: 7,
-      name: "University",
-    });
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/folders",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ name: "University" }),
-        credentials: "include",
-      }),
-    );
-  });
-
-  it("maps a duplicate folder name to a clear error", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 409,
-        json: async () => ({ code: "FOLDER_NAME_TAKEN", message: "x" }),
-      }),
-    );
-
-    await expect(createFolder({ name: "University" })).rejects.toThrow(
-      "A folder with this name already exists.",
-    );
-  });
-
-  it("renames a folder through PATCH", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => null,
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(
-      renameFolder(7, { name: "Classes" }),
-    ).resolves.toBeUndefined();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/folders/7",
-      expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({ name: "Classes" }),
-      }),
-    );
-  });
-
-  it("deletes a folder and maps a missing folder to a clear error", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: true, status: 204, json: async () => null })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        json: async () => ({ code: "FOLDER_NOT_FOUND", message: "x" }),
-      });
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(deleteFolder(7)).resolves.toBeUndefined();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/folders/7",
-      expect.objectContaining({ method: "DELETE", credentials: "include" }),
-    );
-
-    await expect(deleteFolder(7)).rejects.toThrow(
-      "This folder no longer exists.",
     );
   });
 });

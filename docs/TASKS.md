@@ -4726,19 +4726,22 @@ Delete the folder UI end to end: the /folders page and manager, the folder selec
 RMFOLD-001
 
 ### Status
-READY
+DONE
 
 ### Files
 apps/web/src/app/(protected)/folders/ (page, manager, specs — deleted)
+apps/web/src/app/(protected)/sets/new/page.tsx (listFolders + prop removed)
 apps/web/src/app/(protected)/sets/new/create-set-form.tsx (+ spec, folder select removed)
-apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec)
-apps/web/src/app/(protected)/sets/[id]/edit/page.tsx (+ spec)
-apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
-apps/web/src/components/search-input.tsx (+ spec)
-apps/web/src/components/set-list.spec.tsx
-apps/web/src/lib/api.ts (+ spec, folder functions removed)
+apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec, folder select removed; Sharing select stays)
+apps/web/src/app/(protected)/sets/[id]/edit/page.tsx (+ spec, listFolders removed)
+apps/web/src/app/(protected)/dashboard/page.tsx (+ spec, `?folder=` axis removed)
+apps/web/src/components/search-input.tsx (+ spec, hidden folder field removed)
+apps/web/src/components/set-list.spec.tsx (fixture)
+apps/web/src/lib/api.ts (+ spec, createFolder/renameFolder/deleteFolder removed)
 apps/web/src/lib/folders.ts (+ spec — deleted)
 apps/web/src/lib/sets.ts (+ spec, folderId off StudySet and the filter param)
+apps/web/src/lib/public.ts (comment only)
+apps/web/src/components/ui/select.tsx (comment only — the primitive stays, now for Sharing)
 apps/web/e2e/folders.spec.ts (deleted)
 
 ### Acceptance Criteria
@@ -4746,9 +4749,14 @@ apps/web/e2e/folders.spec.ts (deleted)
 - the set forms stop sending `folderId` in their payloads
 - deletion only — no replacement UI, no deprecation states (§56 does not apply to a removed surface)
 
+### Decision
+Pure deletion with two judgment calls. The `Select` primitive stays: it was born for the folder select (its comment said so) but the Sharing select uses it, so the comment was corrected rather than the component deleted. The public payload's whitelist comment dropped its "folder placement" clause — the API will stop returning it in RMFOLD-003/004, and the comment should never promise a field the type doesn't have. One self-caught mistake: the dashboard's tag chips still use `next/link` after the folder chips (their only other consumer) were deleted — the typecheck would have caught the missing import, but the tests passed first because the mock never exercised the chips' import path (§94-style humility: green tests are not a diff review).
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` green with the folder specs removed
-- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- `pnpm --filter @danisolation-recall/web test` — **196 passed (35 files)**: −30 (folders page/manager specs, lib/folders spec, api folder-management block, dashboard's six folder-filter tests, the two folder-form tests, and the tag/folder composition assertions reduced to their tag-only truths)
+- `pnpm --filter @danisolation-recall/web typecheck` — clean (after clearing stale `.next/types` referencing the deleted route)
+- `pnpm --filter @danisolation-recall/web build` — succeeds; `/folders` gone from the route map
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**: the folders journey deleted with its UI, all other journeys green
 
 ---
 
