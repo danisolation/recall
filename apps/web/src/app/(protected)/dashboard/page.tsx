@@ -70,6 +70,16 @@ export default async function DashboardPage({
     .filter(Boolean)
     .join(" with ");
 
+  // ADR-018: the chips were the last control on the page still wearing a
+  // 1px hairline border, so they read as flat text rather than as the clay
+  // surfaces everything else became. The shared base carries the 3px edge,
+  // the double shadow, and the soft-press; the two variants only differ in
+  // how the selected state reads. Focus is not repeated here — the single
+  // `:focus-visible` rule in globals.css owns it, and the old `outline-ink`
+  // utilities had been dead since that token was retired in REDESIGN-003.
+  const chipBase =
+    "inline-flex min-h-11 items-center rounded-full border-[3px] border-border bg-card px-3 py-1.5 text-sm text-ink-soft shadow-clay transition-[transform,box-shadow,background-color] hover:text-ink active:translate-y-0.5 active:shadow-clay-pressed motion-reduce:transition-none";
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -94,11 +104,14 @@ export default async function DashboardPage({
               <Link
                 key={t.id}
                 href={buildHref({ tag: t.id })}
+                // `aria-current` is the non-color signal for the selected
+                // state (§57); the weight change is the second one, so the
+                // selection survives for anyone who cannot separate the hue.
                 aria-current={t.id === tagId ? "true" : undefined}
                 className={
                   t.id === tagId
-                    ? "inline-flex min-h-11 items-center rounded-full border border-ink/25 bg-marker/40 px-3 py-1.5 text-sm font-semibold text-ink"
-                    : "inline-flex min-h-11 items-center rounded-full border border-ink/25 bg-card px-3 py-1.5 text-sm text-ink-soft transition-colors hover:border-ink/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none"
+                    ? `${chipBase} bg-marker/40 font-semibold text-ink`
+                    : chipBase
                 }
               >
                 {t.name}

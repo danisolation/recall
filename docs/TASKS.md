@@ -5057,7 +5057,7 @@ The honest finding is that **most of this task's work was already done by the to
 
 ### Tests
 - RED first: **6 failed**, **10 passed** across the three specs. Every failure was the expected one — the bare `text-ink-soft` label, the absent `div.group`, the missing press affordance, the surviving `focus-visible:outline` utilities, the unchipped account line, the absent icon. The 10 passing were the behavioral guarantees (hrefs, form action/method, hidden tag field, query value, disabled move boundaries, error/pending states) that a restyle has no business touching.
-- one **test-side** correction: the group-focus-within case initially asserted `focus-within:text-marker` on the wrapper, but that class belongs on the label as `group-focus-within:` (the wrapper only carries `group`). The implementation was already right; the assertion was wrong, so the test was fixed rather than the code
+- one **test-side** correction: the group-focus-within case initially asserted `focus-within:text-marker` on the wrapper, but that class belongs on the label as `group-focus-within:` (the wrapper only carries `group`). The implementation was already right and the assertion was wrong, so the test was fixed rather than the code
 - `pnpm --filter @danisolation-recall/web test` — **219 passed (37 files)**, up from 211; **no pre-existing assertion was modified** — every change was additive
 - `pnpm --filter @danisolation-recall/web typecheck` — clean
 - `pnpm --filter @danisolation-recall/web build` — clean, 11 routes, zero CSS warnings
@@ -5077,7 +5077,7 @@ Re-skin the set list, search box, account panel, and tag-filter chips on the new
 REDESIGN-004
 
 ### Status
-TODO (dependencies pending)
+DONE
 
 ### Files
 apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
@@ -5086,8 +5086,24 @@ apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
 - no-matches state and empty-library state stay distinct (§56)
 - search and tag filters keep their URL-state behavior unchanged
 
+### Decision
+The page was **already ~95% converted by the token swap**, so the honest report is a small diff rather than a page rewrite. Everything except the tag chips was already sitting on the restyled primitives: `Panel` for both empty/no-matches surfaces, `TextLink` for every action, `SearchInput` (rebuilt in REDESIGN-004) for the query field, and token-driven `text-ink-soft` headings. That is the token-first ordering working as designed.
+
+**The chips were the one real gap, and they carried the same dead focus bug REDESIGN-004 found.** They were the last control on the page still wearing a 1px `border-ink/25` hairline, and they repeated `focus-visible:outline-2 … outline-ink` — utilities whose color token stopped existing in REDESIGN-003, so they resolved to nothing. The chips therefore had **no focus ring at all** while appearing to have one, which is why this file was worth grepping for rather than assuming the token swap had covered it. Fixing it is the second half of a two-file accessibility bug found in this phase.
+
+The two chip variants were previously fully duplicated class strings. Rather than repeat the duplication with thicker borders, the states now share a `chipBase` and differ only in the selected state — the same two-tier pattern REDESIGN-003 used for `buttonLinkClassName`. `chipBase` is a local `const`, not a new export: it has exactly one call site in the app, and §85 says abstractions must earn their existence.
+
+**The selected state is now signalled twice, not once.** Previously the active chip differed from the idle chips *only* by background tint (`bg-marker/40`) and text color, which is a color-only signal and fails §57 for anyone who cannot separate the hue. It now also carries `font-semibold` while idle chips do not, and a test asserts both halves — so the state cannot silently regress to color-only. `aria-current` was already there and is unchanged. **Contrast was computed before adoption, not assumed** (ADR-018's rule): ink-soft #475569 on card 7.58:1, ink on the marker/40 tint 14.53:1, ink on card 17.85:1 — all far above 4.5:1. The 3px `border-border` is #EFE7FC, a non-text element, so the 3:1 non-text rule applies and it clears comfortably against white.
+
+**No copy, href, or URL-state behavior changed.** `buildHref`, the malformed-tag fold, the filter composition, and all three no-matches copy variants are byte-identical — verified by the 16 pre-existing page tests passing unmodified.
+
 ### Tests
-- page spec, web suite, typecheck, build, and the search/organization E2E journeys
+- RED first: **3 failed**, **16 passed**. The three failures were the hairline border, the missing press affordance, and the surviving `focus-visible:outline` utilities. A fourth new test — the non-color selected-state check — **passed immediately**, which is correct and worth stating plainly: it is a *regression guard* pinning behavior that already existed, not a change; had it failed it would have meant the earlier work had broken §57.
+- `pnpm --filter @danisolation-recall/web test` — **223 passed (37 files)**, up from 219; **no pre-existing assertion was modified**
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — clean, 11 routes, zero CSS warnings
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, including the two journeys that actually drive this page (`search`, `organization`), confirming the chip restyle changed no name, href, or filter behavior
+- contrast recorded: ink-soft on card 7.58:1, ink on the selected tint 14.53:1 — both ≥4.5:1
 
 ---
 

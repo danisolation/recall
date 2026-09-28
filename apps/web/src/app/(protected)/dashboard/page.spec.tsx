@@ -385,4 +385,93 @@ describe("DashboardPage", () => {
       screen.getByRole("link", { name: "Clear filter" }),
     ).toHaveAttribute("href", "/dashboard");
   });
+
+  it("renders the tag chips as raised clay controls", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 1,
+      email: "user@example.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    listTagsMock.mockResolvedValue([{ id: 7, name: "biology" }]);
+    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
+
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
+
+    const chip = screen.getByRole("link", { name: "biology" });
+    // ADR-018: the chips were the last control on the page still wearing a
+    // 1px hairline border, so they read as flat text rather than as the
+    // clay surfaces everything else became. The 3px edge plus the double
+    // shadow is what puts them in the same register as the set tiles.
+    expect(chip).toHaveClass("border-[3px]", "border-border", "shadow-clay");
+    // Still a 44px touch target (§57).
+    expect(chip).toHaveClass("min-h-11");
+  });
+
+  it("gives the tag chips a press affordance like the other controls", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 1,
+      email: "user@example.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    listTagsMock.mockResolvedValue([{ id: 7, name: "biology" }]);
+    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
+
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
+
+    expect(screen.getByRole("link", { name: "biology" })).toHaveClass(
+      "active:translate-y-0.5",
+      "active:shadow-clay-pressed",
+    );
+  });
+
+  it("leaves chip focus to the single base rule", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 1,
+      email: "user@example.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    listTagsMock.mockResolvedValue([{ id: 7, name: "biology" }]);
+    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
+
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
+
+    // Same dead `outline-ink` utilities REDESIGN-004 found on the set tile:
+    // the token was retired in REDESIGN-003, so these resolved to nothing
+    // and the chip had no focus ring at all.
+    expect(
+      screen.getByRole("link", { name: "biology" }).className,
+    ).not.toContain("focus-visible:outline");
+  });
+
+  it("keeps the selected chip distinguishable by more than color", async () => {
+    getCurrentUserMock.mockResolvedValue({
+      id: 1,
+      email: "user@example.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    listTagsMock.mockResolvedValue([
+      { id: 7, name: "biology" },
+      { id: 8, name: "exam prep" },
+    ]);
+    listSetsMock.mockResolvedValue({ items: [], nextOffset: null });
+
+    render(
+      await DashboardPage({ searchParams: Promise.resolve({ tag: "7" }) }),
+    );
+
+    const selected = screen.getByRole("link", { name: "biology" });
+    const idle = screen.getByRole("link", { name: "exam prep" });
+    // `aria-current` is the non-color signal (§57); the test asserts the
+    // selected state survives the restyle rather than relying on a hue.
+    expect(selected).toHaveAttribute("aria-current", "true");
+    expect(idle).not.toHaveAttribute("aria-current");
+    // The selected chip also gains weight, so the state is legible to
+    // someone who cannot separate the violet tint.
+    expect(selected).toHaveClass("font-semibold");
+    expect(idle).not.toHaveClass("font-semibold");
+  });
 });
