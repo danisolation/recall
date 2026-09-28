@@ -4813,20 +4813,27 @@ Remove `study_sets.folder_id` (and its index) and the `folders` table via migrat
 RMFOLD-003
 
 ### Status
-READY
+DONE
 
 ### Files
 packages/database/src/schema.ts
-packages/database/drizzle/0011_*.sql (generated)
-docs/database/schema.md
+packages/database/drizzle/0011_flippant_wasp.sql
+docs/database/schema.md (study_sets table, folders section, ER diagram)
+apps/api/src/sets/create-set.service.spec.ts (the interim folderId fixtures removed)
 
 ### Acceptance Criteria
 - migration drops the column with its index, then the table (§124: destructive, user-directed — the migration is the record)
 - schema.ts holds no folder references; the database package typechecks and builds
 - migration applies cleanly against the local database
 
+### Decision
+`db:generate` produced a migration whose second statement (`DROP TABLE "folders" CASCADE`) already removes the dependent FK constraint, making its explicit `DROP CONSTRAINT "study_sets_folder_id_folders_id_fk"` a guaranteed failure — and `drizzle-kit migrate` reports such failures as a bare exit 1 with no output. The diagnosis path: validated every statement in a rolled-back psql transaction (all passed in isolation), then ran drizzle-orm's migrator directly to surface the swallowed `42704` error. The fix was editing the not-yet-applied migration to drop the redundant statement — legitimate because the file had never been applied or recorded in the journal (§32's "never edit applied migrations" intact). Verified afterwards in psql: nine tables, `folder_id`/index/constraint gone. The interim `folderId` fixtures in the create-set service spec (RMFOLD-003's noted wrinkle) came out with the column.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/database db:generate`, `db:migrate`, `typecheck`, and `build` succeed
+- `pnpm --filter @danisolation-recall/database db:generate` produced `0011_flippant_wasp.sql` (corrected before first apply); `db:migrate` applied it cleanly
+- psql verification: `folders` table dropped, `study_sets` reduced to seven columns with only the owner index and FK remaining
+- `pnpm --filter @danisolation-recall/database typecheck` and `build` — clean (dist rebuilt for consumers)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` — **238 passed (43 files)** against the migrated database
 
 ---
 

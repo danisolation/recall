@@ -18,9 +18,6 @@ describe("CreateSetService", () => {
     const row = {
       id: 1,
       ownerId: 7,
-      // The column dies with RMFOLD-004's migration; until then the row
-      // shape still carries it.
-      folderId: null,
       visibility: "private",
       title: "Biology basics",
       description: "Cells",
@@ -47,7 +44,6 @@ describe("CreateSetService", () => {
     vi.mocked(setsRepository.create).mockResolvedValue({
       id: 1,
       ownerId: 7,
-      folderId: null,
       visibility: "private",
       title: "No description",
       description: null,
