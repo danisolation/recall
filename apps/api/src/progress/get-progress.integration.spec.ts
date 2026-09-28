@@ -19,9 +19,11 @@ describe("GET /progress (integration)", () => {
   const dayMs = 24 * 60 * 60 * 1000;
   const ownerEmail = "get-progress.integration@example.com";
   const emptyEmail = "get-progress.integration.empty@example.com";
+  const lapsedEmail = "get-progress.integration.lapsed@example.com";
   const password = "correct horse battery staple";
   let ownerCookie: string;
   let emptyCookie: string;
+  let lapsedCookie: string;
   let sets: SetsRepository;
   let cards: CardsRepository;
   let sessions: SessionsRepository;
@@ -38,6 +40,7 @@ describe("GET /progress (integration)", () => {
     db = app.get<Database>(DATABASE_PROVIDER);
     await db.delete(users).where(eq(users.email, ownerEmail));
     await db.delete(users).where(eq(users.email, emptyEmail));
+    await db.delete(users).where(eq(users.email, lapsedEmail));
 
     const usersRepository = app.get(UsersRepository);
     const owner = await usersRepository.create({
@@ -46,6 +49,12 @@ describe("GET /progress (integration)", () => {
     });
     await usersRepository.create({
       email: emptyEmail,
+      passwordHash: await hashPassword(password),
+    });
+    // ADR-016: a three-day run that ended two days ago — a lapsed current
+    // streak (0) with the run still on record as the longest (3).
+    const lapsed = await usersRepository.create({
+      email: lapsedEmail,
       passwordHash: await hashPassword(password),
     });
 
@@ -71,6 +80,18 @@ describe("GET /progress (integration)", () => {
 
     if (!cardA || !cardB || !cardC) {
       throw new Error("Failed to create test cards");
+    }
+
+    // The lapsed user's own set and card — separate rows, so the run below
+    // exercises the session join's ownership filter rather than the owner's.
+    const lapsedSet = await sets.create(lapsed.id, { title: "Lapsed set" });
+    const lapsedCard = await cards.create(lapsedSet.id, lapsed.id, {
+      front: "Lapsed front",
+      back: "Lapsed back",
+    });
+
+    if (!lapsedCard) {
+      throw new Error("Failed to create the lapsed test card");
     }
 
     // Seeded relative to the real clock so "due" comparisons stay stable:
@@ -104,6 +125,19 @@ describe("GET /progress (integration)", () => {
       new Date(Date.now() - 60 * 60_000),
     );
 
+    // Three consecutive practice days, the most recent two days ago, so the
+    // run is behind the grace window: currentStreak 0, longestStreak 3.
+    for (const daysAgo of [4, 3, 2]) {
+      const lapsedSession = await sessions.create(lapsed.id, lapsedSet.id);
+      await sessions.addReview(
+        lapsedSession!.id,
+        lapsed.id,
+        lapsedCard.id,
+        true,
+        new Date(Date.now() - daysAgo * dayMs),
+      );
+    }
+
     const login = async (email: string) => {
       const response = await supertest(app.getHttpServer())
         .post("/auth/login")
@@ -123,26 +157,33 @@ describe("GET /progress (integration)", () => {
 
     ownerCookie = await login(ownerEmail);
     emptyCookie = await login(emptyEmail);
+    lapsedCookie = await login(lapsedEmail);
   });
 
   afterAll(async () => {
     await db.delete(users).where(eq(users.email, ownerEmail));
     await db.delete(users).where(eq(users.email, emptyEmail));
+    await db.delete(users).where(eq(users.email, lapsedEmail));
     await app.close();
     await db.$client.end();
   });
 
-  it("returns the caller's review counts and due count", async () => {
+  it("returns the caller's review counts, due count, and streaks", async () => {
     const response = await supertest(app.getHttpServer())
       .get("/progress")
       .set("Cookie", ownerCookie);
 
     expect(response.status).toBe(200);
-    // Exact shape: counts only — there is no server-computed accuracy (ADR-010).
+    // Exact shape: counts only — there is no server-computed accuracy
+    // (ADR-010) — plus the two derived streak facts (ADR-016). The owner's
+    // reviews land today and two days ago, so today's practice starts a
+    // new run: current 1, longest 1.
     expect(response.body).toEqual({
       totalReviews: 4,
       correctReviews: 2,
       dueCount: 2,
+      currentStreak: 1,
+      longestStreak: 1,
     });
   });
 
@@ -156,6 +197,22 @@ describe("GET /progress (integration)", () => {
       totalReviews: 0,
       correctReviews: 0,
       dueCount: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+    });
+  });
+
+  // ADR-016's grace rule at the HTTP boundary: a run that ended before
+  // yesterday is no longer current, but it is still the best run ever.
+  it("zeroes a lapsed current streak while keeping the longest run", async () => {
+    const response = await supertest(app.getHttpServer())
+      .get("/progress")
+      .set("Cookie", lapsedCookie);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      currentStreak: 0,
+      longestStreak: 3,
     });
   });
 

@@ -4625,19 +4625,24 @@ STREAK-002
 STREAK-003
 
 ### Status
-READY
+DONE
 
 ### Files
-apps/api/src/progress/progress.controller.ts
-apps/api/src/progress/get-progress.integration.spec.ts
+apps/api/src/progress/progress.controller.ts (ProgressResponse + getSummary)
+apps/api/src/progress/get-progress.integration.spec.ts (3 new/updated cases, lapsed-user fixture)
 
 ### Acceptance Criteria
 - the summary response carries the two derived facts; no new endpoint (ADR-010's one-fetch stance)
 - integration tests pin the semantics end to end: a user with reviews today shows a current streak, a user whose last review was two days ago shows 0, a user with a past run keeps its longest
 
+### Decision
+No contracts change: `ProgressResponse` is a controller-local type, not a shared Zod schema, so the web's `ProgressSummary` shape is untouched until STREAK-005 reads the new fields — the response grew, nothing else moved. `listReviewDays` joins the existing `Promise.all` rather than adding a waterfall round-trip, and the same `now` value feeds `countDue` and `computeDailyStreaks`, so due counts and streaks are evaluated against one instant. The streaks are computed in the controller because the controller is the composition point: repository (data) → pure function (rules) → response (facts), with no service layer that would only forward three values. The lapsed user is a distinct account with its own set and card rather than extra reviews on the owner, so the case exercises the session join's ownership filter at the HTTP boundary instead of only the pure function. The owner's expected values (current 1, longest 1) fall out of the pre-existing fixture: its reviews land today and two days ago, so today starts a new run — a fixture that had to *not* be adjusted to make the assertion true.
+
 ### Tests
-- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` gains the HTTP-level tests
-- `pnpm --filter @danisolation-recall/api typecheck` succeeds
+- RED first: the spec was updated and run before the controller changed — 3 failed on the missing `currentStreak`/`longestStreak` fields, 1 (the 401 case) still passed
+- `vitest run src/progress/get-progress.integration.spec.ts` — **4 passed** (owner shape, zero-review user, lapsed current 0 with longest 3, unauthenticated 401)
+- `DATABASE_URL=<url> pnpm --filter @danisolation-recall/api test` — **254 passed (44 files)**, up from 253
+- `pnpm --filter @danisolation-recall/api typecheck` and `build` — clean (dist rebuilt; the running dev server was serving stale output)
 
 ---
 

@@ -8,10 +8,15 @@ import {
   type ProgressSummary,
   ProgressRepository,
 } from "./progress.repository";
+import { computeDailyStreaks } from "./streaks";
 
 // ADR-010: facts only — accuracy is derived client-side from the counts.
+// ADR-016: the two streak facts ride the same response — one fetch, no
+// new endpoint.
 export type ProgressResponse = ProgressSummary & {
   dueCount: number;
+  currentStreak: number;
+  longestStreak: number;
 };
 
 // File-local like every list query schema — the web constructs no queries
@@ -45,15 +50,19 @@ export class ProgressController {
   @UseGuards(AuthGuard)
   async getSummary(@CurrentUser() user: User): Promise<ProgressResponse> {
     const now = new Date();
-    const [summary, dueCount] = await Promise.all([
+    const [summary, dueCount, reviewDays] = await Promise.all([
       this.progressRepository.getSummary(user.id),
       this.progressRepository.countDue(user.id, now),
+      this.progressRepository.listReviewDays(user.id),
     ]);
+    const streaks = computeDailyStreaks(reviewDays, now);
 
     return {
       totalReviews: summary.totalReviews,
       correctReviews: summary.correctReviews,
       dueCount,
+      currentStreak: streaks.currentStreak,
+      longestStreak: streaks.longestStreak,
     };
   }
 
