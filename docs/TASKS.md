@@ -4900,3 +4900,299 @@ The sweep doubled as drift correction: the module map never listed `src/folders/
 - no code touched; docs-only sweep
 
 ---
+
+## Visual redesign phase
+
+Design recorded once in ADR-018 (`docs/adr/ADR-018-visual-redesign.md`): a **whole-app** rebrand to the claymorphism visual identity — soft 3D surfaces, 16–24px radii, 3–4px borders, inner+outer double shadows, pastel surfaces, the generated violet/green palette (contrast-verified, not trusted), and Baloo 2 / Comic Neue typography. ADR-008 and ADR-013 are superseded **for visual concerns**; ADR-013's accessibility outcomes (icons beside labels, centralized registers, reduced-motion kill-switch, frozen accessible names) are retained and become the guardrails this phase must not violate.
+
+**Why a phase and not one task:** ten pages plus the token layer plus the primitive restyle plus the assertion updates is the clearest non-atomic request in the project (§2, §4, §6). The phase is **token-first, page-later** so every intermediate state builds and each diff stays reviewable.
+
+**Standing constraints for every task in this phase:**
+- TDD RED-first; one task per turn; no commit or push unless asked
+- contrast ≥4.5:1 in both modes; visible focus; decorative icons `aria-hidden`; sequential headings; no color-only signalling; `prefers-reduced-motion` honored; 44px minimum touch targets (§57)
+- copy/accessible-name assertions are updated **individually with the reason recorded** — never a mass find-and-replace
+- typography's fit for adult dense-reading surfaces is a recorded accepted regression (ADR-018 Tradeoffs)
+- dark mode is explicitly **out of scope** for this phase; it is its own slice
+- web tests + typecheck + build must pass at every task boundary; E2E at each page-affecting task
+
+### REDESIGN-001
+
+### Title
+Record the whole-app redesign decision (ADR-018)
+
+### Goal
+Decide and document the new visual identity, its relationship to ADR-008/ADR-013, and the phase's ground rules before any token or page depends on them.
+
+### Dependencies
+None (phase opening slice)
+
+### Status
+DONE
+
+### Files
+docs/adr/ADR-018-visual-redesign.md
+docs/TASKS.md (this decomposition)
+
+### Acceptance Criteria
+- ADR covers context, decision, alternatives, why, tradeoffs, consequences (§74)
+- the supersession of ADR-008/ADR-013 is scoped to *visual* concerns, with ADR-013's accessibility outcomes explicitly retained
+- the palette is contrast-verified with numbers, and the generated dark-mode "conditional" rating is recorded as out of scope rather than silently claimed
+- the decomposition is top-down (tokens → primitives → shared components → pages → journeys → docs) so every intermediate state builds
+
+### Decision
+The redesign directive plus "adopt the generated system" makes this a rebrand, not a polish, so the ADR **supersedes** rather than amends ADR-008/ADR-013 — the previous identity was coherent and is being replaced on purpose, and the record should show that. The one thing carried forward explicitly is ADR-013's non-visual contract (icons never replace labels, registers stay centralized, reduced-motion stays honored, accessible names stay pinned), which is what keeps a rebrand from quietly breaking accessibility. Two candidate items from the generator were rejected on inspection rather than adopted reflexively: the "Product Demo + Features" landing pattern (a marketing structure that does not fit a signed-in home route showing the user's account and logout control) and Baloo 2's fit for dense adult reading (adopted anyway, recorded as an accepted regression, per explicit direction). Palette contrast was computed, not assumed — `#7C3AED`+white = 5.70:1, `#8B5CF6`+black = 4.97:1, `#059669`+black = 5.58:1, `#475569` on `#FAF5FF` = 7.07:1, all clearing 4.5:1 — which also showed the generator's `on-secondary`/`on-accent` = black pairings are the accessible choice (white would fail at 3.77:1) and must not be "corrected" later. The two most dangerous failure modes were named in the ADR as standing rules: re-implementing markup per page instead of changing tokens, and mass-replacing frozen test assertions.
+
+### Tests
+None (documentation only — the visual and accessibility guarantees are enforced by REDESIGN-002 onward, and every restyle task re-runs the affected suites)
+
+---
+
+### REDESIGN-002
+
+### Title
+Replace the design tokens with the new identity
+
+### Goal
+Swap `globals.css`'s `@theme` block from the warm card-stock tokens to the claymorphism palette, radii, shadows, and typography.
+
+### Dependencies
+REDESIGN-001
+
+### Status
+READY
+
+### Files
+apps/web/src/app/globals.css
+apps/web/src/app/globals.css (spec if a token-level test is warranted)
+
+### Acceptance Criteria
+- `@theme` carries the ADR-018 palette, 16–24px radii, the inner+outer double-shadow tokens, and Baloo 2 / Comic Neue
+- the `paper`/`ink`/`marker`/`alert` tokens are removed, with every consumer of them updated in this same task so the app never renders with an undefined token
+- `prefers-reduced-motion` kill-switch and the flip-card rules survive the rewrite
+- contrast of every new text/background pair is ≥4.5:1, with the numbers recorded
+- no page renders unstyled; web typecheck + build pass
+
+### Tests
+- a focused check that the new tokens resolve and no removed token is still referenced
+- `pnpm --filter @danisolation-recall/web typecheck` and `build` succeed
+- visual verification of every route after the swap (the first render of each page is expected to be unstyled-then-fixed; that breakage is this task's diff, not a regression)
+
+---
+
+### REDESIGN-003
+
+### Title
+Restyle the `components/ui` primitives
+
+### Goal
+Re-skin Button, Input, Select, Panel, FormField, FieldError, Skeleton, TextLink to the new tokens — the register every page depends on.
+
+### Dependencies
+REDESIGN-002
+
+### Status
+TODO (dependencies pending)
+
+### Files
+apps/web/src/components/ui/*.tsx (+ their specs)
+
+### Acceptance Criteria
+- every primitive reads the new tokens only; no hardcoded hex
+- visible focus ring, ≥44px touch targets, `disabled` states clearly non-interactive
+- primitive specs pass unmodified where behavior is unchanged; each changed assertion justified individually
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` (component specs)
+- `pnpm --filter @danisolation-recall/web typecheck` and `build`
+
+---
+
+### REDESIGN-004
+
+### Title
+Restyle the shared components (UserMenu, LogoutButton, SetList, CardList, SearchInput)
+
+### Goal
+Bring the non-primitive shared components onto the new visual register, including the dashboard's tag chips.
+
+### Dependencies
+REDESIGN-003
+
+### Status
+TODO (dependencies pending)
+
+### Files
+apps/web/src/components/{user-menu,logout-button,set-list,card-list,search-input}.tsx (+ specs)
+
+### Acceptance Criteria
+- no page-local visual invention remains; components use the primitives and tokens only
+- tag chips, empty states, and icon+label pairs follow the retained ADR-013 rules
+- E2E-affecting accessible names are unchanged, or each change is recorded
+
+### Tests
+- `pnpm --filter @danisolation-recall/web test` and `typecheck`
+- `pnpm --filter @danisolation-recall/web test:e2e` for the org/search journeys that touch these components
+
+---
+
+### REDESIGN-005
+
+### Title
+Restyle the dashboard / library page
+
+### Goal
+Re-skin the set list, search box, account panel, and tag-filter chips on the new tokens.
+
+### Dependencies
+REDESIGN-004
+
+### Status
+TODO (dependencies pending)
+
+### Files
+apps/web/src/app/(protected)/dashboard/page.tsx (+ spec)
+
+### Acceptance Criteria
+- no-matches state and empty-library state stay distinct (§56)
+- search and tag filters keep their URL-state behavior unchanged
+
+### Tests
+- page spec, web suite, typecheck, build, and the search/organization E2E journeys
+
+---
+
+### REDESIGN-006
+
+### Title
+Restyle the progress page
+
+### Goal
+Re-skin the five stat panels, due queue, and session history on the new tokens, keeping the streak panels' semantics.
+
+### Dependencies
+REDESIGN-003
+
+### Status
+TODO (dependencies pending)
+
+### Files
+apps/web/src/app/(protected)/progress/page.tsx (+ spec)
+
+### Acceptance Criteria
+- stat panels keep their icon+label pairing and derived-accuracy logic untouched
+- zero-state copy ("No answers yet", zeroed streaks) unchanged — behavior, not styling
+
+### Tests
+- page spec, web suite, typecheck, build, and the progress E2E journey
+
+---
+
+### REDESIGN-007
+
+### Title
+Restyle the set detail and study screens
+
+### Goal
+Re-skin the card-management set page and the study screen's flip card, progress bar, and answer controls.
+
+### Dependencies
+REDESIGN-004
+
+### Status
+TODO (dependencies pending)
+
+### Files
+apps/web/src/app/(protected)/sets/[id]/page.tsx, study/[sessionId]/** (+ specs)
+
+### Acceptance Criteria
+- the 3D flip and the progress bar still honor `prefers-reduced-motion`
+- keyboard shortcuts (Space/1/2) and the flip's accessible behavior unchanged
+
+### Tests
+- page and study-client specs, web suite, typecheck, build, and the study/cards E2E journeys
+
+---
+
+### REDESIGN-008
+
+### Title
+Restyle the auth, set-form, and public share pages
+
+### Goal
+Bring login, register, the set new/edit forms, and the public share page onto the new tokens.
+
+### Dependencies
+REDESIGN-003
+
+### Status
+TODO (dependencies pending)
+
+### Files
+apps/web/src/app/{login,register,(protected)/sets/new,(protected)/sets/[id]/edit,share/sets/[id]}/** (+ specs)
+
+### Acceptance Criteria
+- form error, loading, and validation states unchanged in behavior
+- the public share page keeps its read-only, no-controls contract (ADR-015)
+
+### Tests
+- the relevant page specs, web suite, typecheck, build, and the auth/sharing/sets E2E journeys
+
+---
+
+### REDESIGN-009
+
+### Title
+Re-audit accessibility and contrast across all routes
+
+### Goal
+Verify the restyled app against §57 and the skill's pre-delivery checklist, fixing any contrast, focus, heading, or touch-target regression.
+
+### Dependencies
+REDESIGN-005
+REDESIGN-006
+REDESIGN-007
+REDESIGN-008
+
+### Status
+TODO (dependencies pending)
+
+### Files
+the restyled components and pages, as findings require
+
+### Acceptance Criteria
+- contrast ≥4.5:1 on every text/background pair in light mode, with numbers recorded
+- visible focus everywhere; no color-only signalling; sequential heading levels
+- 375px and 1440px checked; reduced-motion verified
+- findings fixed, not just listed
+
+### Tests
+- the full web suite, typecheck, build, and all E2E journeys
+
+---
+
+### REDESIGN-010
+
+### Title
+Visual-redesign docs sweep
+
+### Goal
+Record the new identity in the docs and mark ADR-008/ADR-013 superseded.
+
+### Dependencies
+REDESIGN-009
+
+### Status
+TODO (dependencies pending)
+
+### Files
+ARCHITECTURE.md, README.md, docs/PROGRESS.md, docs/adr/ADR-008-frontend-design-system.md, docs/adr/ADR-013-ui-polish.md
+
+### Acceptance Criteria
+- ADR-008 and ADR-013 annotated superseded-for-visual (accessibility outcomes retained), not deleted
+- counts re-verified against fresh runs (§73)
+- the typography tradeoff and the out-of-scope dark mode are recorded where the data model/design is described
+
+### Tests
+- full suites re-run for the counts cited in PROGRESS.md
+
+---
