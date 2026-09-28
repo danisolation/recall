@@ -273,7 +273,7 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
             aria-valuemin={0}
             aria-valuemax={data.cards.length}
             aria-valuenow={data.reviews.length}
-            className="h-1.5 overflow-hidden rounded-full bg-ink/10"
+            className="h-1.5 overflow-hidden rounded-full bg-muted"
           >
             <div
               className="h-full w-full origin-left rounded-full bg-marker transition-transform duration-200 motion-reduce:transition-none"
@@ -289,13 +289,13 @@ export function StudyClient({ sessionId }: { sessionId: number }) {
           <div className="flip-card-inner">
             <div
               aria-hidden={revealed || undefined}
-              className="flip-card-face flex min-h-36 items-center rounded-card border border-ink/10 bg-card p-4"
+              className="flip-card-face flex min-h-36 items-center rounded-card border-[3px] border-border bg-card p-4 shadow-clay"
             >
               <p className="text-xl font-medium">{current.front}</p>
             </div>
             <div
               aria-hidden={!revealed || undefined}
-              className="flip-card-face flip-card-back flex min-h-36 items-center overflow-y-auto rounded-card border border-ink/10 bg-card p-4"
+              className="flip-card-face flip-card-back flex min-h-36 items-center overflow-y-auto rounded-card border-[3px] border-border bg-card p-4 shadow-clay"
             >
               <p className="text-lg text-ink-soft">{current.back}</p>
             </div>

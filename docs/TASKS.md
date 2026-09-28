@@ -5159,7 +5159,7 @@ Re-skin the card-management set page and the study screen's flip card, progress 
 REDESIGN-004
 
 ### Status
-TODO (dependencies pending)
+DONE
 
 ### Files
 apps/web/src/app/(protected)/sets/[id]/page.tsx, study/[sessionId]/** (+ specs)
@@ -5168,8 +5168,23 @@ apps/web/src/app/(protected)/sets/[id]/page.tsx, study/[sessionId]/** (+ specs)
 - the 3D flip and the progress bar still honor `prefers-reduced-motion`
 - keyboard shortcuts (Space/1/2) and the flip's accessible behavior unchanged
 
+### Decision
+**The set detail page needed no work at all** — it is already entirely composed from the restyled primitives (`Panel`, `TextLink variant="button"`, `StartStudyButton`, `CardList`), so there was nothing left to re-skin. Recording that as an outcome rather than padding the task with cosmetic churn.
+
+The real work was the study screen, and it is a three-class change. **The flip card faces were still wearing ADR-008's `border border-ink/10`** — a 1px hairline that never got picked up by the token swap because `border-ink/10` uses the *ink* token, which survived the rename. That makes it the most visible surface in the app to be missed: the card face is the one thing the user stares at for an entire study session, and it was the last flat surface in the product. Both faces now carry `border-[3px] border-border shadow-clay`. The progress bar's track had the same problem (`bg-ink/10`, a 10% wash of the old ink) and moved to `bg-muted` — the token REDESIGN-003 already used for the skeleton, so the loading state and the progress track now agree.
+
+**The flip mechanism itself was left completely alone**, and that restraint is the substance of the task. The criteria are about *preserving* it, so the classes `flip-card`, `flip-card-inner`, `flip-card-face`, `flip-card-back`, the `data-revealed` toggle, and the `aria-hidden` swap are all untouched, as is `globals.css`'s perspective/rotation rules. The restyle is purely a change to the two faces' *surface* classes — nothing that could affect the 3D geometry. A test now asserts the wrapper and inner elements still exist and that `data-revealed` is absent before the reveal, so a future edit that renames or drops a flip class fails loudly instead of silently flattening the animation.
+
+`shadow-clay` on the faces is the one genuinely debatable call, since a 3D-rotating element with an inset highlight could read oddly mid-flip. It is kept because the card is stationary for most of its life (front, then back), the style is transform-only so the shadow never animates, and the alternative — a raised surface with no lift — would have made the card the flattest object on the screen it is meant to be the focus of.
+
+**Keyboard shortcuts, the reveal/answer flow, the completion wiring, and the skip-on-missing-card path are all unmodified**, confirmed by the 13 pre-existing study tests passing untouched.
+
 ### Tests
-- page and study-client specs, web suite, typecheck, build, and the study/cards E2E journeys
+- RED first: **2 failed**, **14 passed**. The failures were the faces' hairline border and the track's `bg-ink/10`. The flip-mechanism test passed immediately — correct, since it is a regression guard on behavior this task must not change.
+- `pnpm --filter @danisolation-recall/web test` — **229 passed (37 files)**, up from 226; **no pre-existing assertion was modified**
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — clean, 11 routes, zero CSS warnings
+- `pnpm --filter @danisolation-recall/web test:e2e` — **11 passed**, including `study` and `cards`, the two journeys that drive the flip card end to end (a pre-existing dev server had to be stopped first; it was blocking Playwright's web server, and the run was confirmed clean after)
 
 ---
 

@@ -321,4 +321,53 @@ describe("StudyClient", () => {
       "This card no longer exists.",
     );
   });
+
+  it("renders the flip card faces as clay surfaces", async () => {
+    getSessionMock.mockResolvedValue(sessionData);
+
+    const { container } = render(<StudyClient sessionId={5} />);
+    await screen.findByText("What is mitosis?");
+
+    // ADR-018: the card faces still carried ADR-008's 1px `border-ink/10`
+    // hairline, so the one surface the user stares at for the whole study
+    // session was the last thing in the app that had not been re-skinned.
+    const faces = container.querySelectorAll(".flip-card-face");
+    expect(faces).toHaveLength(2);
+    for (const face of faces) {
+      expect(face).toHaveClass("border-[3px]", "border-border", "shadow-clay");
+    }
+  });
+
+  it("keeps the flip mechanism and its reduced-motion kill-switch intact", async () => {
+    getSessionMock.mockResolvedValue(sessionData);
+
+    const { container } = render(<StudyClient sessionId={5} />);
+    await screen.findByText("What is mitosis?");
+
+    // The 3D flip is ADR-013's and must survive the restyle: the outer
+    // wrapper still carries the perspective class, and the transform-only
+    // transition still collapses under prefers-reduced-motion.
+    const flip = container.querySelector(".flip-card");
+    expect(flip).not.toBeNull();
+    expect(flip).not.toHaveAttribute("data-revealed");
+    expect(container.querySelector(".flip-card-inner")).not.toBeNull();
+  });
+
+  it("renders the progress fill on the primary token", async () => {
+    getSessionMock.mockResolvedValue(sessionData);
+
+    const { container } = render(<StudyClient sessionId={5} />);
+    const bar = await screen.findByRole("progressbar", {
+      name: "Session progress",
+    });
+
+    // ADR-018: the track was `bg-ink/10` — a wash of the old ink palette.
+    // The fill keeps `bg-marker` and the transform-only transition, which is
+    // what the reduced-motion rule collapses to an instant jump.
+    expect(bar.firstElementChild).toHaveClass(
+      "bg-marker",
+      "motion-reduce:transition-none",
+    );
+    expect(bar).not.toHaveClass("bg-ink/10");
+  });
 });
