@@ -4434,7 +4434,7 @@ Public set page
 SHARE-003
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/app/share/sets/[id]/page.tsx (+ spec)
@@ -4445,8 +4445,13 @@ apps/web/src/lib/public.ts (fetcher without credentials, + spec)
 - 404 (`notFound()`) for private/missing — indistinguishable
 - the same panel/typography registers; the page works signed out and signed in alike
 
+### Decision
+`fetchPublicSet` in `lib/public.ts` sends no credentials and no cookie header at all — structurally incapable of leaking the visitor's session, pinned by a spec assertion that the fetch options carry neither — and uses `cache: "no-store"` because SHARE-004's toggle means a set's visibility can flip between two renders of the same URL. The 404 fold mirrors `getSet` (`lib/sets.ts`). The page reuses the detail page's markup register (Panel, `dl`, heading scale) but renders its own card list: `CardList` is welded to the owner controls (move/edit/delete), so reusing it would have meant threading an "actions off" mode through an owner-only component — a straight 10-line `<ul>` of fronts and backs is the smaller, honest surface. Zero cards gets a §56 empty state ("This set has no cards yet.") distinct from the owner's add-a-card prompt.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (public page: content rendered, 404 fold, no action controls)
+- `pnpm --filter @danisolation-recall/web test` — **226 passed (38 files)**: +8 (fetch without credentials + URL/cache pinned, 404 → null, other failures throw; page renders content, no action controls — Edit set / Study / Delete set / add-card form all absent, empty state, 404 fold, malformed id 404 without an API call)
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — succeeds (`/share/sets/[id]` is dynamic)
 
 ---
 
