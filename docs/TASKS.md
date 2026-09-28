@@ -4397,11 +4397,13 @@ Let the owner flip a set between Private and Public from the edit form, with the
 SHARE-003
 
 ### Status
-TODO
+DONE
 
 ### Files
 apps/web/src/lib/api.ts (updateSet passes visibility — type-level)
 apps/web/src/lib/sets.ts (StudySet.visibility)
+apps/web/src/lib/sets.spec.ts (fixture pinned with `satisfies StudySet`)
+apps/web/src/components/set-list.spec.tsx (fixtures gain visibility)
 apps/web/src/app/(protected)/sets/[id]/edit/edit-set-form.tsx (+ spec)
 apps/web/src/app/(protected)/sets/[id]/page.tsx (a "Public"/"Private" dl row, + spec)
 
@@ -4410,8 +4412,13 @@ apps/web/src/app/(protected)/sets/[id]/page.tsx (a "Public"/"Private" dl row, + 
 - the detail page's info panel shows the current visibility so the owner can confirm the state
 - copy/name discipline holds; the payload shape changes are pinned by updated tests
 
+### Decision
+`updateSet` in `lib/api.ts` needed no code change at all: `UpdateSetInput` already carries `visibility` (SHARE-003's `.extend()` after `.partial()`), so the form just sends it. `StudySet.visibility` is typed as `"private" | "public"` — not `string` — because the update contract's enum is the only write path, which lets the form hold the token directly without a cast beyond the select's two-option `event.target.value`. The Sharing select mirrors the Folder select exactly (same `Select` primitive, state, and rides-every-save contract); the detail page renders the row in the existing `dl` grid (`visibility === "public" ? "Public" : "Private"`). Payload shapes are pinned at the type level with `satisfies StudySet` on the getSet and edit-form fixtures.
+
 ### Tests
-- `pnpm --filter @danisolation-recall/web test` (edit-form select tests; detail-page visibility row)
+- `pnpm --filter @danisolation-recall/web test` — **218 passed (36 files)**: +4 (Sharing select prefilled from `set.visibility` and sent on every save — the two pre-existing updateSet assertions gained `visibility: "private"`; detail page renders Private and Public rows)
+- `pnpm --filter @danisolation-recall/web typecheck` — clean
+- `pnpm --filter @danisolation-recall/web build` — succeeds (`/sets/[id]` and `/sets/[id]/edit` stay dynamic)
 
 ---
 

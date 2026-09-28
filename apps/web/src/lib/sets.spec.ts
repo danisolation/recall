@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getSet, getSetTags, listSets } from "./sets";
+import type { StudySet } from "./sets";
 
 const { headersMock } = vi.hoisted(() => ({ headersMock: vi.fn() }));
 
@@ -179,11 +180,13 @@ describe("getSet", () => {
   const set = {
     id: 42,
     ownerId: 1,
+    folderId: null,
     title: "Spanish verbs",
     description: "Common irregular verbs",
+    visibility: "private",
     createdAt: "2026-02-01T00:00:00.000Z",
     updatedAt: "2026-02-01T00:00:00.000Z",
-  };
+  } satisfies StudySet;
 
   it("returns null without a cookie and never calls the API", async () => {
     headersMock.mockResolvedValue(new Headers());

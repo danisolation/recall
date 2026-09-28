@@ -98,6 +98,12 @@ export default async function SetDetailPage({
                 : "None yet"}
             </dd>
           </div>
+          <div className="flex flex-col gap-1">
+            <dt className="text-sm text-ink-soft">Sharing</dt>
+            <dd className="font-medium">
+              {set.visibility === "public" ? "Public" : "Private"}
+            </dd>
+          </div>
         </dl>
       </Panel>
       <section className="flex flex-col gap-3">

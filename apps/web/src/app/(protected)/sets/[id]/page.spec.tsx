@@ -46,8 +46,10 @@ beforeEach(() => {
 const set = {
   id: 42,
   ownerId: 1,
+  folderId: null,
   title: "Spanish verbs",
   description: "Common irregular verbs",
+  visibility: "private",
   createdAt: "2026-02-01T00:00:00.000Z",
   updatedAt: "2026-03-15T00:00:00.000Z",
 };
@@ -192,6 +194,30 @@ describe("SetDetailPage", () => {
     }));
 
     expect(screen.getByText("None yet")).toBeInTheDocument();
+  });
+
+  it("renders the set's sharing state as Private", async () => {
+    getSetMock.mockResolvedValue(set);
+
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(screen.getByText("Sharing")).toBeInTheDocument();
+    expect(screen.getByText("Private")).toBeInTheDocument();
+  });
+
+  it("renders the set's sharing state as Public", async () => {
+    getSetMock.mockResolvedValue({ ...set, visibility: "public" });
+
+    render(await SetDetailPage({
+      params: Promise.resolve({ id: "42" }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(screen.getByText("Sharing")).toBeInTheDocument();
+    expect(screen.getByText("Public")).toBeInTheDocument();
   });
 
   it("offers the primary Study control", async () => {

@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
+import type { StudySet } from "@/lib/sets";
 import { EditSetForm } from "./edit-set-form";
 
 const { updateSetMock, replaceTagsMock, pushMock } = vi.hoisted(() => ({
@@ -38,9 +39,10 @@ const set = {
   folderId: null,
   title: "Spanish verbs",
   description: "Common irregular verbs",
+  visibility: "private",
   createdAt: "2026-02-01T00:00:00.000Z",
   updatedAt: "2026-03-15T00:00:00.000Z",
-};
+} satisfies StudySet;
 
 describe("EditSetForm", () => {
   it("renders prefilled with the set's current values", () => {
@@ -69,6 +71,7 @@ describe("EditSetForm", () => {
         title: "Spanish verbs 2",
         description: "Common irregular verbs",
         folderId: null,
+        visibility: "private",
       }),
     );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
@@ -169,6 +172,34 @@ describe("EditSetForm", () => {
         title: "Spanish verbs",
         description: "Common irregular verbs",
         folderId: 9,
+        visibility: "private",
+      }),
+    );
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));
+  });
+
+  it("prefills the Sharing select with the set's current visibility", () => {
+    render(<EditSetForm set={set} />);
+
+    expect(screen.getByLabelText("Sharing")).toHaveValue("private");
+  });
+
+  it("sends the selected visibility on every save", async () => {
+    updateSetMock.mockResolvedValue(undefined);
+    replaceTagsMock.mockResolvedValue(undefined);
+    render(<EditSetForm set={set} />);
+
+    await userEvent.selectOptions(screen.getByLabelText("Sharing"), "public");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save changes" }),
+    );
+
+    await waitFor(() =>
+      expect(updateSetMock).toHaveBeenCalledWith(42, {
+        title: "Spanish verbs",
+        description: "Common irregular verbs",
+        folderId: null,
+        visibility: "public",
       }),
     );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sets/42"));

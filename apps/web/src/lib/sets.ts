@@ -8,6 +8,9 @@ export type StudySet = {
   folderId: number | null;
   title: string;
   description: string | null;
+  // ADR-015: the token is enum-validated by the update contract, so the
+  // API only ever returns one of these two values.
+  visibility: "private" | "public";
   createdAt: string;
   updatedAt: string;
 };

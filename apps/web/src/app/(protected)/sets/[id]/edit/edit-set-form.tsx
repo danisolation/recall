@@ -24,6 +24,7 @@ export function EditSetForm({
   const router = useRouter();
   const [tags, setTags] = useState(initialTags.join(", "));
   const [folderId, setFolderId] = useState(set.folderId ?? "");
+  const [visibility, setVisibility] = useState(set.visibility);
   const {
     register,
     handleSubmit,
@@ -57,13 +58,15 @@ export function EditSetForm({
           }
 
           // Both calls are idempotent, so a failure leaves the form filled
-          // and a resubmit safely retries the whole save (§55). The folder
-          // placement is always sent: null unfiles, a number files (§55's
-          // tri-state contract).
+          // and a resubmit safely retries the whole save (Â§55). The folder
+          // placement is always sent: null unfiles, a number files (Â§55's
+          // tri-state contract). Visibility rides every save too, mirroring
+          // the folder placement (ADR-015: sharing rides the update path).
           await updateSet(set.id, {
             title: values.title,
             description: values.description,
             folderId: folderId === "" ? null : Number(folderId),
+            visibility,
           });
           await replaceTags(set.id, { tags: parsedTags.data.tags });
           router.push(`/sets/${set.id}`);
@@ -112,6 +115,18 @@ export function EditSetForm({
               {folder.name}
             </option>
           ))}
+        </Select>
+      </FormField>
+      <FormField label="Sharing" id="visibility">
+        <Select
+          id="visibility"
+          value={visibility}
+          onChange={(event) =>
+            setVisibility(event.target.value as "private" | "public")
+          }
+        >
+          <option value="private">Private</option>
+          <option value="public">Public</option>
         </Select>
       </FormField>
       {errors.root?.message ? (
